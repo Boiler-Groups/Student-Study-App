@@ -1,2 +1,5 @@
 # Don't add node modules to git
 **/node_modules/
+
+# Don't add enviornment variables to git
+**/.env*
