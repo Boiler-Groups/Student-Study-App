@@ -8,12 +8,18 @@ To use the template
 Clone the Directory
 `git clone https://github.com/GavinMcCormack912/Student-Study-App.git`
 ## Step2:
-Enter the client directory
-`cd client`
+Get client dependencies
+```
+cd client
+npm install
+```
 
-## Step2:
-Run the following to update dependencies:
-`nmp install`
+## Step3:
+Get server dependencies
+```
+cd server
+npm install
+```
 
 ## Step 4:
 Launch the project:
