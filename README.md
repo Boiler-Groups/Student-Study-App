@@ -7,14 +7,14 @@ To use the template
 ## Step 1:
 Clone the Directory
 `git clone https://github.com/GavinMcCormack912/Student-Study-App.git`
-## Step2:
+## Step 2:
 Get client dependencies
 ```
 cd client
 npm install
 ```
 
-## Step3:
+## Step 3:
 Get server dependencies
 ```
 cd server
