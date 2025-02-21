@@ -5,6 +5,7 @@ import app from '../server.js';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import 'dotenv/config';
+import jwt from 'jsonwebtoken';
 
 const { expect } = chai;
 
@@ -97,6 +98,80 @@ describe('User Registration and Login', () => {
 
       expect(res.status).to.equal(400);
       expect(res.body).to.have.property('message', 'Invalid credentials');
+    });
+  });
+
+  describe('PUT /api/users/:userId', () => {
+    let userId;
+    let userToken;
+
+    // Set up a test user before each test and get token and userId
+    beforeEach(async () => {
+      const registerRes = await request(app)
+        .post('/api/users/register')
+        .send({
+          username: 'UpdateTestUser',
+          email: 'updatetest@example.com',
+          password: 'Password123'
+        });
+
+      userToken = registerRes.body.token;
+      const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    });
+
+    // Attempt to update username
+    it('should update username successfully', async () => {
+      const res = await request(app)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          username: 'NewUsername'
+        });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.message).to.equal('User updated successfully');
+
+      const updatedUser = await User.findById(userId);
+      expect(updatedUser.username).to.equal('NewUsername');
+    });
+
+    // Attempt to update password
+    it('should update password successfully', async () => {
+      const newPassword = 'NewPassword123';
+      const res = await request(app)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          password: newPassword
+        });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.message).to.equal('User updated successfully');
+
+      // Attempt to login again with new password
+      const loginRes = await request(app)
+        .post('/api/users/login')
+        .send({
+          email: 'updatetest@example.com',
+          password: newPassword
+        });
+
+      expect(loginRes.status).to.equal(200);
+      expect(loginRes.body).to.have.property('token');
+    });
+
+    // Attempt to change username with fake user Id
+    it('should return 400 for non-existent user', async () => {
+      const fakeUserId = '507f1f77bcf86cd799439011';
+      const res = await request(app)
+        .put(`/api/users/${fakeUserId}`)
+        .send({
+          username: 'NewUsername'
+        });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.message).to.equal('User not found');
     });
   });
 
