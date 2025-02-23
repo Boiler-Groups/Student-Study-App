@@ -1,26 +1,42 @@
-# Student-Study-App
-Study app for CS 307
+# Boiler Groups
+Study app for CS 307 using MongoDB, Express.js, React Native, and Node.js
 
+## Launch Instructions
 
-To use the template
-
-## Step 1:
-Clone the Directory
-`git clone https://github.com/GavinMcCormack912/Student-Study-App.git`
-## Step 2:
-Get client dependencies
+Clone the repository
 ```
-cd client
-npm install
+git clone https://github.com/GavinMcCormack912/Student-Study-App.git
 ```
 
-## Step 3:
 Get server dependencies
 ```
 cd server
 npm install
 ```
 
-## Step 4:
-Launch the project:
-`npm start`
+Get client dependencies
+```
+cd client
+npm install
+```
+
+Create a .env file in server with the following fields filled in
+```
+MONGO_URI=
+PORT=
+NODE_ENV=
+JWT_SECRET=
+```
+
+Create a .env file in client with the following fields filled in
+```
+API_URL=
+```
+
+Launch the application
+```
+cd server
+npm start
+cd client
+npm start
+```
