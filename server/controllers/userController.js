@@ -71,7 +71,7 @@ export const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const { username, password } = req.body;
-    
+
     // Find user by Id
     const user = await User.findById(userId);
     if (!user) {

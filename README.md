@@ -33,10 +33,19 @@ Create a .env file in client with the following fields filled in
 API_URL=
 ```
 
-Launch the application
+Start the server and client on separate terminals and open the application
 ```
 cd server
 npm start
+```
+```
 cd client
 npm start
+```
+
+## Testing
+Server tests are ran with Mocha. Insert test files in `server/test`. Run tests with
+```
+cd server
+npm test
 ```
