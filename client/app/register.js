@@ -12,9 +12,28 @@ export default function Register() {
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
+    /**
+     * A valid email has:
+     * - One or more characters before the @ symbol
+     * - An @ symbol
+     * - At least 2 characters after the @ symbol
+     * - A dot
+     * - At least 2 characters after the dot
+     */
+    const validateEmail = (email) => {
+        return /(.+)@(.+){2,}\.(.+){2,}/.test(email);
+    }
+
     const handleRegister = async () => {
         setLoading(true);
         setErrorMessage('');
+
+        if (!validateEmail(email)) {
+            setErrorMessage('Please enter a valid email address.');
+            setLoading(false);
+            return;
+        }
+
         try {
             const response = await fetch(`${API_URL}/users/register`, {
                 method: 'POST',
