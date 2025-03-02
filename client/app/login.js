@@ -1,37 +1,64 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { API_URL } from '@env';
-import { AuthContext } from './AuthContext';
-import Header from '../components/Header';
+import React, { useContext, useEffect, useState } from "react";
+import {
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+} from "react-native";
+import { useRouter, useRootNavigationState } from "expo-router";
+import { API_URL } from "@env";
+import { AuthContext } from "./AuthContext";
+import Header from "../components/Header";
 
 export default function Login() {
     const router = useRouter();
-    const { login } = useContext(AuthContext);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const navigationState = useRootNavigationState();
+    const { user, login } = useContext(AuthContext);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState("");
 
     const handleLogin = async () => {
-        setLoading(true);
-        setErrorMessage('');
+        setErrorMessage("");
+        try {
+            const response = await fetch(`${process.env.API_URL}/users/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const success = await login(email, password);
-        if (success) {
-            router.push('/home');
-        } else {
-            setErrorMessage('Login failed. Please try again.');
+            const data = await response.json();
+            if (response.ok) {
+                // Login successful, set user data in context
+                login(data);
+                console.log(data)
+            } else {
+                setErrorMessage("Invalid credentials");
+            }
+        } catch (error) {
+            console.log(error);
+            setErrorMessage("Login failed. Please try again.");
         }
-        setLoading(false);
     };
+
+    useEffect(() => {
+        // waits for user to be updated, and for the root layout is mounted before navigating
+        if (user && navigationState) { 
+            console.log("Navigating to home...");
+            router.replace("/home");
+        }
+    }, [user, navigationState?.mounted]);
 
     return (
         <View style={styles.container}>
             <Header />
             <Text style={styles.title}>Login</Text>
 
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+            {errorMessage ? (
+                <Text style={styles.errorText}>{errorMessage}</Text>
+            ) : null}
 
             <TextInput
                 style={styles.input}
@@ -50,11 +77,17 @@ export default function Login() {
                 onChangeText={setPassword}
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-                <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Login'}</Text>
+            <TouchableOpacity
+                style={styles.button}
+                onPress={handleLogin}
+                disabled={loading}
+            >
+                <Text style={styles.buttonText}>
+                    {loading ? "Logging in..." : "Login"}
+                </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.push('/register')}>
+            <TouchableOpacity onPress={() => router.push("/register")}>
                 <Text style={styles.link}>Don't have an account? Register</Text>
             </TouchableOpacity>
         </View>
@@ -62,26 +95,31 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-    title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15 },
+    container: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
+    title: { fontSize: 28, fontWeight: "bold", marginBottom: 15 },
     input: {
-        width: '25%',
+        width: "25%",
         height: 40,
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: "#ccc",
         borderRadius: 5,
         marginBottom: 10,
         paddingHorizontal: 10,
     },
     button: {
-        width: '25%',
-        backgroundColor: '#007AFF',
+        width: "25%",
+        backgroundColor: "#007AFF",
         padding: 10,
         borderRadius: 5,
-        alignItems: 'center',
+        alignItems: "center",
         marginBottom: 10,
     },
-    buttonText: { color: '#fff', fontSize: 16 },
-    link: { color: '#007AFF', marginTop: 5 },
-    errorText: { color: 'red', marginBottom: 10 },
+    buttonText: { color: "#fff", fontSize: 16 },
+    link: { color: "#007AFF", marginTop: 5 },
+    errorText: { color: "red", marginBottom: 10 },
 });

@@ -1,6 +1,6 @@
-import React, { createContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import React, { createContext, useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 export const AuthContext = createContext();
 
@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     // Load user from AsyncStorage when the app starts
     useEffect(() => {
         const loadUser = async () => {
-            const storedUser = await AsyncStorage.getItem('userInfo');
+            const storedUser = await AsyncStorage.getItem("userInfo");
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
             }
@@ -21,35 +21,21 @@ export const AuthProvider = ({ children }) => {
         loadUser();
     }, []);
 
-    const login = async (email, password) => {
-        try {
-            const response = await fetch(`${process.env.API_URL}/users/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
+    const login = async (data) => {
+        setLoading(true);
 
-            const data = await response.json();
-            console.log(data)
-            if (response.ok) {
-                await AsyncStorage.setItem('userToken', data.token); // Save token
-                await AsyncStorage.setItem('userInfo', JSON.stringify(data.userInfo)); // Save user data
-                setUser(data.user);
-                return true;
-            } else {
-                return false;
-            }
-        } catch (error) {
-            console.error('Login failed:', error);
-            return false;
-        }
+        await AsyncStorage.setItem("userToken", data.token); // Save token
+        await AsyncStorage.setItem("userInfo", JSON.stringify(data.userInfo)); // Save user data
+        setUser(data.userInfo);
+        setLoading(false);
+        return;
     };
 
     const logout = async () => {
-        await AsyncStorage.removeItem('userToken');
-        await AsyncStorage.removeItem('userInfo');
+        await AsyncStorage.removeItem("userToken");
+        await AsyncStorage.removeItem("userInfo");
         setUser(null);
-        router.replace('/login');
+        setLoading(false);
     };
 
     return (

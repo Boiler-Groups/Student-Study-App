@@ -21,12 +21,14 @@ export default function RootLayout() {
       <SafeAreaProvider>
         {isAuthPage ? (
           <Stack>
+            {/* Non-logged-in routes go here */}
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="register" options={{ headerShown: false }} />
           </Stack>
         ) : (
           <ProtectedRoute>
             <Stack>
+              {/* Protected routes go here (anything you need to be logged in to access) */}
               <Stack.Screen name="landing" options={{ headerShown: false }} />
               <Stack.Screen name="home" options={{ headerShown: false }} />
               <Stack.Screen name="messages" options={{ headerShown: true }} />
