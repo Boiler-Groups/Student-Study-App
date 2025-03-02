@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { API_URL } from '@env';
+import { AuthContext } from './AuthContext';
 import Header from '../components/Header';
 
 export default function Login() {
     const router = useRouter();
+    const { login } = useContext(AuthContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,24 +16,14 @@ export default function Login() {
     const handleLogin = async () => {
         setLoading(true);
         setErrorMessage('');
-        try {
-            const response = await fetch(`${process.env.API_URL}/users/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
 
-            const data = await response.json();
-            if (response.ok) {
-                router.push('/home');
-            } else {
-                setErrorMessage('Login failed. Please try again.');
-            }
-        } catch (error) {
+        const success = await login(email, password);
+        if (success) {
+            router.push('/home');
+        } else {
             setErrorMessage('Login failed. Please try again.');
-        } finally {
-            setLoading(false);
         }
+        setLoading(false);
     };
 
     return (
