@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { API_URL } from '@env';
 import Header from '../components/Header';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Register() {
     const router = useRouter();
@@ -44,12 +45,13 @@ export default function Register() {
 
             const data = await response.json();
             if (response.ok) {
+                await AsyncStorage.setItem('token', data.token);
                 router.push('/landing');
             } else {
-                setErrorMessage('Registration failed. Please try again.');
+                setErrorMessage('Registration failed. User already exists.');
             }
         } catch (error) {
-            setErrorMessage('Registration failed. Please try again.');
+            setErrorMessage('Registration failed. User already exists.');
         } finally {
             setLoading(false);
         }

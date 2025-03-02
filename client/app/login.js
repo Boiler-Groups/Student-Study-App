@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { API_URL } from '@env';
 import Header from '../components/Header';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
     const router = useRouter();
@@ -23,7 +24,8 @@ export default function Login() {
 
             const data = await response.json();
             if (response.ok) {
-                router.push('/home');
+                await AsyncStorage.setItem('token', data.token);
+                router.push('/landing');
             } else {
                 setErrorMessage('Login failed. Please try again.');
             }
