@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
+import { AuthContext } from './AuthContext';
 
 export default function Home() {
     const router = useRouter();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user, logout } = useContext(AuthContext);
 
     // Simulated API call to fetch groups
     useEffect(() => {
@@ -24,7 +26,7 @@ export default function Home() {
             <Header />
 
             {/* Title for the page */}
-            <Text style={styles.title}>Classes</Text>
+            <Text style={styles.title}>{user.email}'s Classes</Text>
 
             {/* Bottom buttons container */}
             <View style={styles.bottomButtonsContainer}>
