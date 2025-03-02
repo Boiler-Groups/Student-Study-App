@@ -2,51 +2,60 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
+import { getStudyGroups } from './api/studygroup'; // Ensure the correct import path
 
 export default function Messages() {
     const router = useRouter();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Simulated API call to fetch groups
     useEffect(() => {
-        setGroups([
-            { id: '1', name: 'CS Study Group' },
-            { id: '2', name: 'Purdue Hackathon Team' },
-            { id: '3', name: 'Networking Enthusiasts' },
-        ]);
-        setLoading(false); // Set loading to false immediately
+        const fetchGroups = async () => {
+            try {
+                const email = "student1@example.com"; // Replace with dynamic user email
+                const response = await getStudyGroups({ email }); // Call API
+                console.log(response.data); // Log the data to inspect its structure
+                if (Array.isArray(response.data)) {
+                    setGroups(response.data);
+                } else {
+                    console.error("Data is not an array:", response.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch study groups:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchGroups();
     }, []);
 
     return (
         <View style={styles.container}>
-            {/* Header with its own styles */}
             <Header />
-
-            {/* Title for the page */}
-            <Text style={styles.title}>Classes</Text>
+            <Text style={styles.title}>Study Groups</Text>
 
             {loading ? (
                 <ActivityIndicator size="large" color="#007AFF" />
             ) : (
                 <FlatList
                     data={groups}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item._id} // Use _id as keyExtractor
                     contentContainerStyle={styles.listContainer}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.groupItem}
-                            onPress={() => router.push(`/group/${item.id}`)}
+                            onPress={() => router.push(`/group/${item._id}`)} // Use _id for navigation
                         >
-                            <Text style={styles.groupText}>{item.name}</Text>
+                            <Text style={styles.groupText}>{item.name}</Text> {/* Display group name */}
                         </TouchableOpacity>
                     )}
                 />
             )}
-
         </View>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'flex-start', alignItems: 'center', padding: 15, paddingTop: 100 },
@@ -58,47 +67,9 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginVertical: 5,
         alignItems: 'center',
-        borderWidth: 2,  // Add border to each group item
-        //borderColor: '#005BB5',  // Border color
+        borderWidth: 2,
     },
     groupText: { fontSize: 18 },
-    button: {
-        backgroundColor: '#007AFF',
-        padding: 12,
-        borderRadius: 8,
-        marginTop: 20,
-    },
-    buttonText: { color: '#fff', fontSize: 16 },
-    bottomButtonsContainer: {
-        position: 'absolute',
-        bottom: 30,
-        width: '100%',
-        paddingHorizontal: 20,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    bottomButton: {
-        backgroundColor: '#007AFF',
-        padding: 10,
-        borderRadius: 5,
-        flex: 1,
-        marginHorizontal: 5,
-        alignItems: 'center',
-    },
-    header: {
-        width: '100%',
-        height: 70,
-        backgroundColor: '#007AFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    headerText: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
-    listContainer: {
-        paddingLeft: 50,  // Move the list 50 units to the right (adjust the number as needed)
-    },
+    listContainer: { paddingLeft: 50 },
 });
+

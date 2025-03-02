@@ -13,9 +13,9 @@ export default function Home() {
     // Simulated API call to fetch groups
     useEffect(() => {
         setGroups([
-            { id: '1', name: 'CS Study Group' },
-            { id: '2', name: 'Purdue Hackathon Team' },
-            { id: '3', name: 'Networking Enthusiasts' },
+            { id: '1', name: 'CS 307      >' },
+            { id: '2', name: 'CS 252      >' },
+            { id: '3', name: 'MA 265      >' },
         ]);
         setLoading(false); // Set loading to false immediately
     }, []);
@@ -27,6 +27,25 @@ export default function Home() {
 
             {/* Title for the page */}
             <Text style={styles.title}>{user.email}'s Classes</Text>
+
+            {/* Display a loading indicator or the FlatList */}
+            {loading ? (
+                <ActivityIndicator size="large" color="#007AFF" />
+            ) : (
+                <FlatList
+                    data={groups}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContainer}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.groupItem}
+                            onPress={() => router.push(`/group/${item.id}`)}
+                        >
+                            <Text style={styles.groupText}>{item.name}</Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            )}
 
             {/* Bottom buttons container */}
             <View style={styles.bottomButtonsContainer}>
@@ -48,14 +67,13 @@ const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'flex-start', alignItems: 'center', padding: 15, paddingTop: 100 },
     title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15 },
     groupItem: {
-        width: '80%',
-        padding: 15,
+        width: '100%',
+        padding: 30,
         backgroundColor: '#D3D3D3',
         borderRadius: 8,
         marginVertical: 5,
         alignItems: 'center',
         borderWidth: 2,  // Add border to each group item
-        //borderColor: '#005BB5',  // Border color
     },
     groupText: { fontSize: 18 },
     button: {
@@ -95,6 +113,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     listContainer: {
-        paddingLeft: 50,  // Move the list 50 units to the right (adjust the number as needed)
+        paddingLeft: 20,  // Move the list 20 units to the right (adjust the number as needed)
+        marginBottom: 80,  // Ensure space for the bottom buttons
     },
 });
