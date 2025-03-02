@@ -28,6 +28,7 @@ export default function Register() {
         setLoading(true);
         setErrorMessage('');
 
+        console.log(`URL: ${process.env.API_URL}`)
         if (!validateEmail(email)) {
             setErrorMessage('Please enter a valid email address.');
             setLoading(false);
@@ -35,7 +36,7 @@ export default function Register() {
         }
 
         try {
-            const response = await fetch(`${API_URL}/users/register`, {
+            const response = await fetch(`${process.env.API_URL}/users/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, email, password }),

@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 
-export default function Home() {
+export default function Messages() {
     const router = useRouter();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,18 +26,24 @@ export default function Home() {
             {/* Title for the page */}
             <Text style={styles.title}>Classes</Text>
 
-            {/* Bottom buttons container */}
-            <View style={styles.bottomButtonsContainer}>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/Notes')}>
-                    <Text style={styles.buttonText}>Notes</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/AddClass')}>
-                    <Text style={styles.buttonText}>Add Class</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/messages')}>
-                    <Text style={styles.buttonText}>Messages</Text>
-                </TouchableOpacity>
-            </View>
+            {loading ? (
+                <ActivityIndicator size="large" color="#007AFF" />
+            ) : (
+                <FlatList
+                    data={groups}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContainer}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.groupItem}
+                            onPress={() => router.push(`/group/${item.id}`)}
+                        >
+                            <Text style={styles.groupText}>{item.name}</Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            )}
+
         </View>
     );
 }
