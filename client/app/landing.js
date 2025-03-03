@@ -4,13 +4,13 @@ import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 export default function Landing() {
     const router = useRouter();
 
     const handleLogout = async () => {
         await AsyncStorage.removeItem('token');
-        router.push('/login');
+        //await logout();
+        router.replace('/login');
     };
 
     return (

@@ -4,7 +4,7 @@ import { AuthContext } from './AuthContext';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function ProtectedRoute({ children }) {
-    const { user, loading, token } = useContext(AuthContext);
+    const { token, loading } = useContext(AuthContext);
     const router = useRouter();
     const segments = useSegments(); // Get current route
 
@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children }) {
                 router.replace('/login');
             }
         }
-    }, [user, loading, segments]);
+    }, [loading, segments]);
 
     if (loading) {
         return (

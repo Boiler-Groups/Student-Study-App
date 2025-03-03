@@ -33,7 +33,7 @@ export default function Login() {
             const data = await response.json();
             if (response.ok) {
                 await AsyncStorage.setItem('token', data.token);
-                router.push('/landing');
+                router.replace('/landing');
             } else {
                 setErrorMessage("Invalid credentials");
             }
@@ -43,13 +43,6 @@ export default function Login() {
         }
     };
 
-    useEffect(() => {
-        // waits for user to be updated, and for the root layout is mounted before navigating
-        if (user && navigationState) { 
-            console.log("Navigating to home...");
-            router.replace("/home");
-        }
-    }, [user, navigationState?.mounted]);
 
     return (
         <View style={styles.container}>
