@@ -5,20 +5,21 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
-import { getStudyGroups, createStudyGroup } from './api/studygroup'; // Ensure correct path
+import {getStudyGroups, createStudyGroup, deleteStudyGroup} from './api/studygroup'; // Ensure correct path
 
 export default function Messages() {
     const router = useRouter();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [modalVisible, setModalVisible] = useState(false);
+    const [createModalVisible, setCreateModalVisible] = useState(false);
     const [groupName, setGroupName] = useState('');
     const [members, setMembers] = useState('');
-
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedGroupId, setSelectedGroupId] = useState(null);
     // Fetch groups function
     const fetchGroups = async () => {
         try {
-            const email = "ryan@gmail.com"; // Replace with dynamic user email
+            const email = "foobar@gmail.com"; // Replace with dynamic user email
             const response = await getStudyGroups({ email });
             console.log(response.data);
             if (Array.isArray(response.data)) {
@@ -27,7 +28,9 @@ export default function Messages() {
                 console.error("Data is not an array:", response.data);
             }
         } catch (error) {
-            console.error("Failed to fetch study groups:", error);
+            console.log("Failed to fetch study groups:", error);
+            console.log("Returning Empty List");
+            setGroups([]); // Clear groups if the fetch fails
         } finally {
             setLoading(false);
         }
@@ -48,12 +51,28 @@ export default function Messages() {
             const memberArray = members.split(',').map(m => m.trim());
             await createStudyGroup({ name: groupName, members: memberArray });
             Alert.alert('Success', 'Study group created successfully!');
-            setModalVisible(false);
+            setCreateModalVisible(false);
             setGroupName('');
             setMembers('');
             fetchGroups(); // Refresh the study groups list
         } catch (error) {
             Alert.alert('Error', error.response?.data?.message || 'Failed to create group');
+        }
+    };
+    const handleDeleteGroup = async (groupId) => {
+        console.log("Deleting:", groupId);
+        try {
+            // Call the delete function with the groupId
+            await deleteStudyGroup(groupId);
+
+            // Show success message
+            Alert.alert('Success', 'Study group deleted successfully!');
+
+            // Refresh the list of study groups
+            await fetchGroups(); // Assuming this fetches the updated list of groups
+        } catch (error) {
+            // Show error message if deletion fails
+            Alert.alert('Error', error.response?.data?.message || 'Failed to delete group');
         }
     };
 
@@ -71,23 +90,31 @@ export default function Messages() {
                     contentContainerStyle={styles.listContainer}
                     style={{ flex: 1 }} // Make FlatList fill available space
                     renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.groupItem}
-                            onPress={() => router.push(`/group/${item._id}`)}
-                        >
-                            <Text style={styles.groupText}>{item.name}</Text>
-                        </TouchableOpacity>
+                        <View style={styles.groupItem}>
+                            {/* Group Item (Touchable for navigation) */}
+                            <TouchableOpacity
+                                style={styles.groupItemTouchable}
+                                onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                            >
+                                <Text style={styles.groupText}>{item.name}</Text>
+                            </TouchableOpacity>
+
+                            {/* Delete Button */}
+                            <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
+                                <Text style={styles.deleteText}>Delete</Text>
+                            </TouchableOpacity>
+                        </View>
                     )}
                 />
             )}
 
             {/* Button to Open Modal */}
-            <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={styles.button} onPress={() => setCreateModalVisible(true)}>
                 <Text style={styles.buttonText}>Create New Group</Text>
             </TouchableOpacity>
 
             {/* Modal for Creating Group */}
-            <Modal visible={modalVisible} animationType="slide" transparent={true}>
+            <Modal visible={createModalVisible} animationType="slide" transparent={true}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Create a Study Group</Text>
@@ -106,7 +133,7 @@ export default function Messages() {
                         <TouchableOpacity style={styles.button} onPress={handleCreateGroup}>
                             <Text style={styles.buttonText}>Create Group</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setCreateModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
@@ -186,6 +213,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '80%', // Ensure buttons have the same width
     },
-    cancelButtonText: { color: '#fff', fontWeight: 'bold' },
+    cancelButtonText: {
+        color: '#fff',
+        fontWeight: 'bold'
+    },
+    deleteText: {
+        color: 'red',
+        fontSize: 18,
+    }
 });
 
