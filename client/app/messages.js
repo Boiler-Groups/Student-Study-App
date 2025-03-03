@@ -60,7 +60,7 @@ export default function Messages() {
     return (
         <View style={styles.container}>
             <Header />
-            <Text style={styles.title}>Study Groups</Text>
+            <Text style={styles.title}>Study Groups and Messaging</Text>
 
             {loading ? (
                 <ActivityIndicator size="large" color="#007AFF" />
@@ -69,6 +69,7 @@ export default function Messages() {
                     data={groups}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.listContainer}
+                    style={{ flex: 1 }} // Make FlatList fill available space
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.groupItem}
@@ -117,21 +118,27 @@ export default function Messages() {
 
 // Styles
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'space-between', alignItems: 'center', padding: 15, paddingTop: 100 },
-    title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15 },
+    container: {
+        flex: 1,
+        justifyContent: 'flex-start', // Allow list to expand downward
+        alignItems: 'stretch', // Let FlatList expand horizontally
+        //padding: 15,
+        paddingTop: 75, // Reduce top padding for more space
+    },
+    title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15, padding: 15 },
     groupItem: {
-        width: '80%',
+        width: '100%', // Make items full width
         padding: 15,
         backgroundColor: '#D3D3D3',
         borderRadius: 8,
-        marginVertical: 5,
-        alignItems: 'center',
+        marginVertical: 1,
+        alignItems: 'LEFT',
         borderWidth: 2,
     },
-    groupText: { fontSize: 18 },
-    listContainer: { paddingLeft: 50 },
+    groupText: { fontSize: 18, padding:15},
+    listContainer: { paddingLeft: 0 },
     button: {
-        width: '80%',
+        width: '100%',
         padding: 15,
         backgroundColor: '#007AFF',
         borderRadius: 8,
