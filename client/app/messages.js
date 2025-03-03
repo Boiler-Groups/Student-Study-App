@@ -103,6 +103,10 @@ export default function Messages() {
                             <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
                                 <Text style={styles.deleteText}>Delete</Text>
                             </TouchableOpacity>
+                            {/* Delete Button */}
+                            <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
+                                <Text style={styles.editText}>Edit Name</Text>
+                            </TouchableOpacity>
                         </View>
                     )}
                 />
@@ -219,7 +223,19 @@ const styles = StyleSheet.create({
     },
     deleteText: {
         color: 'red',
+        backgroundColor: 'grey',
         fontSize: 18,
+        borderRadius: 5,
+        borderWidth: 2,
+        width: '10%',
+    },
+    editText: {
+        fontSize: 18,
+        borderRadius: 5,
+        backgroundColor: 'grey',
+        marginVertical: 1,
+        borderWidth: 2,
+        width: '10%',
     }
 });
 
