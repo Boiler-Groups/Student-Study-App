@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
+import { AuthContext } from './AuthContext';
 
 export default function Home() {
     const router = useRouter();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user, logout, authLoading} = useContext(AuthContext);
 
     // Simulated API call to fetch groups
     useEffect(() => {
@@ -18,13 +20,26 @@ export default function Home() {
         setLoading(false); // Set loading to false immediately
     }, []);
 
+    if (authLoading) {
+        return <ActivityIndicator size="large" color="#007AFF" />;
+      }
+
+    const handleLogout = () => {
+        logout();
+        router.push('/login');
+    };
+
     return (
         <View style={styles.container}>
             {/* Header with its own styles */}
             <Header />
 
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+
             {/* Title for the page */}
-            <Text style={styles.title}>Classes</Text>
+            <Text style={styles.title}>{user?.email}'s Classes</Text>
 
             {/* Display a loading indicator or the FlatList */}
             {loading ? (
