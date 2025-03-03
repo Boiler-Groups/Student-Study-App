@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { AuthContext } from './AuthContext';
 import { ActivityIndicator, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProtectedRoute({ children }) {
     const { token, loading } = useContext(AuthContext);
@@ -11,7 +12,8 @@ export default function ProtectedRoute({ children }) {
     // Check if user is authenticated
     useEffect(() => {
         if (!loading) {
-            if (!token && segments[0] !== 'login' && segments[0] !== 'register') {
+            const checkToken = AsyncStorage.getItem('token');
+            if (!checkToken && segments[0] !== 'login' && segments[0] !== 'register') {
                 router.replace('/login');
             }
         }
