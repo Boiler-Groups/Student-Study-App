@@ -11,3 +11,5 @@ const StudyGroupClient = axios.create({
 export const getStudyGroups = ({ email }) => StudyGroupClient.get(`/${email}`);
 
 export const createStudyGroup = (studyGroupData) => StudyGroupClient.post('/', studyGroupData);
+
+export const deleteStudyGroup = (studyGroupId) => StudyGroupClient.delete(`/id/${studyGroupId}`);

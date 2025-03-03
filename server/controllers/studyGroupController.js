@@ -41,3 +41,21 @@ export const createStudyGroup = async (req, res) => {
       res.status(500).json({ message: 'Server error', error: e.message });
     }
   };
+
+// New function to delete a study group
+export const deleteStudyGroup = async (req, res) => {
+    const { id } = req.params; // Get group ID from request parameters
+
+    try {
+        //Attempt to Delete a Study Group by id
+        const deletedGroup = await StudyGroup.findByIdAndDelete(id);
+
+        if (!deletedGroup) {
+            return res.status(404).json({ message: 'Study group not found' });
+        }
+
+        res.status(200).json({ message: 'Study group deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ message: 'Server error', error: e.message });
+    }
+};
