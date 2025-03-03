@@ -4,14 +4,14 @@ import { AuthContext } from './AuthContext';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function ProtectedRoute({ children }) {
-    const { user, loading } = useContext(AuthContext);
+    const { user, loading, token } = useContext(AuthContext);
     const router = useRouter();
     const segments = useSegments(); // Get current route
 
     // Check if user is authenticated
     useEffect(() => {
         if (!loading) {
-            if (!user && segments[0] !== 'login' && segments[0] !== 'register') {
+            if (!token && segments[0] !== 'login' && segments[0] !== 'register') {
                 router.replace('/login');
             }
         }

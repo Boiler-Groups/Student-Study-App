@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
     const router = useRouter();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [token, setToken] = useState();
 
     // Load user from AsyncStorage when the app starts
     useEffect(() => {
@@ -19,6 +20,14 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         };
         loadUser();
+        const loadToken = async () => {
+            const storedToken = await AsyncStorage.getItem("token");
+            if (storedToken) {
+                setToken(storedToken);
+            }
+            setLoading(false);
+        };
+        loadToken();
     }, []);
 
     const login = async (data) => {
@@ -26,6 +35,7 @@ export const AuthProvider = ({ children }) => {
 
         await AsyncStorage.setItem("userToken", data.token); // Save token
         await AsyncStorage.setItem("userInfo", JSON.stringify(data.userInfo)); // Save user data
+        setToken(data.token);
         setUser(data.userInfo);
         setLoading(false);
         return;
@@ -34,12 +44,13 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         await AsyncStorage.removeItem("userToken");
         await AsyncStorage.removeItem("userInfo");
+        setToken(null);
         setUser(null);
         setLoading(false);
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, token, login, logout }}>
             {children}
         </AuthContext.Provider>
     );
