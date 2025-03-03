@@ -9,7 +9,6 @@ export default function Landing() {
 
     const handleLogout = async () => {
         await AsyncStorage.removeItem('token');
-        //await logout();
         router.replace('/login');
     };
 

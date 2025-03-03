@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 import { AuthContext } from './AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home() {
     const router = useRouter();
@@ -24,9 +25,9 @@ export default function Home() {
         return <ActivityIndicator size="large" color="#007AFF" />;
       }
 
-    const handleLogout = () => {
-        logout();
-        router.push('/login');
+      const handleLogout = async () => {
+        await AsyncStorage.removeItem('token');
+        router.replace('/login');
     };
 
     return (
