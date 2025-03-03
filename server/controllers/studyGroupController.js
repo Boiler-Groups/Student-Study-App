@@ -59,3 +59,27 @@ export const deleteStudyGroup = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: e.message });
     }
 };
+
+// New function to edit the name of a study group
+export const editStudyGroupName = async (req, res) => {
+    const { id } = req.params; // Get group ID from request parameters
+    const { name } = req.body; // Get the new group name from request body
+
+    // Check if the name was provided
+    if (!name) {
+        return res.status(400).json({ message: 'Group name is required' });
+    }
+
+    try {
+        // Attempt to find and update the Study Group by id
+        const updatedGroup = await StudyGroup.findByIdAndUpdate(id, { name }, { new: true });
+
+        if (!updatedGroup) {
+            return res.status(404).json({ message: 'Study group not found' });
+        }
+
+        res.status(200).json({ message: 'Study group name updated successfully', group: updatedGroup });
+    } catch (e) {
+        res.status(500).json({ message: 'Server error', error: e.message });
+    }
+};
