@@ -10,3 +10,4 @@ const StudyGroupClient = axios.create({
 
 export const getStudyGroups = ({ email }) => StudyGroupClient.get(`/${email}`);
 
+export const createStudyGroup = (studyGroupData) => StudyGroupClient.post('/', studyGroupData);
