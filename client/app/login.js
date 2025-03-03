@@ -10,6 +10,7 @@ import { useRouter, useRootNavigationState } from "expo-router";
 import { API_URL } from "@env";
 import { AuthContext } from "./AuthContext";
 import Header from "../components/Header";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
     const router = useRouter();
@@ -31,9 +32,8 @@ export default function Login() {
 
             const data = await response.json();
             if (response.ok) {
-                // Login successful, set user data in context
-                login(data);
-                console.log(data)
+                await AsyncStorage.setItem('token', data.token);
+                router.push('/landing');
             } else {
                 setErrorMessage("Invalid credentials");
             }
