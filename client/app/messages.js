@@ -5,7 +5,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
-import {getStudyGroups, createStudyGroup, deleteStudyGroup} from './api/studygroup'; // Ensure correct path
+import {
+    getStudyGroups,
+    createStudyGroup,
+    deleteStudyGroup,
+    editStudyGroupName
+} from './api/studygroup'; // Ensure correct path
 
 export default function Messages() {
     const router = useRouter();
@@ -14,8 +19,10 @@ export default function Messages() {
     const [createModalVisible, setCreateModalVisible] = useState(false);
     const [groupName, setGroupName] = useState('');
     const [members, setMembers] = useState('');
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [selectedGroupId, setSelectedGroupId] = useState(null);
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [groupToEdit, setGroupToEdit] = useState(null);
+
     // Fetch groups function
     const fetchGroups = async () => {
         try {
@@ -75,6 +82,38 @@ export default function Messages() {
             Alert.alert('Error', error.response?.data?.message || 'Failed to delete group');
         }
     };
+    const updateStudyGroupName = async (groupId, newName) => {
+        if (!groupId || !newName) {
+            Alert.alert('Error', 'Please enter a new group name .');
+            return;
+        }
+        console.log("Editing Study Group Name");
+        console.log("New name:", newName);
+        try {
+            // Create the payload for the edit request
+            const requestBody = { name: newName };
+
+            // Send the PATCH request to update the study group name
+            const response = await editStudyGroupName(groupId, requestBody);
+
+            console.log("Response:", response.data);
+
+            // Check if the response contains the updated group information
+            if (response.data && response.data.group) {
+                console.log("Study group name updated successfully:", response.data.group);
+                // Optionally, update local state here with the updated group
+                // Example: setGroups(updatedGroups); or update the specific group in your state
+            } else {
+                console.error("Failed to update group name:", response.data);
+            }
+            // Refresh the list of study groups
+            await fetchGroups(); // Assuming this fetches the updated list of groups
+        } catch (error) {
+            console.log("Error occurred while updating study group:", error);
+        } finally {
+            // Perform any cleanup or loading state reset if necessary
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -99,13 +138,18 @@ export default function Messages() {
                                 <Text style={styles.groupText}>{item.name}</Text>
                             </TouchableOpacity>
 
-                            {/* Delete Button */}
-                            <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
-                                <Text style={styles.deleteText}>Delete</Text>
+                            {/* Edit Button */}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setGroupToEdit(item); // Set the group being edited
+                                    setEditModalVisible(true); // Open the edit modal
+                                }}
+                            >
+                                <Text style={styles.editText}>Edit Name</Text>
                             </TouchableOpacity>
                             {/* Delete Button */}
                             <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
-                                <Text style={styles.editText}>Edit Name</Text>
+                                <Text style={styles.deleteText}>Delete</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -139,6 +183,34 @@ export default function Messages() {
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setCreateModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal for Changing Group Name */}
+            <Modal visible={editModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Edit Study Group Name</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="New Group Name"
+                            value={newGroupName}
+                            onChangeText={setNewGroupName}
+                        />
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={() => {
+                                if (groupToEdit) {
+                                    updateStudyGroupName(groupToEdit._id, newGroupName);
+                                }
+                            }}
+                        >
+                            <Text style={styles.buttonText}>Save Changes</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
+                            <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

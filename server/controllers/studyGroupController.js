@@ -67,7 +67,10 @@ export const editStudyGroupName = async (req, res) => {
 
     // Check if the name was provided
     if (!name) {
-        return res.status(400).json({ message: 'Group name is required' });
+        return res.status(400).json({
+            message: 'Group name is required',
+            errorDetails: 'The request did not include a name for the group.'
+        });
     }
 
     try {
@@ -75,11 +78,24 @@ export const editStudyGroupName = async (req, res) => {
         const updatedGroup = await StudyGroup.findByIdAndUpdate(id, { name }, { new: true });
 
         if (!updatedGroup) {
-            return res.status(404).json({ message: 'Study group not found' });
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${id}.`
+            });
         }
 
-        res.status(200).json({ message: 'Study group name updated successfully', group: updatedGroup });
+        res.status(200).json({
+            message: 'Study group name updated successfully',
+            group: updatedGroup
+        });
     } catch (e) {
-        res.status(500).json({ message: 'Server error', error: e.message });
+        // Log the error for debugging
+        console.error('Error updating study group:', e);
+
+        res.status(500).json({
+            message: 'Server error occurred while updating the study group',
+            errorDetails: `The error occurred while trying to update the group with id: ${id}. Error: ${e.message}`,
+            errorStack: e.stack
+        });
     }
 };
