@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     chatWrapper: {
-        width: '15%',
+        width: '20%',
         height: '80%',
         borderRadius: 15,
         overflow: 'hidden',
