@@ -1,16 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, FlatList, TouchableOpacity, StyleSheet,
-    ActivityIndicator, Modal, TextInput, Alert
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 import {
-    getStudyGroups,
-    createStudyGroup,
-    deleteStudyGroup,
-    editStudyGroupName
-} from './api/studygroup'; // Ensure correct path
+    getStudyGroups, createStudyGroup, deleteStudyGroup, editStudyGroupName } from './api/studygroup'; // Ensure correct path
 
 export default function Messages() {
     const router = useRouter();

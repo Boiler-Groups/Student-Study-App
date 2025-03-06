@@ -4,10 +4,10 @@ import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 
 const grouplist = [
-  { id: 1, name: 'Math Study Group' },
-  { id: 2, name: 'Science Study Group' },
-  { id: 3, name: 'History Study Group' },
-  { id: 4, name: 'Test Study Group 4' }
+  { id: 1, name: 'CS 307' },
+  { id: 2, name: 'MA 265' },
+  { id: 3, name: 'SOC 220' },
+  { id: 4, name: 'Math Study Group' }
 ];
 
 export default function GroupList() {
@@ -33,7 +33,7 @@ export default function GroupList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 80, // Adjusted for header spacing
+    paddingTop: 80,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
