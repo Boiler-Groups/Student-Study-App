@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { FlatList, TextInput, TouchableOpacity, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import axios from 'axios';
 
-export default function ClassPage({ navigation }) { // Accept navigation prop
+export default function ClassPage() {
   const [className, setClassName] = useState('');
   const [classes, setClasses] = useState([]);
 

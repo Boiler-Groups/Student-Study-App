@@ -15,3 +15,5 @@ export const createStudyGroup = (studyGroupData) => StudyGroupClient.post('/', s
 export const deleteStudyGroup = (studyGroupId) => StudyGroupClient.delete(`/id/${studyGroupId}`);
 
 export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/editName/${id}`, newName );
+
+export default StudyGroupClient;
