@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Dimensions, Switch } from 'react-native';
+import { useTheme } from './ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export default function SettingsModal({ visible, onClose }) {
   const slideAnim = React.useRef(new Animated.Value(width)).current;
-  const [isDarkTheme, setIsDarkTheme] = React.useState(false);
+  const { isDarkTheme, toggleTheme } = useTheme();
 
   React.useEffect(() => {
     if (visible) {
       Animated.timing(slideAnim, {
-        toValue: width * 0.8, // Slide in to cover 1/5 of the page width
+        toValue: width * 0.8, 
         duration: 300,
         useNativeDriver: true,
       }).start();
@@ -23,28 +24,14 @@ export default function SettingsModal({ visible, onClose }) {
     }
   }, [visible]);
 
-  const toggleTheme = () => {
-    setIsDarkTheme(previousState => !previousState);
-    // Add logic to apply the theme change
-  };
-
   return (
-    <Modal
-      animationType="none"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
+    <Modal animationType="none" transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Settings</Text>
-          {/* Add UI settings content here */}
+        <View style={[styles.modalContent, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+          <Text style={[styles.modalTitle, isDarkTheme ? styles.darkText : styles.lightText]}>Settings</Text>
           <View style={styles.settingItem}>
-            <Text style={styles.settingText}>Dark Theme</Text>
-            <Switch
-              value={isDarkTheme}
-              onValueChange={toggleTheme}
-            />
+            <Text style={[styles.settingText, isDarkTheme ? styles.darkText : styles.lightText]}>Dark Theme</Text>
+            <Switch value={isDarkTheme} onValueChange={toggleTheme} />
           </View>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>Close</Text>
@@ -63,13 +50,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '20%', // Cover 1/5 of the page width
+    width: '20%',
     height: '100%',
-    backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
     padding: 20,
     alignItems: 'center',
+  },
+  lightBackground: {
+    backgroundColor: 'white',
+  },
+  darkBackground: {
+    backgroundColor: '#121212',
   },
   modalTitle: {
     fontSize: 24,
@@ -85,6 +77,12 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 18,
+  },
+  lightText: {
+    color: 'black',
+  },
+  darkText: {
+    color: 'white',
   },
   closeButton: {
     marginTop: 20,

@@ -145,7 +145,7 @@ export default function Profile() {
     return (
         <View style={styles.container}>
             <Header />
-            <Text style={styles.title}>My Profile</Text>
+            <Text style={styles.title}>My Account Settings</Text>
 
             {message.text ? (
                 <Text style={message.isError ? styles.errorText : styles.successText}>
