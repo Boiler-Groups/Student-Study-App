@@ -1,13 +1,14 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { FlatList, TextInput, TouchableOpacity, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import axios from 'axios';
+import { useRouter } from "expo-router";
 
-export default function ClassPage() {
+export default function AddClass() {
+  const router = useRouter();
   const [className, setClassName] = useState('');
   const [classes, setClasses] = useState([]);
 
-  const addClass = () => {
+  const handleAddClass = () => {
     if (className.trim()) {
       setClasses([...classes, { id: Date.now().toString(), name: className, added: false }]);
       setClassName('');
@@ -24,7 +25,7 @@ export default function ClassPage() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Your Class List</Text>
+      <Text style={styles.title}>Add Classes</Text>
 
       {/* Input Field */}
       <View style={styles.inputContainer}>
@@ -35,7 +36,7 @@ export default function ClassPage() {
           value={className}
           onChangeText={setClassName}
         />
-        <TouchableOpacity style={styles.addButton} onPress={addClass}>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddClass}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
@@ -62,7 +63,11 @@ export default function ClassPage() {
           </View>
         )}
       />
+      <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
+          <Text style={styles.buttonText}>Return to Classes</Text>
+      </TouchableOpacity>
     </View>
+    
   );
 }
 
@@ -71,6 +76,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: "#f8f8f8"
+  },
+  button: { 
+    backgroundColor: '#007AFF', 
+    padding: 10, 
+    borderRadius: 5,
+    width: '50%',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 10,
+    marginTop: 20,
   },
   title: {
     fontSize: 24,
