@@ -11,6 +11,8 @@ import {
     deleteStudyGroup,
     editStudyGroupName
 } from './api/studygroup'; // Ensure correct path
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser } from './api/user';
 
 export default function Messages() {
     const router = useRouter();
@@ -26,9 +28,14 @@ export default function Messages() {
     // Fetch groups function
     const fetchGroups = async () => {
         try {
-            const email = "foobar@gmail.com"; // Replace with dynamic user email
+            const token = await AsyncStorage.getItem('token');
+
+            const user = await getCurrentUser({ token });
+           
+            //console.log(`Email: ${user.data.email}`)
+            const email = user.data.email;
             const response = await getStudyGroups({ email });
-            console.log(response.data);
+            //console.log(response.data);
             if (Array.isArray(response.data)) {
                 setGroups(response.data);
             } else {

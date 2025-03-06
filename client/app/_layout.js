@@ -34,6 +34,7 @@ export default function RootLayout() {
               <Stack.Screen name="home" options={{ headerShown: false }} />
               <Stack.Screen name="messages" options={{ headerShown: true }} />
               <Stack.Screen name="profile" options={{ headerShown: false }} />
+              <Stack.Screen name="group/[groupId]" options={{ headerShown: true }} />
             </Stack>
           </ProtectedRoute>
         )}

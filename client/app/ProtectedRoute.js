@@ -14,7 +14,7 @@ export default function ProtectedRoute({ children }) {
         if (!loading) {
             const checkToken = AsyncStorage.getItem('token');
             if (!checkToken && segments[0] !== 'login' && segments[0] !== 'register') {
-                router.replace('/login');
+                //router.replace('/login');
             }
         }
     }, [loading, segments]);
