@@ -3,69 +3,77 @@ import { FlatList, TextInput, TouchableOpacity, StyleSheet, Text, View } from 'r
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 
-export default function AddClass() {
+export default function notesPage() {
   const router = useRouter();
-  const [className, setClassName] = useState('');
-  const [classes, setClasses] = useState([]);
+  const [notesName, setNotesName] = useState('');
+  const [notes, setNotes] = useState([]);
 
-  const handleAddClass = () => {
-    if (className.trim()) {
-      setClasses([...classes, { id: Date.now().toString(), name: className, added: false }]);
-      setClassName('');
+  const removeSelected = () => {
+    setNotes(notes.filter((c) => (c.added === false)));
+  }
+  const handleAddNotes = () => {
+    if (notesName.trim()) {
+      setNotes([...notes, { id: Date.now().toString(), name: notesName, added: false }]);
+      setNotesName('');
     }
   };
 
-  const toggleClassAdded = (id) => {
-    setClasses(classes.map((c) => (c.id === id ? { ...c, added: !c.added } : c)));
+  const toggleNoteAdded = (id) => {
+    setNotes(notes.map((c) => (c.id === id ? { ...c, added: !c.added } : c)));
   };
 
-  const removeClass = (id) => {
-    setClasses(classes.filter((c) => c.id !== id));
+  const removeNotes = (id) => {
+    setNotes(notes.filter((c) => c.id !== id));
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add Classes</Text>
+      <Text style={styles.title}>Your Notes</Text>
 
       {/* Input Field */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Enter class name..."
+          placeholder="Enter notes name..."
           placeholderTextColor="#999"
-          value={className}
-          onChangeText={setClassName}
+          value={notesName}
+          onChangeText={setNotesName}
         />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddClass}>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddNotes}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
 
       <FlatList
-        data={classes}
+        data={notes}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.classItem}>
-            <TouchableOpacity onPress={() => toggleClassAdded(item.id)} style={styles.classTextContainer}>
+          <View style={styles.notesItem}>
+            <TouchableOpacity onPress={() => toggleNoteAdded(item.id)} style={styles.notesTextContainer}>
               <Icon
                 name={item.added ? 'check-circle' : 'radio-button-unchecked'}
                 size={24}
                 color={item.added ? 'green' : 'gray'}
                 style={styles.icon}
               />
-              <Text style={[styles.classText, item.added && styles.completedClass]}>
+              <Text style={[styles.notesText, item.added && styles.completedNotes]}>
                 {item.name}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => removeClass(item.id)}>
-              <Icon name="delete" size={24} color="red" />
-            </TouchableOpacity>
+            <View style={styles.notesButtons}>
+              <TouchableOpacity onPress={() => removeNotes(item.id)}>
+                <Icon name="edit" size={24} color="black" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => removeNotes(item.id)}>
+                <Icon name="delete" size={24} color="red" />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
-      /> 
+      />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
-          <Text style={styles.buttonText}>Save Changes</Text>
+        <TouchableOpacity style={styles.button} onPress={() => removeSelected()}>
+          <Text style={styles.buttonText}>Delete Selected</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
           <Text style={styles.buttonText}>Return to Classes</Text>
@@ -107,6 +115,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  notesButtons: {
+    flexDirection: 'row',
+  },
   buttonText: {
     color: 'white',
     fontSize: 16,
@@ -140,7 +151,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  classItem: {
+  notesItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -148,16 +159,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
-  classTextContainer: {
+  notesTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  classText: {
+  notesText: {
     fontSize: 16,
     color: '#000',
     marginLeft: 8,
   },
-  completedClass: {
+  completedNotes: {
     textDecorationLine: 'line-through',
     color: 'gray',
   },

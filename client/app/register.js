@@ -30,6 +30,7 @@ export default function Register() {
         setErrorMessage('');
 
         console.log(`URL: ${process.env.API_URL}`)
+        console.log(`Test: ${process.env.TEST}`)
         if (!validateEmail(email)) {
             setErrorMessage('Please enter a valid email address.');
             setLoading(false);
