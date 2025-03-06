@@ -1,21 +1,15 @@
 import React, { useContext, useState } from "react";
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, } from "react-native";
 import { useRouter } from "expo-router";
 import { AuthContext } from "./AuthContext";
 import Header from "../components/Header";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from "../components/ThemeContext"; // ✅ Import useTheme
+import { useTheme } from "../components/ThemeContext";
 
 export default function Login() {
     const router = useRouter();
     const { user, login } = useContext(AuthContext);
-    const { isDarkTheme } = useTheme(); // ✅ Get dark mode state
+    const { isDarkTheme } = useTheme();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);

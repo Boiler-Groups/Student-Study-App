@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../components/ThemeContext'; // ✅ Import useTheme
+import { useTheme } from '../components/ThemeContext'; 
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Register() {
     const router = useRouter();
-    const { isDarkTheme } = useTheme(); // ✅ Get dark mode state
+    const { isDarkTheme } = useTheme(); 
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
