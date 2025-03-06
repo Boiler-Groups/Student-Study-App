@@ -1,35 +1,29 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { API_URL } from '@env';
+import { useTheme } from '../components/ThemeContext'; // ✅ Import useTheme
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Register() {
     const router = useRouter();
+    const { isDarkTheme } = useTheme(); // ✅ Get dark mode state
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
-    /**
-     * A valid email has:
-     * - One or more characters before the @ symbol
-     * - An @ symbol
-     * - At least 2 characters after the @ symbol
-     * - A dot
-     * - At least 2 characters after the dot
-     */
+    // Email validation function
     const validateEmail = (email) => {
         return /(.+)@(.+){2,}\.(.+){2,}/.test(email);
-    }
+    };
 
     const handleRegister = async () => {
         setLoading(true);
         setErrorMessage('');
 
-        console.log(`URL: ${process.env.API_URL}`)
+        console.log(`URL: ${process.env.API_URL}`);
         if (!validateEmail(email)) {
             setErrorMessage('Please enter a valid email address.');
             setLoading(false);
@@ -58,22 +52,35 @@ export default function Register() {
     };
 
     return (
-        <View style={styles.container}>
+        <View
+            style={[
+                styles.container,
+                isDarkTheme ? styles.darkBackground : styles.lightBackground,
+            ]}
+        >
             <Header />
-            <Text style={styles.title}>Register</Text>
+            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>
+                Register
+            </Text>
 
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+            {errorMessage ? (
+                <Text style={[styles.errorText, isDarkTheme ? styles.darkError : null]}>
+                    {errorMessage}
+                </Text>
+            ) : null}
 
             <TextInput
-                style={styles.input}
+                style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                 placeholder="Display Name"
+                placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                 value={username}
                 onChangeText={setUsername}
             />
 
             <TextInput
-                style={styles.input}
+                style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                 placeholder="Email"
+                placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                 value={email}
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -81,45 +88,114 @@ export default function Register() {
             />
 
             <TextInput
-                style={styles.input}
+                style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                 placeholder="Password"
+                placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                 value={password}
                 secureTextEntry
                 onChangeText={setPassword}
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-                <Text style={styles.buttonText}>{loading ? 'Registering...' : 'Register'}</Text>
+            <TouchableOpacity
+                style={[styles.button, isDarkTheme ? styles.darkButton : styles.lightButton]}
+                onPress={handleRegister}
+                disabled={loading}
+            >
+                <Text style={[styles.buttonText, isDarkTheme ? styles.darkButtonText : null]}>
+                    {loading ? 'Registering...' : 'Register'}
+                </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.link}>Already have an account? Login</Text>
+                <Text style={[styles.link, isDarkTheme ? styles.darkLink : null]}>
+                    Already have an account? Login
+                </Text>
             </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-    title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15 },
+    container: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: "bold",
+        marginBottom: 15,
+    },
     input: {
-        width: '25%',
+        width: "25%",
         height: 40,
         borderWidth: 1,
-        borderColor: '#ccc',
         borderRadius: 5,
         marginBottom: 10,
         paddingHorizontal: 10,
     },
     button: {
-        width: '25%',
-        backgroundColor: '#007AFF',
+        width: "25%",
         padding: 10,
         borderRadius: 5,
-        alignItems: 'center',
+        alignItems: "center",
         marginBottom: 10,
     },
-    buttonText: { color: '#fff', fontSize: 16 },
-    link: { color: '#007AFF', marginTop: 5 },
-    errorText: { color: 'red', marginBottom: 10 },
+    buttonText: {
+        fontSize: 16,
+    },
+    link: {
+        marginTop: 5,
+        color: "#007AFF",
+    },
+    errorText: {
+        marginBottom: 10,
+        color: "red",
+    },
+
+    /* Light Mode Styles */
+    lightBackground: {
+        backgroundColor: "#FFFFFF",
+    },
+    lightText: {
+        color: "#333",
+    },
+    lightInput: {
+        backgroundColor: "#FFF",
+        borderColor: "#CCC",
+        color: "#333",
+    },
+    lightButtonText: {
+        color: "#FFF",
+    },
+    lightButton: {
+        backgroundColor: "#007AFF",
+    },
+
+    /* Dark Mode Styles */
+    darkBackground: {
+        backgroundColor: "#121212",
+    },
+    darkText: {
+        color: "#F1F1F1",
+    },
+    darkInput: {
+        backgroundColor: "#1E1E1E",
+        borderColor: "#555",
+        color: "#F1F1F1",
+    },
+    darkButton: {
+        backgroundColor: "#007AFF",
+    },
+    darkButtonText: {
+        color: "#FFF",
+    },
+    darkLink: {
+        color: "#007AFF",
+    },
+    darkError: {
+        color: "#FF7F7F",
+    },
 });
+
