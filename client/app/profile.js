@@ -10,7 +10,6 @@ export default function Profile() {
     const router = useRouter();
     const { isDarkTheme } = useTheme();
     const [user, setUser] = useState(null);
-    const [userPassword, setUserPassword] = useState('');
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,9 +30,6 @@ export default function Profile() {
                 router.push('/login');
                 return;
             }
-
-            const storedPassword = await AsyncStorage.getItem('password');
-            setUserPassword(storedPassword || 'Not available');
 
             // server fix console.log(`test: ${process.env.TEST}`);
             const response = await fetch(`${API_URL}/users/me`, {
@@ -81,12 +77,7 @@ export default function Profile() {
             return;
         }
 
-        const success = await updateUser({ password: newPassword });
-
-        if (success) {
-            await AsyncStorage.setItem('password', newPassword);
-            setUserPassword(newPassword);
-        }
+        await updateUser({ password: newPassword });
 
         setNewPassword('');
         setConfirmPassword('');
@@ -183,11 +174,6 @@ export default function Profile() {
                 <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Display Name:</Text>
                 <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
                     {user?.username || 'Not available'}
-                </Text>
-
-                <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Password:</Text>
-                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
-                    {userPassword || 'Not available'}
                 </Text>
             </View>
 
