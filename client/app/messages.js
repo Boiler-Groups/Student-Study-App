@@ -37,8 +37,7 @@ export default function Messages() {
             const token = await AsyncStorage.getItem('token');
 
             const user = await getCurrentUser({ token });
-           
-            //console.log(`Email: ${user.data.email}`)
+
             const email = user.data.email;
             const response = await getStudyGroups({ email });
             //console.log(response.data);
@@ -285,7 +284,10 @@ export default function Messages() {
                                             // Handle group selection
                                             setGroupToEdit(item); // Set the group being edited
                                             console.log('Selected group:', item);
-                                            await addStudyGroupMembers(item._id,currentUserEmail);
+                                            const token = await AsyncStorage.getItem('token');
+                                            const user = await getCurrentUser({ token });
+                                            const email = user.data.email;
+                                            await addStudyGroupMembers(item._id,email);
                                             fetchGroups();
                                             setJoinModalVisible(false);
                                         }}
