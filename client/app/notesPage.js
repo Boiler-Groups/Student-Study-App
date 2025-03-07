@@ -143,7 +143,7 @@ export default function NotesPage() {
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.button} onPress={() => router.dismissTo('/home')}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
