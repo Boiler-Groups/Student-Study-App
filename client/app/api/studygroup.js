@@ -48,3 +48,12 @@ export const getGroupMembers = (token, groupId) =>
       console.error("Error fetching messages:", err);
       return [];
     });
+
+export const removeMember = (token, groupId, userEmail) =>
+  StudyGroupClient.patch(`/remove/${groupId}`, { email: userEmail }, authHeader(token))
+    .then(res => res.data)
+    .catch(err => {
+      console.error("Error remove user from group:", err);
+      return null;
+    })
+

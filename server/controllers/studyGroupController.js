@@ -233,3 +233,33 @@ export const sendMessage = async (req, res) => {
       res.status(500).json({ message: "Server error", error: e.message });
   }
 };
+
+export const removeMember = async (req, res) => {
+  const { groupId } = req.params;
+  const { email } = req.body; // Email of the user to remove
+
+  if (!email) {
+      return res.status(400).json({ message: "User email is required" });
+  }
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      // Check if the user is in the group
+      if (!group.members.includes(email)) {
+          return res.status(400).json({ message: "User is not a member of this group" });
+      }
+
+      // Remove the user
+      group.members = group.members.filter(member => member !== email);
+      await group.save();
+
+      res.status(200).json({ message: "User removed from study group", updatedGroup: group });
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
+};
