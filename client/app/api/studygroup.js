@@ -22,6 +22,8 @@ export const deleteStudyGroup = (studyGroupId) => StudyGroupClient.delete(`/id/$
 
 export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/editName/${id}`, newName );
 
+export const getStudyGroupName = (groupId) => StudyGroupClient.get(`/name/${groupId}`);
+
 // Function to add member emails to a study group
 export const addStudyGroupMembers = (id, email) => StudyGroupClient.patch(`/addMember/${id}`, {email});
 

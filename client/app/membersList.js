@@ -10,17 +10,19 @@ import {
     TextInput
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useNavigation, useFocusEffect } from 'expo-router';
-import { getGroupMembers, removeMember, addStudyGroupMembers } from './api/studygroup';
+import { getGroupMembers, removeMember, addStudyGroupMembers, getStudyGroupName } from './api/studygroup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser, searchUser } from './api/user';
 
 const MembersList = () => {
-    const { groupId } = useLocalSearchParams(); 
+    const { groupId } = useLocalSearchParams();
     const [groupMembers, setGroupMembers] = useState([]);
     const [editMode, setEditMode] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [groupTitle, setGroupTitle] = useState('');
+    
 
     console.log(`GroupID: ${groupId}`);
     console.log(`search Results: ${searchResults}`);
@@ -29,11 +31,11 @@ const MembersList = () => {
     const navigation = useNavigation();
 
     useEffect(() => {
-            navigation.setOptions({
-                title: "Group Info",
-                
-            });
-        }, [navigation]);
+        navigation.setOptions({
+            title: "Group Info",
+
+        });
+    }, [navigation]);
 
     const handleRemoveMember = async (email) => {
         const token = await AsyncStorage.getItem('token');
@@ -108,13 +110,25 @@ const MembersList = () => {
 
     useFocusEffect(
         useCallback(() => {
+            const fetchGroupName = async () => {
+                try {
+                    const name = await getStudyGroupName(groupId);
+                    setGroupTitle(name.data);
+                } catch (e) {
+                    console.error("Failed to fetch group name:", e);
+                }
+            };
+
+            fetchGroupName();
             loadGroupMembers(groupId);
         }, [groupId])
     );
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Group Members</Text>
+            <Text style={styles.title}>Study Group: {groupTitle}</Text>
+            <Text style={styles.title}>Members</Text>
+
 
             {/* Action buttons */}
             <View style={styles.actionsContainer}>

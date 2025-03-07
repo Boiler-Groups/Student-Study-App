@@ -309,3 +309,19 @@ export const deleteMessage = async (req, res) => {
         res.status(500).json({ message: "Server error", error: e.message });
     }
 };
+
+export const getStudyGroupName = async (req, res) => {
+    const { groupId } = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
+
+        res.status(200).json(group.name);
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message })
+    }
+}

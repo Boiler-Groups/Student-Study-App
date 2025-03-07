@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
-import { getGroupMessages, sendMessage, deleteMessage } from './api/studygroup.js'; // Import API functions
+import { getGroupMessages, sendMessage, deleteMessage, getStudyGroupName } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { getCurrentUser } from './api/user.js';
@@ -57,7 +57,17 @@ const GroupChatPage = ({ }) => {
 
     useFocusEffect(
         useCallback(() => {
+            const fetchGroupName = async () => {
+                try {
+                    const name = await getStudyGroupName(groupId);
+                    setGroupTitle(name.data);
+                } catch (e) {
+                    console.error("Failed to fetch group name:", e);
+                }
+            };
+
             loadMessages();
+            fetchGroupName();
         }, [groupId])
     );
 
@@ -115,24 +125,24 @@ const GroupChatPage = ({ }) => {
                             <Text style={styles.statusMessage}>{item.text}</Text>
                         </View>
                     ) : (
-                    <TouchableOpacity
-                        style={[
-                            styles.messageContainer,
-                            item.sender === username ? styles.myMessage : styles.otherMessage
-                        ]}
-                        onPress={() => handleSelectMessage(item._id)} // Click to select message
-                    >
-                        <Text style={styles.sender}>{item.sender}</Text>
-                        <Text style={styles.messageText}>{item.text}</Text>
-                        {item._id === selectedMessageId && (
-                            <TouchableOpacity
-                                style={styles.deleteButton}
-                                onPress={() => handleDeleteMessage(item._id)}
-                            >
-                                <Text style={styles.deleteText}>Delete</Text>
-                            </TouchableOpacity>
-                        )}
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.messageContainer,
+                                item.sender === username ? styles.myMessage : styles.otherMessage
+                            ]}
+                            onPress={() => handleSelectMessage(item._id)} // Click to select message
+                        >
+                            <Text style={styles.sender}>{item.sender}</Text>
+                            <Text style={styles.messageText}>{item.text}</Text>
+                            {item._id === selectedMessageId && (
+                                <TouchableOpacity
+                                    style={styles.deleteButton}
+                                    onPress={() => handleDeleteMessage(item._id)}
+                                >
+                                    <Text style={styles.deleteText}>Delete</Text>
+                                </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
                     )
                 )}
                 extraData={selectedMessageId} // This ensures the UI updates when the selection changes
