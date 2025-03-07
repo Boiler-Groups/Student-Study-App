@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { API_URL } from '@env';
-import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Profile() {
     const router = useRouter();
-    const { isDarkTheme } = useTheme();
     const [user, setUser] = useState(null);
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -31,7 +29,7 @@ export default function Profile() {
                 return;
             }
 
-            // server fix console.log(`test: ${process.env.TEST}`);
+            console.log(`test: ${process.env.TEST}`);
             const response = await fetch(`${API_URL}/users/me`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -137,18 +135,18 @@ export default function Profile() {
 
     if (loading) {
         return (
-            <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+            <View style={styles.container}>
                 <Header />
                 <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={isDarkTheme ? styles.darkText : styles.lightText}>Loading profile...</Text>
+                <Text>Loading profile...</Text>
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+        <View style={styles.container}>
             <Header />
-            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>My Account Settings</Text>
+            <Text style={styles.title}>My Account Settings</Text>
 
             {message.text ? (
                 <Text style={message.isError ? styles.errorText : styles.successText}>
@@ -157,15 +155,11 @@ export default function Profile() {
             ) : null}
 
             <View style={styles.infoContainer}>
-            <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Email:</Text>
-                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
-                    {user?.email || 'Not available'}
-                </Text>
+                <Text style={styles.label}>Email:</Text>
+                <Text style={styles.value}>{user?.email || 'Not available'}</Text>
 
-                <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Display Name:</Text>
-                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
-                    {user?.username || 'Not available'}
-                </Text>
+                <Text style={styles.label}>Display Name:</Text>
+                <Text style={styles.value}>{user?.username || 'Not available'}</Text>
             </View>
 
             <View style={styles.actionsContainer}>
@@ -191,66 +185,93 @@ export default function Profile() {
                 </TouchableOpacity>
             </View>
 
-            <Modal transparent={true} visible={usernameModalVisible}>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={usernameModalVisible}
+                onRequestClose={() => setUsernameModalVisible(false)}
+            >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, isDarkTheme ? styles.darkModal : styles.lightModal]}>
-                        <Text style={[styles.modalTitle, isDarkTheme ? styles.darkText : styles.lightText]}>
-                            Change Display Name
-                        </Text>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Change Display Name</Text>
 
                         <TextInput
-                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
+                            style={styles.input}
                             placeholder="New Display Name"
-                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={newUsername}
                             onChangeText={setNewUsername}
                         />
 
                         <View style={styles.modalButtonContainer}>
-                            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setUsernameModalVisible(false)}>
+                            <TouchableOpacity
+                                style={[styles.button, styles.cancelButton]}
+                                onPress={() => {
+                                    setUsernameModalVisible(false);
+                                    setNewUsername(user?.username || '');
+                                }}
+                            >
                                 <Text style={styles.buttonText}>Cancel</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.button} onPress={() => {}}>
-                                <Text style={styles.buttonText}>Update</Text>
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={handleUpdateUsername}
+                                disabled={updating}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {updating ? 'Updating...' : 'Update'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </Modal>
 
-            <Modal transparent={true} visible={passwordModalVisible}>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={passwordModalVisible}
+                onRequestClose={() => setPasswordModalVisible(false)}
+            >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, isDarkTheme ? styles.darkModal : styles.lightModal]}>
-                        <Text style={[styles.modalTitle, isDarkTheme ? styles.darkText : styles.lightText]}>
-                            Change Password
-                        </Text>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Change Password</Text>
 
                         <TextInput
-                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
+                            style={styles.input}
                             placeholder="New Password"
-                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={newPassword}
                             secureTextEntry
                             onChangeText={setNewPassword}
                         />
-
                         <TextInput
-                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
+                            style={styles.input}
                             placeholder="Confirm New Password"
-                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={confirmPassword}
                             secureTextEntry
                             onChangeText={setConfirmPassword}
                         />
 
                         <View style={styles.modalButtonContainer}>
-                            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setPasswordModalVisible(false)}>
+                            <TouchableOpacity
+                                style={[styles.button, styles.cancelButton]}
+                                onPress={() => {
+                                    setPasswordModalVisible(false);
+                                    setNewPassword('');
+                                    setConfirmPassword('');
+                                }}
+                            >
                                 <Text style={styles.buttonText}>Cancel</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.button} onPress={() => {}}>
-                                <Text style={styles.buttonText}>Update</Text>
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={handleUpdatePassword}
+                                disabled={updating}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {updating ? 'Updating...' : 'Update'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
