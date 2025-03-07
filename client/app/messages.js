@@ -8,13 +8,14 @@ import Header from '../components/Header';
 import {
     getStudyGroups, createStudyGroup, deleteStudyGroup, editStudyGroupName, getStudyGroupsAll, addStudyGroupMembers
 } from './api/studygroup'; // Ensure correct path
-
+import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from './api/user';
 
 
 export default function Messages() {
     const router = useRouter();
+    const { isDarkTheme } = useTheme();
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [successModalVisible, setSuccessModalVisible] = useState(false);
     const [groupsAll, setGroupsAll] = useState([]);
@@ -160,11 +161,11 @@ export default function Messages() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
             <Header />
 
             <View style={styles.headerContainer}>
-                <Text style={styles.title}>Study Groups and Messaging</Text>
+                <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Study Groups and Messaging</Text>
                 <TouchableOpacity style={styles.joinButton} onPress={() => {
                         fetchGroupsAll();
                         setJoinModalVisible(true);
@@ -272,9 +273,9 @@ export default function Messages() {
 
             {/* Modal for Joining Group  */}
             <Modal visible={joinModalVisible} animationType="slide" transparent={true}>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-                    <View style={{ width: '80%', backgroundColor: '#fff', borderRadius: 10, padding: 20 }}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Select a Study Group</Text>
+                <View style={[{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+                    <View style={[{ width: '80%', backgroundColor: '#fff', borderRadius: 10, padding: 20 }, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+                        <Text style={[{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }, isDarkTheme ? styles.darkText : styles.lightText]}>Select a Study Group</Text>
                         {loading ? (
                             <ActivityIndicator size="large" color="#007AFF" />
                         ) : (
@@ -283,7 +284,7 @@ export default function Messages() {
                                 keyExtractor={(item) => item._id}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
-                                        style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' }}
+                                        style={[{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' }, isDarkTheme ? styles.darkText : styles.lightText]}
                                         onPress={async() => {
                                             // Handle group selection
                                             setGroupToEdit(item); // Set the group being edited
@@ -296,7 +297,7 @@ export default function Messages() {
                                             setJoinModalVisible(false);
                                         }}
                                     >
-                                        <Text style={{ fontSize: 16 }}>{item.name}</Text>
+                                        <Text style={[{ fontSize: 16 }, isDarkTheme ? styles.darkText : styles.lightText]}>{item.name}</Text>
                                     </TouchableOpacity>
                                 )}
                             />
@@ -442,6 +443,18 @@ const styles = StyleSheet.create({
     joinButtonText: {
         color: 'white',
         fontWeight: 'bold',
-    }
+    },
+    /* Dark Mode */
+    darkBackground: { backgroundColor: "#121212" },
+    darkText: { color: "#F1F1F1" },
+    darkModal: { backgroundColor: "#1E1E1E" },
+    darkInput: { backgroundColor: "#333", borderColor: "#555", color: "#F1F1F1" 
+    },
+    /* Light Mode */
+    lightBackground: { backgroundColor: "#FFFFFF" },
+    lightText: { color: "#333" },
+    lightModal: { backgroundColor: "white" },
+    lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" 
+    },
 });
 
