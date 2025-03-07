@@ -10,6 +10,7 @@ export default function Profile() {
     const router = useRouter();
     const { isDarkTheme } = useTheme();
     const [user, setUser] = useState(null);
+    const [userPassword, setUserPassword] = useState('');
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,6 +31,9 @@ export default function Profile() {
                 router.push('/login');
                 return;
             }
+            	
+            const storedPassword = await AsyncStorage.getItem('password');
+            setUserPassword(storedPassword || 'Not available');
 
             // server fix console.log(`test: ${process.env.TEST}`);
             const response = await fetch(`${API_URL}/users/me`, {
@@ -77,7 +81,13 @@ export default function Profile() {
             return;
         }
 
-        await updateUser({ password: newPassword });
+        const success = await updateUser({ password: newPassword });
+        	
+        if (success) {
+            await AsyncStorage.setItem('password', newPassword);
+            setUserPassword(newPassword);
+        }
+
         setNewPassword('');
         setConfirmPassword('');
         setPasswordModalVisible(false);
@@ -86,6 +96,11 @@ export default function Profile() {
     const updateUser = async (updateData) => {
         setUpdating(true);
         setMessage({ text: '', isError: false });
+
+        if (!newUsername || !newUsername.trim()) {
+            setMessage({ text: 'Display name cannot be empty', isError: true });
+            return;
+        }
 
         try {
             const token = await AsyncStorage.getItem('token');
@@ -124,12 +139,15 @@ export default function Profile() {
                 if (updateData.username) {
                     setUser(prev => ({ ...prev, username: updateData.username }));
                 }
+                return true;
             } else {
                 setMessage({ text: responseData.message || 'Update failed', isError: true });
+                return false;
             }
         } catch (error) {
             console.error("Update error:", error);
             setMessage({ text: 'Update failed: ' + error.message, isError: true });
+            return false;
         } finally {
             setUpdating(false);
         }
