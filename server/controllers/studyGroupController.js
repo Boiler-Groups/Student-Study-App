@@ -5,20 +5,20 @@ import mongoose from 'mongoose';
 
 // Find and return all study groups that the given user is a member of
 export const getGroups = async (req, res) => {
-  try {
-    const { email } = req.params;
+    try {
+        const { email } = req.params;
 
-    const groups = await StudyGroup.find({ members: email });
+        const groups = await StudyGroup.find({ members: email });
 
-    if (groups.length == 0) {
-      // No groups found
-      return res.status(404).json({ message: "User has no study groups" });
+        if (groups.length == 0) {
+            // No groups found
+            return res.status(404).json({ message: "User has no study groups" });
+        }
+
+        res.status(200).json(groups);
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
     }
-
-    res.status(200).json(groups);
-  } catch (e) {
-    res.status(500).json({ message: "Server error", error: e.message });
-  }
 };
 
 // Find and return all study groups
@@ -42,25 +42,25 @@ export const getGroupsAll = async (req, res) => {
 
 export const createStudyGroup = async (req, res) => {
     const { name, members } = req.body;
-  
+
     // Validate input before creating group
     if (!name || !Array.isArray(members)) {
-      return res.status(400).json({ message: 'Invalid input. Make sure you provide a name and at least one member' });
+        return res.status(400).json({ message: 'Invalid input. Make sure you provide a name and at least one member' });
     }
-  
+
     try {
-      const newGroup = new StudyGroup({
-        name,
-        members,
-        messages: [], // Starts with no messages
-      });
-  
-      const savedGroup = await newGroup.save();
-      res.status(201).json(savedGroup);
+        const newGroup = new StudyGroup({
+            name,
+            members,
+            messages: [], // Starts with no messages
+        });
+
+        const savedGroup = await newGroup.save();
+        res.status(201).json(savedGroup);
     } catch (e) {
-      res.status(500).json({ message: 'Server error', error: e.message });
+        res.status(500).json({ message: 'Server error', error: e.message });
     }
-  };
+};
 
 // New function to delete a study group
 export const deleteStudyGroup = async (req, res) => {
@@ -147,6 +147,13 @@ export const addMemberToGroup = async (req, res) => {
         // Add the email to the members array if it's not already present
         if (!group.members.includes(email)) {
             group.members.push(email);
+            const statusMessage = {
+                _id: new mongoose.Types.ObjectId(),
+                sender: '_status_',
+                text: `${email} has joined the group`,
+                timestamp: new Date(),
+            };
+            group.messages.push(statusMessage);
         }
 
         // Save the updated group
@@ -169,129 +176,152 @@ export const addMemberToGroup = async (req, res) => {
 };
 // Fetch all messages for a study group
 export const getGroupMessages = async (req, res) => {
-  const { groupId } = req.params;
+    const { groupId } = req.params;
 
-  try {
-      const group = await StudyGroup.findById(groupId);
+    try {
+        const group = await StudyGroup.findById(groupId);
 
-      if (!group) {
-          return res.status(404).json({ message: "Study group not found" });
-      }
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
 
-      res.status(200).json(group.messages);
-  } catch (e) {
-      res.status(500).json({ message: "Server error", error: e.message });
-  }
+        res.status(200).json(group.messages);
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
 };
 
 export const getGroupMembers = async (req, res) => {
-  const { groupId } = req.params;
+    const { groupId } = req.params;
 
-  try {
-      const group = await StudyGroup.findById(groupId);
+    try {
+        const group = await StudyGroup.findById(groupId);
 
-      if (!group) {
-          return res.status(404).json({ message: "Study group not found" });
-      }
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
 
-      res.status(200).json(group.members);
-  } catch (e) {
-      res.status(500).json({ message: "Server error", error: e.message });
-  }
+        res.status(200).json(group.members);
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
 };
 
 // Send a message to a study group
 export const sendMessage = async (req, res) => {
-  const { groupId } = req.params;
-  const { text } = req.body;
-  const userEmail = req.user.email; // Assuming authentication middleware sets req.user
-  const username = req.user.username
+    const { groupId } = req.params;
+    const { text } = req.body;
+    const userEmail = req.user.email; // Assuming authentication middleware sets req.user
+    const username = req.user.username
 
-  if (!text) {
-      return res.status(400).json({ message: "Message text is required" });
-  }
+    if (!text) {
+        return res.status(400).json({ message: "Message text is required" });
+    }
 
-  try {
-      const group = await StudyGroup.findById(groupId);
+    try {
+        const group = await StudyGroup.findById(groupId);
 
-      if (!group) {
-          return res.status(404).json({ message: "Study group not found" });
-      }
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
 
-      const newMessage = {
-          _id: new mongoose.Types.ObjectId(),
-          sender: username,
-          text,
-          timestamp: new Date(),
-      };
+        const newMessage = {
+            _id: new mongoose.Types.ObjectId(),
+            sender: username,
+            text,
+            timestamp: new Date(),
+        };
 
-      group.messages.push(newMessage);
-      await group.save();
+        group.messages.push(newMessage);
+        await group.save();
 
-      res.status(201).json({ message: "Message sent", newMessage });
-  } catch (e) {
-      res.status(500).json({ message: "Server error", error: e.message });
-  }
+        res.status(201).json({ message: "Message sent", newMessage });
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
 };
 
 export const removeMember = async (req, res) => {
-  const { groupId } = req.params;
-  const { email } = req.body; // Email of the user to remove
+    const { groupId } = req.params;
+    const { email } = req.body; // Email of the user to remove
 
-  if (!email) {
-      return res.status(400).json({ message: "User email is required" });
-  }
+    if (!email) {
+        return res.status(400).json({ message: "User email is required" });
+    }
 
-  try {
-      const group = await StudyGroup.findById(groupId);
+    try {
+        const group = await StudyGroup.findById(groupId);
 
-      if (!group) {
-          return res.status(404).json({ message: "Study group not found" });
-      }
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
 
-      // Check if the user is in the group
-      if (!group.members.includes(email)) {
-          return res.status(400).json({ message: "User is not a member of this group" });
-      }
+        // Check if the user is in the group
+        if (!group.members.includes(email)) {
+            return res.status(400).json({ message: "User is not a member of this group" });
+        }
 
-      // Remove the user
-      group.members = group.members.filter(member => member !== email);
-      await group.save();
+        // Remove the user
+        group.members = group.members.filter(member => member !== email);
+        const statusMessage = {
+            _id: new mongoose.Types.ObjectId(),
+            sender: '_status_',
+            text: `${email} has left the group`,
+            timestamp: new Date(),
+        };
+        group.messages.push(statusMessage);
+        await group.save();
 
-      res.status(200).json({ message: "User removed from study group", updatedGroup: group });
-  } catch (e) {
-      res.status(500).json({ message: "Server error", error: e.message });
-  }
+        res.status(200).json({ message: "User removed from study group", updatedGroup: group });
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
 };
 
 export const deleteMessage = async (req, res) => {
-  const { groupId } = req.params;
-  const { messageId } = req.body; // Email of the user to remove
+    const { groupId } = req.params;
+    const { messageId } = req.body; // Email of the user to remove
 
-  if (!messageId) {
-      return res.status(400).json({ message: "MessageId is required" });
-  }
+    if (!messageId) {
+        return res.status(400).json({ message: "MessageId is required" });
+    }
 
-  try {
-      const group = await StudyGroup.findById(groupId);
+    try {
+        const group = await StudyGroup.findById(groupId);
 
-      if (!group) {
-          return res.status(404).json({ message: "Study group not found" });
-      }
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
 
 
-      // Check if the message exists
-      const messageIndex = group.messages.findIndex(msg => msg._id.toString() === messageId);
-      if (messageIndex === -1) {
-          return res.status(404).json({ message: "Message not found in the group" });
-      }
+        // Check if the message exists
+        const messageIndex = group.messages.findIndex(msg => msg._id.toString() === messageId);
+        if (messageIndex === -1) {
+            return res.status(404).json({ message: "Message not found in the group" });
+        }
 
-      // Remove the message
-      group.messages.splice(messageIndex, 1);
-      await group.save();
+        // Remove the message
+        group.messages.splice(messageIndex, 1);
+        await group.save();
 
-      res.status(200).json({ message: "Message deleted", updatedGroup: group });
-  } catch (e) {
-      res.status(500).json({ message: "Server error", error: e.message });
-  }
+        res.status(200).json({ message: "Message deleted", updatedGroup: group });
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
 };
+
+export const getStudyGroupName = async (req, res) => {
+    const { groupId } = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
+
+        res.status(200).json(group.name);
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message })
+    }
+}
