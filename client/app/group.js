@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { getGroupMessages, sendMessage, deleteMessage } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { getCurrentUser } from './api/user.js';
 import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
@@ -51,9 +51,15 @@ const GroupChatPage = ({ }) => {
         setMessages(fetchedMessages);
     };
 
-    useEffect(() => {
-        loadMessages();
-    }, [groupId]);
+    // useEffect(() => {
+    //     loadMessages();
+    // }, [groupId]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadMessages();
+        }, [groupId])
+    );
 
     const handleSendMessage = async () => {
         if (text.trim() === '') return;
@@ -104,6 +110,11 @@ const GroupChatPage = ({ }) => {
                 data={messages}
                 keyExtractor={item => item._id}
                 renderItem={({ item }) => (
+                    item.sender === '_status_' ? (
+                        <View style={styles.statusMessageContainer}>
+                            <Text style={styles.statusMessage}>{item.text}</Text>
+                        </View>
+                    ) : (
                     <TouchableOpacity
                         style={[
                             styles.messageContainer,
@@ -122,6 +133,7 @@ const GroupChatPage = ({ }) => {
                             </TouchableOpacity>
                         )}
                     </TouchableOpacity>
+                    )
                 )}
                 extraData={selectedMessageId} // This ensures the UI updates when the selection changes
             />
@@ -137,9 +149,9 @@ const GroupChatPage = ({ }) => {
                 </TouchableOpacity>
             </View>
 
-            
+
         </KeyboardAvoidingView>
-        
+
     );
 };
 
@@ -172,6 +184,16 @@ const styles = StyleSheet.create({
     messageText: {
         fontSize: 16,
         color: '#fff',
+    },
+    statusMessageContainer: {
+        alignSelf: 'center',
+        marginVertical: 5,
+    },
+    statusMessage: {
+        fontSize: 14,
+        color: 'gray',
+        textAlign: 'center',
+        userSelect: 'none',
     },
     inputContainer: {
         flexDirection: 'row',
