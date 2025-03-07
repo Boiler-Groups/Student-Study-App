@@ -3,7 +3,7 @@ import {
     View, Text, FlatList, TouchableOpacity, StyleSheet,
     ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
 import {
     getStudyGroups,
@@ -24,6 +24,8 @@ export default function Messages() {
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [groupToEdit, setGroupToEdit] = useState(null);
+
+    const navigation = useNavigation();
 
     // Fetch groups function
     const fetchGroups = async () => {
@@ -63,6 +65,10 @@ export default function Messages() {
 
         try {
             const memberArray = members.split(',').map(m => m.trim());
+            const token = await AsyncStorage.getItem('token');
+            const user = await getCurrentUser({ token });
+            const email = user.data.email;
+            memberArray.push(email);
             await createStudyGroup({ name: groupName, members: memberArray });
             Alert.alert('Success', 'Study group created successfully!');
             setCreateModalVisible(false);
@@ -140,7 +146,8 @@ export default function Messages() {
                             {/* Group Item (Touchable for navigation) */}
                             <TouchableOpacity
                                 style={styles.groupItemTouchable}
-                                onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                                //onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                                onPress={() => navigation.navigate('group', { groupId: item._id } )} // Navigate on touch
                             >
                                 <Text style={styles.groupText}>{item.name}</Text>
                             </TouchableOpacity>

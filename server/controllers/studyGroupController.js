@@ -1,6 +1,7 @@
 import StudyGroup from "../models/StudyGroup.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from 'mongoose';
 
 // Find and return all study groups that the given user is a member of
 export const getGroups = async (req, res) => {
@@ -152,6 +153,7 @@ export const sendMessage = async (req, res) => {
       }
 
       const newMessage = {
+          _id: new mongoose.Types.ObjectId(),
           sender: username,
           text,
           timestamp: new Date(),

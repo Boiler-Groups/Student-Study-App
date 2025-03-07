@@ -7,14 +7,13 @@ import { getCurrentUser } from './api/user.js';
 import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 
-const GroupChatPage = ({  }) => {
+const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const flatListRef = useRef(null);
     const [username, setUsername] = useState("");
     const [groupTitle, setGroupTitle] = useState('');
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
-    const [groupMembers, setGroupMembers] = useState([]); // Store group members
 
     const { groupId } = useLocalSearchParams();
     const navigation = useNavigation();
@@ -52,15 +51,8 @@ const GroupChatPage = ({  }) => {
         setMessages(fetchedMessages); // Reverse to show oldest first
     };
 
-    const loadGroupMembers = async () => {
-        const token = await AsyncStorage.getItem('token');
-        const members = await getGroupMembers(token, groupId);
-        setGroupMembers(members); // Store members in state
-    };
-
     useEffect(() => {
         loadMessages();
-        loadGroupMembers(); // Fetch group members when component mounts
     }, [groupId]);
 
     const handleSendMessage = async () => {
@@ -88,8 +80,11 @@ const GroupChatPage = ({  }) => {
     };
 
     const handleSelectMessage = (messageId) => {
-        if (username === messages.find(msg => msg._id === messageId)?.sender) {
-            setSelectedMessageId(prevSelected => prevSelected === messageId ? null : messageId); // Toggle selection
+        const message = messages.find(msg => msg._id === messageId);
+        console.log(message)
+        console.log(messageId)
+        if (message && message.sender === username) {
+            setSelectedMessageId(prevSelected => (prevSelected === messageId ? null : messageId)); // Toggle selection
         }
     };
 
