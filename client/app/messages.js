@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+    View, Text, FlatList, TouchableOpacity, StyleSheet,
+    ActivityIndicator, Modal, TextInput, Alert
+} from 'react-native';
+import { useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
 import {
-    getStudyGroups, createStudyGroup, deleteStudyGroup, editStudyGroupName } from './api/studygroup'; // Ensure correct path
+    getStudyGroups,
+    createStudyGroup,
+    deleteStudyGroup,
+    editStudyGroupName
+} from './api/studygroup'; // Ensure correct path
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser } from './api/user';
+
 
 export default function Messages() {
     const router = useRouter();
@@ -16,12 +26,19 @@ export default function Messages() {
     const [newGroupName, setNewGroupName] = useState('');
     const [groupToEdit, setGroupToEdit] = useState(null);
 
+    const navigation = useNavigation();
+
     // Fetch groups function
     const fetchGroups = async () => {
         try {
-            const email = "foobar@gmail.com"; // Replace with dynamic user email
+            const token = await AsyncStorage.getItem('token');
+
+            const user = await getCurrentUser({ token });
+           
+            //console.log(`Email: ${user.data.email}`)
+            const email = user.data.email;
             const response = await getStudyGroups({ email });
-            console.log(response.data);
+            //console.log(response.data);
             if (Array.isArray(response.data)) {
                 setGroups(response.data);
             } else {
@@ -49,6 +66,10 @@ export default function Messages() {
 
         try {
             const memberArray = members.split(',').map(m => m.trim());
+            const token = await AsyncStorage.getItem('token');
+            const user = await getCurrentUser({ token });
+            const email = user.data.email;
+            memberArray.push(email);
             await createStudyGroup({ name: groupName, members: memberArray });
             Alert.alert('Success', 'Study group created successfully!');
             setCreateModalVisible(false);
@@ -126,7 +147,8 @@ export default function Messages() {
                             {/* Group Item (Touchable for navigation) */}
                             <TouchableOpacity
                                 style={styles.groupItemTouchable}
-                                onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                                //onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                                onPress={() => navigation.navigate('group', { groupId: item._id } )} // Navigate on touch
                             >
                                 <Text style={styles.groupText}>{item.name}</Text>
                             </TouchableOpacity>

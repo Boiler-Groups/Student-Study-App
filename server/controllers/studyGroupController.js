@@ -1,6 +1,7 @@
 import StudyGroup from "../models/StudyGroup.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from 'mongoose';
 
 // Find and return all study groups that the given user is a member of
 export const getGroups = async (req, res) => {
@@ -98,4 +99,71 @@ export const editStudyGroupName = async (req, res) => {
             errorStack: e.stack
         });
     }
+};
+
+// Fetch all messages for a study group
+export const getGroupMessages = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      res.status(200).json(group.messages);
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
+};
+
+export const getGroupMembers = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      res.status(200).json(group.members);
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
+};
+
+// Send a message to a study group
+export const sendMessage = async (req, res) => {
+  const { groupId } = req.params;
+  const { text } = req.body;
+  const userEmail = req.user.email; // Assuming authentication middleware sets req.user
+  const username = req.user.username
+
+  if (!text) {
+      return res.status(400).json({ message: "Message text is required" });
+  }
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      const newMessage = {
+          _id: new mongoose.Types.ObjectId(),
+          sender: username,
+          text,
+          timestamp: new Date(),
+      };
+
+      group.messages.push(newMessage);
+      await group.save();
+
+      res.status(201).json({ message: "Message sent", newMessage });
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
 };
