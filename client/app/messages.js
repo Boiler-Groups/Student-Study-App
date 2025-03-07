@@ -16,6 +16,7 @@ import { getCurrentUser } from './api/user';
 export default function Messages() {
     const router = useRouter();
     const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [successModalVisible, setSuccessModalVisible] = useState(false);
     const [groupsAll, setGroupsAll] = useState([]);
     const [joinModalVisible, setJoinModalVisible] = useState(false);
     const [groups, setGroups] = useState([]);
@@ -97,6 +98,7 @@ export default function Messages() {
             await createStudyGroup({ name: groupName, members: memberArray });
             Alert.alert('Success', 'Study group created successfully!');
             setCreateModalVisible(false);
+            setSuccessModalVisible(true);
             setGroupName('');
             setMembers('');
             fetchGroups(); // Refresh the study groups list
@@ -312,6 +314,18 @@ export default function Messages() {
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>There Was An Error Completing the Task</Text>
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setErrorModalVisible(false)}>
+                            <Text style={styles.cancelButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/*Success Modal*/}
+            <Modal visible={successModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Study Group Successfully Created!</Text>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setSuccessModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
