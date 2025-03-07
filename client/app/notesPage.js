@@ -113,7 +113,7 @@ export default function NotesPage() {
       {/* Input Fields */}
 
       <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
-        <Text style={[styles.addNoteText,isDarkTheme ? styles.darkInput : styles.lightInput}>Add Note</Text>
+        <Text style={[styles.addNoteText,isDarkTheme ? styles.darkInput : styles.lightInput]}>Add Note</Text>
         <TouchableOpacity style={styles.addButton} onPress={() => { openCreateModal(true) }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
@@ -384,8 +384,6 @@ cancelButtonText: {
     color: '#fff',
     fontWeight: 'bold'
 },
-});
-
 
   /* Light Mode */
   lightBackground: {
