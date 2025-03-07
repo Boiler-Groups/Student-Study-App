@@ -14,10 +14,16 @@ const authHeader = (token) => ({
 
 export const getStudyGroups = ({ email }) => StudyGroupClient.get(`/${email}`);
 
+export const getStudyGroupsAll = () => StudyGroupClient.get('/groups');
+
 export const createStudyGroup = (studyGroupData) => StudyGroupClient.post('/', studyGroupData);
 
 export const deleteStudyGroup = (studyGroupId) => StudyGroupClient.delete(`/id/${studyGroupId}`);
 
+export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/editName/${id}`, newName );
+
+// Function to add member emails to a study group
+export const addStudyGroupMembers = (id, email) => StudyGroupClient.patch(`/id/${id}/members`, {email});
 export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/editName/${id}`, newName);
 
 export const getGroupMessages = (token, groupId) =>
