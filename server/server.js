@@ -3,7 +3,8 @@ import 'dotenv/config';
 import mongoConnect from './config/db.js';
 import userRoutes from './routes/userRoutes.js';
 import studyGroupRoutes from './routes/studyGroupRoutes.js';
-
+import noteRouter from './routes/noteRouter.js';
+import classRoutes from './routes/classRoutes.js';
 const app = express()
 
 app.use((req, res, next) => {
@@ -20,7 +21,8 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/studygroups', studyGroupRoutes);
-
+app.use('/api/notes', noteRouter);
+app.use('/api/classes', classRoutes);
 const port = process.env.PORT || 8080
 
 mongoConnect().then(async () => {

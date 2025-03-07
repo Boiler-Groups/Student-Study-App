@@ -18,6 +18,8 @@ export default function Login() {
     const handleLogin = async () => {
         setErrorMessage("");
         try {
+            console.log(`API_URL: ${process.env.API_URL}`)
+            console.log(`Test: ${process.env.TEST}`)
             const response = await fetch(`${process.env.API_URL}/users/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

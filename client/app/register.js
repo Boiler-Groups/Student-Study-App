@@ -42,6 +42,7 @@ export default function Register() {
         }
 
         console.log(`URL: ${process.env.API_URL}`);
+
         if (!validateEmail(email)) {
             setErrorMessage('Please enter a valid email address.');
             setLoading(false);
