@@ -135,14 +135,6 @@ export default function NotesPage() {
                 {item.content}
               </Text>
             </View>
-            <View style={styles.iconContainer}>
-              <TouchableOpacity onPress={() => removeNotes(item._id)}>
-                <Icon name="edit" size={24} color={isDarkTheme ? "#AAA" : "black"} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => removeNotes(item._id)}>
-                <Icon name="delete" size={24} color="red" />
-              </TouchableOpacity>
-            </View>
 
             <TouchableOpacity onPress={() => {
               setNotesName(item.name);
