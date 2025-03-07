@@ -16,8 +16,7 @@ export default function NotesPage() {
   const [token, setToken] = useState('');
   const [editModal, openEditModal] = useState(false);
   const [createModal, openCreateModal] = useState(false);
-  const [objContent, setObjContent] = useState('');
-  const [objName, setObjName] = useState('');
+  const [objId, setObjId] = useState("");
   /** 🔹 Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
     try {
@@ -76,12 +75,12 @@ export default function NotesPage() {
     }
   };
 
-  const handleEditNote = async (id) => {
+  const handleEditNote = async () => {
     if (notesName.trim() && notesContent.trim()) {
       try {
         const newNote = { name: notesName, content: notesContent };
 
-        const res = await fetch(`${API_URL}/notes/${id}`, {
+        const res = await fetch(`${API_URL}/notes/${objId}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -93,6 +92,7 @@ export default function NotesPage() {
         if (res.ok) {
         setNotesName('');
         setNotesContent('');
+        setObjId('');
         fetchNotes();
         openCreateModal(false);
         } else {
@@ -130,6 +130,7 @@ export default function NotesPage() {
             <TouchableOpacity onPress={() => {
               setNotesName(item.name);
               setNotesContent(item.content); 
+              setObjId(item._id);
               openEditModal(true);
             }}>
               <Icon name="edit" size={24} color="black" />
