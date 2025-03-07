@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View, Text, FlatList, TouchableOpacity, StyleSheet,
     ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
 import {
     getStudyGroups, createStudyGroup, deleteStudyGroup, editStudyGroupName, getStudyGroupsAll, addStudyGroupMembers
@@ -75,9 +75,11 @@ export default function Messages() {
         }
     };
 
-    useEffect(() => {
-        fetchGroups();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchGroups();
+        }, [])
+    );
 
     // Create Study Group Function
     const handleCreateGroup = async () => {
