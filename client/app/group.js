@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
-import { getGroupMessages, sendMessage, deleteMessage, getGroupMembers } from './api/studygroup.js'; // Import API functions
+import { getGroupMessages, sendMessage, deleteMessage, getStudyGroupName } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLocalSearchParams } from 'expo-router';
+import { useTheme } from '../components/ThemeContext';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { getCurrentUser } from './api/user.js';
 import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
@@ -11,6 +12,7 @@ const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const flatListRef = useRef(null);
+    const { isDarkTheme } = useTheme();
     const [username, setUsername] = useState("");
     const [groupTitle, setGroupTitle] = useState('');
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
@@ -48,12 +50,28 @@ const GroupChatPage = ({ }) => {
     const loadMessages = async () => {
         const token = await AsyncStorage.getItem('token');
         const fetchedMessages = await getGroupMessages(token, groupId);
-        setMessages(fetchedMessages); // Reverse to show oldest first
+        setMessages(fetchedMessages);
     };
 
-    useEffect(() => {
-        loadMessages();
-    }, [groupId]);
+    // useEffect(() => {
+    //     loadMessages();
+    // }, [groupId]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const fetchGroupName = async () => {
+                try {
+                    const name = await getStudyGroupName(groupId);
+                    setGroupTitle(name.data);
+                } catch (e) {
+                    console.error("Failed to fetch group name:", e);
+                }
+            };
+
+            loadMessages();
+            fetchGroupName();
+        }, [groupId])
+    );
 
     const handleSendMessage = async () => {
         if (text.trim() === '') return;
@@ -69,9 +87,9 @@ const GroupChatPage = ({ }) => {
 
     const handleDeleteMessage = async (messageId) => {
         const token = await AsyncStorage.getItem('token');
-        const response = await deleteMessage(token, groupId, messageId); // API call to delete message
-        if (response.success) {
-            setMessages(prevMessages => prevMessages.filter(msg => msg._id !== messageId));
+        const response = await deleteMessage(token, groupId, messageId);
+        if (response.status == 200) {
+            loadMessages();
             setSelectedMessageId(null); // Reset selected message
             Alert.alert('Message Deleted', 'Your message has been deleted successfully.');
         } else {
@@ -97,46 +115,58 @@ const GroupChatPage = ({ }) => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.container}
+            style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}
         >
             <FlatList
                 ref={flatListRef}
                 data={messages}
                 keyExtractor={item => item._id}
                 renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={[
-                            styles.messageContainer,
-                            item.sender === username ? styles.myMessage : styles.otherMessage
-                        ]}
-                        onPress={() => handleSelectMessage(item._id)} // Click to select message
-                    >
-                        <Text style={styles.sender}>{item.sender}</Text>
-                        <Text style={styles.messageText}>{item.text}</Text>
-                        {item._id === selectedMessageId && (
-                            <TouchableOpacity
-                                style={styles.deleteButton}
-                                onPress={() => handleDeleteMessage(item._id)}
-                            >
-                                <Text style={styles.deleteText}>Delete</Text>
-                            </TouchableOpacity>
-                        )}
-                    </TouchableOpacity>
+                    item.sender === '_status_' ? (
+                        <View style={styles.statusMessageContainer}>
+                            <Text style={styles.statusMessage}>{item.text}</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[
+                                styles.messageContainer,
+                                item.sender === username ? styles.myMessage : styles.otherMessage
+                            ]}
+                            onPress={() => handleSelectMessage(item._id)} // Click to select message
+                        >
+                            <Text style={styles.sender}>{item.sender}</Text>
+                            <Text style={[styles.messageText, { color: item.sender === username ? '#FFFFFF' : '#000000' }]}>{item.text}</Text>
+                            {item._id === selectedMessageId && (
+                                <TouchableOpacity
+                                    style={styles.deleteButton}
+                                    onPress={() => handleDeleteMessage(item._id)}
+                                >
+                                    <Text style={styles.deleteText}>Delete</Text>
+                                </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
+                    )
                 )}
-                extraData={selectedMessageId} // This ensures the UI updates when the selection changes
+                extraData={selectedMessageId} 
             />
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                     value={text}
                     onChangeText={setText}
                     placeholder="Type a message..."
+                    onSubmitEditing={handleSendMessage} // Send message on Enter key press
+                    blurOnSubmit={false} // Prevent keyboard from closing
+                    returnKeyType="send" // Improve UX on mobile keyboards
                 />
                 <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
                     <Text style={styles.sendText}>Send</Text>
                 </TouchableOpacity>
             </View>
+
+
         </KeyboardAvoidingView>
+
     );
 };
 
@@ -168,7 +198,16 @@ const styles = StyleSheet.create({
     },
     messageText: {
         fontSize: 16,
-        color: '#fff',
+    },
+    statusMessageContainer: {
+        alignSelf: 'center',
+        marginVertical: 5,
+    },
+    statusMessage: {
+        fontSize: 14,
+        color: 'gray',
+        textAlign: 'center',
+        userSelect: 'none',
     },
     inputContainer: {
         flexDirection: 'row',
@@ -206,6 +245,58 @@ const styles = StyleSheet.create({
     deleteText: {
         color: '#fff',
         fontWeight: 'bold',
+    },
+    /* Light Mode Styles */
+    lightBackground: {
+        backgroundColor: "#FFFFFF",
+    },
+    lightChatWrapper: {
+        backgroundColor: "#F5F5F5",
+        borderColor: "#CCC",
+        borderWidth: 1,
+    },
+    lightText: {
+        color: "#333",
+    },
+    lightInputContainer: {
+        backgroundColor: "#F5F5F5",
+        borderTopColor: "#CCC",
+    },
+    lightInput: {
+        backgroundColor: "#FFF",
+        borderColor: "#CCC",
+        color: "#333",
+    },
+    lightButton: {
+        backgroundColor: "#007AFF",
+    },
+
+    /* Dark Mode Styles */
+    darkBackground: {
+        backgroundColor: "#121212",
+    },
+    darkChatWrapper: {
+        backgroundColor: "#1E1E1E",
+        borderColor: "#555",
+        borderWidth: 1,
+    },
+    darkInputContainer: {
+        backgroundColor: "#1E1E1E",
+        borderTopColor: "#555",
+    },
+    darkInput: {
+        backgroundColor: "#333",
+        borderColor: "#555",
+        color: "#F1F1F1",
+    },
+    darkButton: {
+        backgroundColor: "#007AFF",
+    },
+    darkButtonText: {
+        color: "#FFF",
+    },
+    darkText: {
+        color: "#F1F1F1",
     },
 });
 
