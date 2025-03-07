@@ -6,6 +6,7 @@ import { AuthProvider } from "./AuthContext";
 import { useSegments } from "expo-router";
 import ProtectedRoute from "./ProtectedRoute";
 import { ThemeProvider } from "../components/ThemeContext";
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function RootLayout() {
   const pathname = usePathname();

@@ -9,7 +9,7 @@ export default function AddClass() {
   const [className, setClassName] = useState('');
   const [errMsg, setErrMsg] = useState('');
   const [classes, setClasses] = useState([]);
-  const [credits, setCredits] = useState();
+  const [credits, setCredits] = useState('');
 
   const handleAddClass = () => {
     if (!className.trim()) {
