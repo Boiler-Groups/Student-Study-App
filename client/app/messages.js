@@ -14,6 +14,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from './api/user';
 
+
 export default function Messages() {
     const router = useRouter();
     const [groups, setGroups] = useState([]);

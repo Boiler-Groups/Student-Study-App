@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { API_URL } from '@env';
+import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Profile() {
     const router = useRouter();
+    const { isDarkTheme } = useTheme();
     const [user, setUser] = useState(null);
+    const [userPassword, setUserPassword] = useState('');
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,6 +32,10 @@ export default function Profile() {
                 return;
             }
 
+            const storedPassword = await AsyncStorage.getItem('password');
+            setUserPassword(storedPassword || 'Not available');
+
+            // server fix console.log(`test: ${process.env.TEST}`);
             const response = await fetch(`${API_URL}/users/me`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -74,7 +81,13 @@ export default function Profile() {
             return;
         }
 
-        await updateUser({ password: newPassword });
+        const success = await updateUser({ password: newPassword });
+
+        if (success) {
+            await AsyncStorage.setItem('password', newPassword);
+            setUserPassword(newPassword);
+        }
+
         setNewPassword('');
         setConfirmPassword('');
         setPasswordModalVisible(false);
@@ -83,6 +96,11 @@ export default function Profile() {
     const updateUser = async (updateData) => {
         setUpdating(true);
         setMessage({ text: '', isError: false });
+
+        if (!newUsername || !newUsername.trim()) {
+            setMessage({ text: 'Display name cannot be empty', isError: true });
+            return;
+        }
 
         try {
             const token = await AsyncStorage.getItem('token');
@@ -121,12 +139,15 @@ export default function Profile() {
                 if (updateData.username) {
                     setUser(prev => ({ ...prev, username: updateData.username }));
                 }
+                return true;
             } else {
                 setMessage({ text: responseData.message || 'Update failed', isError: true });
+                return false;
             }
         } catch (error) {
             console.error("Update error:", error);
             setMessage({ text: 'Update failed: ' + error.message, isError: true });
+            return false;
         } finally {
             setUpdating(false);
         }
@@ -134,18 +155,18 @@ export default function Profile() {
 
     if (loading) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
                 <Header />
                 <ActivityIndicator size="large" color="#007AFF" />
-                <Text>Loading profile...</Text>
+                <Text style={isDarkTheme ? styles.darkText : styles.lightText}>Loading profile...</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
             <Header />
-            <Text style={styles.title}>My Profile</Text>
+            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>My Account Settings</Text>
 
             {message.text ? (
                 <Text style={message.isError ? styles.errorText : styles.successText}>
@@ -154,11 +175,20 @@ export default function Profile() {
             ) : null}
 
             <View style={styles.infoContainer}>
-                <Text style={styles.label}>Email:</Text>
-                <Text style={styles.value}>{user?.email || 'Not available'}</Text>
+                <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Email:</Text>
+                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
+                    {user?.email || 'Not available'}
+                </Text>
 
-                <Text style={styles.label}>Display Name:</Text>
-                <Text style={styles.value}>{user?.username || 'Not available'}</Text>
+                <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Display Name:</Text>
+                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
+                    {user?.username || 'Not available'}
+                </Text>
+
+                <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Password:</Text>
+                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
+                    {userPassword || 'Not available'}
+                </Text>
             </View>
 
             <View style={styles.actionsContainer}>
@@ -191,12 +221,13 @@ export default function Profile() {
                 onRequestClose={() => setUsernameModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Change Display Name</Text>
+                    <View style={[styles.modalContent, isDarkTheme ? styles.darkModal : styles.lightModal]}>
+                        <Text style={[styles.modalTitle, isDarkTheme ? styles.darkText : styles.lightText]}>Change Display Name</Text>
 
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                             placeholder="New Display Name"
+                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={newUsername}
                             onChangeText={setNewUsername}
                         />
@@ -233,19 +264,21 @@ export default function Profile() {
                 onRequestClose={() => setPasswordModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Change Password</Text>
+                    <View style={[styles.modalContent, isDarkTheme ? styles.darkModal : styles.lightModal]}>
+                        <Text style={[styles.modalTitle, isDarkTheme ? styles.darkText : styles.lightText]}>Change Password</Text>
 
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                             placeholder="New Password"
+                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={newPassword}
                             secureTextEntry
                             onChangeText={setNewPassword}
                         />
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                             placeholder="Confirm New Password"
+                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={confirmPassword}
                             secureTextEntry
                             onChangeText={setConfirmPassword}
@@ -369,5 +402,16 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         backgroundColor: '#FF3B30',
-    }
+    },
+    /* Dark Mode */
+    darkBackground: { backgroundColor: "#121212" },
+    darkText: { color: "#F1F1F1" },
+    darkModal: { backgroundColor: "#1E1E1E" },
+    darkInput: { backgroundColor: "#333", borderColor: "#555", color: "#F1F1F1" },
+
+    /* Light Mode */
+    lightBackground: { backgroundColor: "#FFFFFF" },
+    lightText: { color: "#333" },
+    lightModal: { backgroundColor: "white" },
+    lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" },
 });
