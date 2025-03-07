@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
-import { getGroupMessages, sendMessage, deleteMessage, getGroupMembers } from './api/studygroup.js'; // Import API functions
+import { getGroupMessages, sendMessage, deleteMessage } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams } from 'expo-router';
 import { getCurrentUser } from './api/user.js';
@@ -48,7 +48,7 @@ const GroupChatPage = ({ }) => {
     const loadMessages = async () => {
         const token = await AsyncStorage.getItem('token');
         const fetchedMessages = await getGroupMessages(token, groupId);
-        setMessages(fetchedMessages); // Reverse to show oldest first
+        setMessages(fetchedMessages);
     };
 
     useEffect(() => {
@@ -69,9 +69,9 @@ const GroupChatPage = ({ }) => {
 
     const handleDeleteMessage = async (messageId) => {
         const token = await AsyncStorage.getItem('token');
-        const response = await deleteMessage(token, groupId, messageId); // API call to delete message
-        if (response.success) {
-            setMessages(prevMessages => prevMessages.filter(msg => msg._id !== messageId));
+        const response = await deleteMessage(token, groupId, messageId);
+        if (response.status == 200) {
+            loadMessages();
             setSelectedMessageId(null); // Reset selected message
             Alert.alert('Message Deleted', 'Your message has been deleted successfully.');
         } else {
@@ -136,7 +136,10 @@ const GroupChatPage = ({ }) => {
                     <Text style={styles.sendText}>Send</Text>
                 </TouchableOpacity>
             </View>
+
+            
         </KeyboardAvoidingView>
+        
     );
 };
 

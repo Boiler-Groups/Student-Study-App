@@ -125,3 +125,22 @@ export const getUser = async (req, res) => {
   }
 };
 
+export const searchUser = async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query || query.length < 2) {
+      return res.status(400).json({ message: "Search query must be at least 2 characters long." });
+    }
+
+    const users = await User.find(
+      { email: { $regex: query, $options: 'i' } }, // Case-insensitive
+      { email: 1, _id: 0 } // Return only email
+    ).limit(10); // Limit results to 10
+
+    res.json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

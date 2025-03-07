@@ -9,7 +9,8 @@ import {
     sendMessage,
     removeMember,
     getGroupsAll,
-    addMemberToGroup
+    addMemberToGroup,
+    deleteMessage
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -25,5 +26,6 @@ router.post("/messages/:groupId", userMiddleware, sendMessage);
 router.get("/members/:groupId", userMiddleware, getGroupMembers);
 router.patch('/remove/:groupId', userMiddleware, removeMember)
 router.patch('/addMember/:id', addMemberToGroup);
+router.patch('/delete/:groupId', userMiddleware, deleteMessage);
 
 export default router;
