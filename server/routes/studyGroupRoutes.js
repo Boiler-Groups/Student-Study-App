@@ -6,7 +6,8 @@ import {
     editStudyGroupName,
     getGroupMessages,
     getGroupMembers,
-    sendMessage
+    sendMessage,
+    removeMember
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -19,5 +20,6 @@ router.patch('/editName/:id',editStudyGroupName); //Editing is done by the group
 router.get("/messages/:groupId", userMiddleware, getGroupMessages);
 router.post("/messages/:groupId", userMiddleware, sendMessage);
 router.get("/members/:groupId", userMiddleware, getGroupMembers);
+router.patch('/remove/:groupId', userMiddleware, removeMember)
 
 export default router;
