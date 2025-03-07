@@ -23,7 +23,7 @@ export const deleteStudyGroup = (studyGroupId) => StudyGroupClient.delete(`/id/$
 export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/editName/${id}`, newName );
 
 // Function to add member emails to a study group
-export const addStudyGroupMembers = (id, email) => StudyGroupClient.patch(`/id/${id}/members`, {email});
+export const addStudyGroupMembers = (id, email) => StudyGroupClient.patch(`/addMember/${id}`, {email});
 
 export const getGroupMessages = (token, groupId) =>
   StudyGroupClient.get(`/messages/${groupId}`, authHeader(token))
