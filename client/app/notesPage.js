@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   listContainer: {
     borderBottomWidth: 6, 
     borderBottomColor: "black",
-    padding: 5,
+    // padding: 5,
     width: '60%',
     borderRightWidth: 6, 
     borderRightColor: "black",
@@ -340,11 +340,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20, // Space above the button
 },
-buttonText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: 'bold'
-},
+// buttonText: {
+//     fontSize: 18,
+//     color: '#fff',
+//     fontWeight: 'bold'
+// },
 modalContainer: {
     flex: 1,
     justifyContent: 'center',
