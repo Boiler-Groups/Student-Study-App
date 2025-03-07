@@ -32,7 +32,7 @@ export default function RootLayout() {
               <Stack>
                 {/* Protected routes go here */}
                 <Stack.Screen name="landing" options={{ headerShown: false }} />
-                <Stack.Screen name="home" options={{ headerShown: false }} />
+                <Stack.Screen name="home" options={{ headerShown: true }} />
                 <Stack.Screen name="messages" options={{ headerShown: true }} />
                 <Stack.Screen name="profile" options={{ headerShown: false }} />
               </Stack>
