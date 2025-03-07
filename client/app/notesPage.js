@@ -2,85 +2,127 @@ import React, { useContext, useEffect, useState } from 'react';
 import { FlatList, TextInput, TouchableOpacity, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function notesPage() {
+export default function NotesPage() {
   const router = useRouter();
   const [notesName, setNotesName] = useState('');
+  const [notesContent, setNotesContent] = useState('');
   const [notes, setNotes] = useState([]);
+  const [token, setToken] = useState('');
 
-  const removeSelected = () => {
-    setNotes(notes.filter((c) => (c.added === false)));
-  }
-  const handleAddNotes = () => {
-    if (notesName.trim()) {
-      setNotes([...notes, { id: Date.now().toString(), name: notesName, added: false }]);
-      setNotesName('');
+  /** 🔹 Fetch notes from backend when the component mounts */
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const userToken = await AsyncStorage.getItem('token');
+        setToken(userToken);
+
+        if (!userToken) return;
+
+        const response = await fetch('https://your-api.com/api/notes', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${userToken}` },
+        });
+
+        const data = await response.json();
+        setNotes(data); // Store fetched notes in state
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      }
+    };
+
+    fetchNotes();
+  }, []);
+
+  /** 🔹 Add a new note */
+  const handleAddNotes = async () => {
+    if (notesName.trim() && notesContent.trim()) {
+      try {
+        const newNote = { name: notesName, content: notesContent };
+
+        const response = await fetch('https://your-api.com/api/notes', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(newNote),
+        });
+
+        const data = await response.json();
+        setNotes([...notes, data]); // Update state with new note
+        setNotesName('');
+        setNotesContent('');
+      } catch (error) {
+        console.error("Error adding note:", error);
+      }
     }
   };
 
-  const toggleNoteAdded = (id) => {
-    setNotes(notes.map((c) => (c.id === id ? { ...c, added: !c.added } : c)));
-  };
+  /** 🔹 Delete a note */
+  const removeNotes = async (id) => {
+    try {
+      await fetch(`https://your-api.com/api/notes/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
 
-  const removeNotes = (id) => {
-    setNotes(notes.filter((c) => c.id !== id));
+      setNotes(notes.filter((note) => note._id !== id)); // Remove note from state
+    } catch (error) {
+      console.error("Error deleting note:", error);
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Your Notes</Text>
 
-      {/* Input Field */}
+      {/* Input Fields */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Enter notes name..."
+          placeholder="Note Title"
           placeholderTextColor="#999"
           value={notesName}
           onChangeText={setNotesName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your note..."
+          placeholderTextColor="#999"
+          value={notesContent}
+          onChangeText={setNotesContent}
+          multiline
         />
         <TouchableOpacity style={styles.addButton} onPress={handleAddNotes}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
 
+      {/* List of Notes */}
       <FlatList
         data={notes}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <View style={styles.notesItem}>
-            <TouchableOpacity onPress={() => toggleNoteAdded(item.id)} style={styles.notesTextContainer}>
-              <Icon
-                name={item.added ? 'check-circle' : 'radio-button-unchecked'}
-                size={24}
-                color={item.added ? 'green' : 'gray'}
-                style={styles.icon}
-              />
-              <Text style={[styles.notesText, item.added && styles.completedNotes]}>
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-            <View style={styles.notesButtons}>
-              <TouchableOpacity onPress={() => removeNotes(item.id)}>
-                <Icon name="edit" size={24} color="black" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => removeNotes(item.id)}>
-                <Icon name="delete" size={24} color="red" />
-              </TouchableOpacity>
+            <View>
+              <Text style={styles.notesText}>{item.name}</Text>
+              <Text style={styles.notesContent}>{item.content}</Text>
             </View>
+            <TouchableOpacity onPress={() => removeNotes(item._id)}>
+              <Icon name="delete" size={24} color="red" />
+            </TouchableOpacity>
           </View>
         )}
       />
+
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => removeSelected()}>
-          <Text style={styles.buttonText}>Delete Selected</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
     </View>
-    
   );
 }
 
@@ -88,66 +130,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#f8f8f8"
-  },
-  buttonContainer: {
-    flexDirection: 'row',  
-    justifyContent: 'center', 
-    alignItems: 'center',
-    marginTop: 20,
-    paddingHorizontal: 20, 
-  },
-  button: {
-    marginLeft: '1%',
-    marginRight: '1%',
-    backgroundColor: '#007AFF',
-    paddingVertical: 12, 
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#005BBB',
-    width: '35%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  notesButtons: {
-    flexDirection: 'row',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    backgroundColor: "#f8f8f8",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 16
+    marginBottom: 16,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     marginBottom: 12,
-    backgroundColor: '#eee',
-    borderRadius: 8,
-    paddingHorizontal: 10,
   },
   input: {
-    flex: 1,
     padding: 10,
     fontSize: 16,
-    color: '#000',
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    marginBottom: 10,
   },
   addButton: {
     backgroundColor: '#1D3D47',
     padding: 10,
     borderRadius: 50,
-    marginLeft: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -155,24 +161,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
-  notesTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   notesText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  notesContent: {
+    fontSize: 14,
+    color: "#333",
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: 'white',
     fontSize: 16,
-    color: '#000',
-    marginLeft: 8,
-  },
-  completedNotes: {
-    textDecorationLine: 'line-through',
-    color: 'gray',
-  },
-  icon: {
-    marginRight: 8,
+    fontWeight: 'bold',
   },
 });
+
