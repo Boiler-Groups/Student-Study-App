@@ -3,11 +3,13 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 import { AuthContext } from './AuthContext';
+import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 
 export default function Home() {
     const router = useRouter();
+    const { isDarkTheme } = useTheme();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user, logout, authLoading} = useContext(AuthContext);
@@ -44,16 +46,16 @@ export default function Home() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
             {/* Header with its own styles */}
             <Header />
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText}>Logout</Text>
+            <TouchableOpacity style={[styles.button, styles.logoutButton]}  onPress={handleLogout}>
+                <Text style={[styles.darkText, isDarkTheme ? styles.darkText : styles.darkText]}>Logout</Text>
             </TouchableOpacity>
 
             {/* Title for the page */}
-            <Text style={styles.title}>{user?.email}'s Classes</Text>
+            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>{user?.email}'s Classes</Text>
 
             {/* Display a loading indicator or the FlatList */}
             {loading ? (
@@ -105,11 +107,17 @@ const styles = StyleSheet.create({
     },
     groupText: { fontSize: 18, fontWeight: 'bold' },
     creditsText: { fontSize: 16, color: '#555', marginTop: 5 }, // New style for credits
-    button: {
+    button: { 
         backgroundColor: '#007AFF',
-        padding: 12,
-        borderRadius: 8,
-        marginTop: 20,
+        padding: 10, 
+        borderRadius: 5,
+        width: '25%',
+        alignItems: 'center',
+        marginBottom: 10
+    },
+    logoutButton: {
+        backgroundColor: '#FF3B30',
+        marginTop: 10
     },
     buttonText: { color: '#fff', fontSize: 16 },
     bottomButtonsContainer: {
@@ -145,4 +153,15 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
         marginBottom: 80,
     },
+    /* Dark Mode */
+    darkBackground: { backgroundColor: "#121212" },
+    darkText: { color: "#F1F1F1" },
+    darkModal: { backgroundColor: "#1E1E1E" },
+    darkInput: { backgroundColor: "#333", borderColor: "#555", color: "#F1F1F1" },
+
+    /* Light Mode */
+    lightBackground: { backgroundColor: "#FFFFFF" },
+    lightText: { color: "#333" },
+    lightModal: { backgroundColor: "white" },
+    lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" },
 });

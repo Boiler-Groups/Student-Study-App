@@ -1,11 +1,13 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, TextInput, TouchableOpacity, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../components/ThemeContext'; // Import dark mode hook
 
 export default function NotesPage() {
   const router = useRouter();
+  const { isDarkTheme } = useTheme(); // Get dark mode state
   const [notesName, setNotesName] = useState('');
   const [notesContent, setNotesContent] = useState('');
   const [notes, setNotes] = useState([]);
@@ -75,22 +77,22 @@ export default function NotesPage() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your Notes</Text>
+    <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+      <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Your Notes</Text>
 
       {/* Input Fields */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
           placeholder="Note Title"
-          placeholderTextColor="#999"
+          placeholderTextColor={isDarkTheme ? "#AAA" : "#666"}
           value={notesName}
           onChangeText={setNotesName}
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
           placeholder="Enter your note..."
-          placeholderTextColor="#999"
+          placeholderTextColor={isDarkTheme ? "#AAA" : "#666"}
           value={notesContent}
           onChangeText={setNotesContent}
           multiline
@@ -105,16 +107,23 @@ export default function NotesPage() {
         data={notes}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <View style={styles.notesItem}>
+          <View style={[styles.notesItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
             <View>
-              <Text style={styles.notesText}>{item.name}</Text>
+              <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                {item.name}
+              </Text>
+              <Text style={[styles.notesContent, isDarkTheme ? styles.darkText : styles.lightText]}>
+                {item.content}
+              </Text>
             </View>
-            <TouchableOpacity onPress={() => removeNotes(item._id)}>
-              <Icon name="edit" size={24} color="black" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => removeNotes(item._id)}>
-              <Icon name="delete" size={24} color="red" />
-            </TouchableOpacity>
+            <View style={styles.iconContainer}>
+              <TouchableOpacity onPress={() => removeNotes(item._id)}>
+                <Icon name="edit" size={24} color={isDarkTheme ? "#AAA" : "black"} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => removeNotes(item._id)}>
+                <Icon name="delete" size={24} color="red" />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       />
@@ -132,7 +141,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#f8f8f8",
   },
   title: {
     fontSize: 24,
@@ -143,12 +151,13 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'column',
     marginBottom: 12,
+    borderRadius: 8,
+    padding: 10,
   },
   input: {
     padding: 10,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -165,7 +174,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+  },
+  iconContainer: {
+    flexDirection: 'row',
+    gap: 10,
   },
   notesText: {
     fontSize: 18,
@@ -173,7 +185,6 @@ const styles = StyleSheet.create({
   },
   notesContent: {
     fontSize: 14,
-    color: "#333",
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -195,5 +206,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-});
 
+  /* Light Mode */
+  lightBackground: {
+    backgroundColor: "#FFFFFF",
+  },
+  lightText: {
+    color: "#000",
+  },
+  lightInputContainer: {
+    backgroundColor: "#F5F5F5",
+  },
+  lightInput: {
+    backgroundColor: "#FFF",
+    borderColor: "#CCC",
+    color: "#000",
+  },
+  lightNoteItem: {
+    backgroundColor: "#FFF",
+    borderBottomColor: "#DDD",
+  },
+
+  /* Dark Mode */
+  darkBackground: {
+    backgroundColor: "#121212",
+  },
+  darkText: {
+    color: "#F1F1F1",
+  },
+  darkInputContainer: {
+    backgroundColor: "#1E1E1E",
+  },
+  darkInput: {
+    backgroundColor: "#333",
+    borderColor: "#555",
+    color: "#F1F1F1",
+  },
+  darkNoteItem: {
+    backgroundColor: "#1E1E1E",
+    borderBottomColor: "#555",
+  },
+});

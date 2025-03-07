@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { getGroupMessages, sendMessage, deleteMessage, getStudyGroupName } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../components/ThemeContext';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { getCurrentUser } from './api/user.js';
 import { useNavigation } from 'expo-router';
@@ -11,6 +12,7 @@ const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const flatListRef = useRef(null);
+    const { isDarkTheme } = useTheme();
     const [username, setUsername] = useState("");
     const [groupTitle, setGroupTitle] = useState('');
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
@@ -113,7 +115,7 @@ const GroupChatPage = ({ }) => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.container}
+            style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}
         >
             <FlatList
                 ref={flatListRef}
@@ -133,7 +135,7 @@ const GroupChatPage = ({ }) => {
                             onPress={() => handleSelectMessage(item._id)} // Click to select message
                         >
                             <Text style={styles.sender}>{item.sender}</Text>
-                            <Text style={styles.messageText}>{item.text}</Text>
+                            <Text style={[styles.messageText, { color: item.sender === username ? '#FFFFFF' : '#000000' }]}>{item.text}</Text>
                             {item._id === selectedMessageId && (
                                 <TouchableOpacity
                                     style={styles.deleteButton}
@@ -145,14 +147,17 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
                     )
                 )}
-                extraData={selectedMessageId} // This ensures the UI updates when the selection changes
+                extraData={selectedMessageId} 
             />
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                     value={text}
                     onChangeText={setText}
                     placeholder="Type a message..."
+                    onSubmitEditing={handleSendMessage} // Send message on Enter key press
+                    blurOnSubmit={false} // Prevent keyboard from closing
+                    returnKeyType="send" // Improve UX on mobile keyboards
                 />
                 <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
                     <Text style={styles.sendText}>Send</Text>
@@ -193,7 +198,6 @@ const styles = StyleSheet.create({
     },
     messageText: {
         fontSize: 16,
-        color: '#fff',
     },
     statusMessageContainer: {
         alignSelf: 'center',
@@ -241,6 +245,58 @@ const styles = StyleSheet.create({
     deleteText: {
         color: '#fff',
         fontWeight: 'bold',
+    },
+    /* Light Mode Styles */
+    lightBackground: {
+        backgroundColor: "#FFFFFF",
+    },
+    lightChatWrapper: {
+        backgroundColor: "#F5F5F5",
+        borderColor: "#CCC",
+        borderWidth: 1,
+    },
+    lightText: {
+        color: "#333",
+    },
+    lightInputContainer: {
+        backgroundColor: "#F5F5F5",
+        borderTopColor: "#CCC",
+    },
+    lightInput: {
+        backgroundColor: "#FFF",
+        borderColor: "#CCC",
+        color: "#333",
+    },
+    lightButton: {
+        backgroundColor: "#007AFF",
+    },
+
+    /* Dark Mode Styles */
+    darkBackground: {
+        backgroundColor: "#121212",
+    },
+    darkChatWrapper: {
+        backgroundColor: "#1E1E1E",
+        borderColor: "#555",
+        borderWidth: 1,
+    },
+    darkInputContainer: {
+        backgroundColor: "#1E1E1E",
+        borderTopColor: "#555",
+    },
+    darkInput: {
+        backgroundColor: "#333",
+        borderColor: "#555",
+        color: "#F1F1F1",
+    },
+    darkButton: {
+        backgroundColor: "#007AFF",
+    },
+    darkButtonText: {
+        color: "#FFF",
+    },
+    darkText: {
+        color: "#F1F1F1",
     },
 });
 
