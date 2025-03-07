@@ -48,7 +48,7 @@ export default function Messages() {
             }
         } catch (error) {
             console.log("Failed to fetch study groups:", error);
-            setErrorModalVisible(true);
+            //setErrorModalVisible(true);
             console.log("Returning Empty List");
             setGroups([]); // Clear groups if the fetch fails
         } finally {
@@ -67,7 +67,7 @@ export default function Messages() {
             }
         } catch (error) {
             console.log("Failed to fetch All study groups:", error);
-            setErrorModalVisible(true);
+            //setErrorModalVisible(true);
             console.log("Returning Empty List");
             setGroupsAll([]); // Clear groups if the fetch fails
         } finally {
@@ -149,7 +149,7 @@ export default function Messages() {
             await fetchGroups(); // Assuming this fetches the updated list of groups
         } catch (error) {
             console.log("Error occurred while updating study group:", error);
-            setErrorModalVisible(true);
+            //setErrorModalVisible(true);
         } finally {
             // Perform any cleanup or loading state reset if necessary
         }
