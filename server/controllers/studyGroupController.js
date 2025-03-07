@@ -1,6 +1,7 @@
 import StudyGroup from "../models/StudyGroup.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from 'mongoose';
 
 // Find and return all study groups that the given user is a member of
 export const getGroups = async (req, res) => {
@@ -18,6 +19,25 @@ export const getGroups = async (req, res) => {
   } catch (e) {
     res.status(500).json({ message: "Server error", error: e.message });
   }
+};
+
+// Find and return all study groups
+export const getGroupsAll = async (req, res) => {
+    try {
+        // Retrieve all groups without filtering by email
+        const groups = await StudyGroup.find();
+
+        if (groups.length === 0) {
+            // No groups found
+            return res.status(404).json({ message: "No study groups available" });
+        }
+
+        // Return the list of all groups
+        res.status(200).json(groups);
+    } catch (e) {
+        // Handle any errors
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
 };
 
 export const createStudyGroup = async (req, res) => {
@@ -98,4 +118,148 @@ export const editStudyGroupName = async (req, res) => {
             errorStack: e.stack
         });
     }
+};
+
+// Function to add a member to a study group
+export const addMemberToGroup = async (req, res) => {
+    const { id } = req.params; // Get group ID from request parameters
+    const { email } = req.body; // Get the email address from request body
+
+    // Check if email was provided
+    if (!email) {
+        return res.status(400).json({
+            message: 'Email is required',
+            errorDetails: 'The request did not include a valid email to add to the group.'
+        });
+    }
+
+    try {
+        // Find the study group by id
+        const group = await StudyGroup.findById(id);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${id}.`
+            });
+        }
+
+        // Add the email to the members array if it's not already present
+        if (!group.members.includes(email)) {
+            group.members.push(email);
+        }
+
+        // Save the updated group
+        const updatedGroup = await group.save();
+
+        res.status(200).json({
+            message: 'Member added successfully',
+            group: updatedGroup
+        });
+    } catch (e) {
+        // Log the error for debugging
+        console.error('Error adding member:', e);
+
+        res.status(500).json({
+            message: 'Server error occurred while adding member',
+            errorDetails: `The error occurred while trying to add the email to the group with id: ${id}. Error: ${e.message}`,
+            errorStack: e.stack
+        });
+    }
+};
+// Fetch all messages for a study group
+export const getGroupMessages = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      res.status(200).json(group.messages);
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
+};
+
+export const getGroupMembers = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      res.status(200).json(group.members);
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
+};
+
+// Send a message to a study group
+export const sendMessage = async (req, res) => {
+  const { groupId } = req.params;
+  const { text } = req.body;
+  const userEmail = req.user.email; // Assuming authentication middleware sets req.user
+  const username = req.user.username
+
+  if (!text) {
+      return res.status(400).json({ message: "Message text is required" });
+  }
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      const newMessage = {
+          _id: new mongoose.Types.ObjectId(),
+          sender: username,
+          text,
+          timestamp: new Date(),
+      };
+
+      group.messages.push(newMessage);
+      await group.save();
+
+      res.status(201).json({ message: "Message sent", newMessage });
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
+};
+
+export const removeMember = async (req, res) => {
+  const { groupId } = req.params;
+  const { email } = req.body; // Email of the user to remove
+
+  if (!email) {
+      return res.status(400).json({ message: "User email is required" });
+  }
+
+  try {
+      const group = await StudyGroup.findById(groupId);
+
+      if (!group) {
+          return res.status(404).json({ message: "Study group not found" });
+      }
+
+      // Check if the user is in the group
+      if (!group.members.includes(email)) {
+          return res.status(400).json({ message: "User is not a member of this group" });
+      }
+
+      // Remove the user
+      group.members = group.members.filter(member => member !== email);
+      await group.save();
+
+      res.status(200).json({ message: "User removed from study group", updatedGroup: group });
+  } catch (e) {
+      res.status(500).json({ message: "Server error", error: e.message });
+  }
 };

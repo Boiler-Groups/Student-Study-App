@@ -29,6 +29,7 @@ export default function Login() {
             const data = await response.json();
             if (response.ok) {
                 await AsyncStorage.setItem('token', data.token);
+                await AsyncStorage.setItem('password', password);
                 router.replace('/landing');
             } else {
                 setErrorMessage("Invalid credentials");

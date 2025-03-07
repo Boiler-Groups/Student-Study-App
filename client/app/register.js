@@ -23,6 +23,23 @@ export default function Register() {
         setLoading(true);
         setErrorMessage('');
 
+        if (!username.trim()) {
+            setErrorMessage('Please enter a display name.');
+            setLoading(false);
+            return;
+        }
+    
+        if (!email.trim()) {
+            setErrorMessage('Please enter an email address.');
+            setLoading(false);
+            return;
+        }
+    
+        if (!password.trim()) {
+            setErrorMessage('Please enter a password.');
+            setLoading(false);
+            return;
+        }
 
         console.log(`URL: ${process.env.API_URL}`);
 
@@ -42,6 +59,7 @@ export default function Register() {
             const data = await response.json();
             if (response.ok) {
                 await AsyncStorage.setItem('token', data.token);
+                await AsyncStorage.setItem('password', password);
                 router.push('/landing');
             } else {
                 setErrorMessage('Registration failed. User already exists.');
