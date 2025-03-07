@@ -13,3 +13,5 @@ export const getCurrentUser = ({ token }) =>
             Authorization: `Bearer ${token}`,
         },
     });
+
+export const searchUser = (query) => UserClient.get('/search', { params: { query } });
