@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, TextInput, TouchableOpacity, StyleSheet, Text, View } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  ActivityIndicator, Modal, TextInput,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../components/ThemeContext'; // Import dark mode hook
+import { API_URL } from '@env';
 
 export default function NotesPage() {
   const router = useRouter();
@@ -12,50 +15,45 @@ export default function NotesPage() {
   const [notesContent, setNotesContent] = useState('');
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState('');
-
+  const [editModal, openEditModal] = useState(false);
+  const [createModal, openCreateModal] = useState(false);
+  const [objContent, setObjContent] = useState('');
+  const [objName, setObjName] = useState('');
   /** 🔹 Fetch notes from backend when the component mounts */
-  useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const userToken = await AsyncStorage.getItem('token');
-        setToken(userToken);
+  const fetchNotes = async () => {
+    try {
+      const response = await fetch(`${API_URL}/notes`, {
+        method: 'GET',
+      });
 
-        if (!userToken) return;
+      const data = await response.json();
+      setNotes(data);
+    } catch (error) {
+      console.error("Error fetching notes:", error);
+    }
+  };
 
-        const response = await fetch('https://your-api.com/api/notes', {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${userToken}` },
-        });
-
-        const data = await response.json();
-        setNotes(data); // Store fetched notes in state
-      } catch (error) {
-        console.error("Error fetching notes:", error);
-      }
-    };
-
-    fetchNotes();
-  }, []);
+  useEffect(() => { fetchNotes() }, []);
 
   /** 🔹 Add a new note */
-  const handleAddNotes = async () => {
+  const handleAddNote = async () => {
     if (notesName.trim() && notesContent.trim()) {
       try {
         const newNote = { name: notesName, content: notesContent };
 
-        const response = await fetch('https://your-api.com/api/notes', {
+        const res = await fetch(`${API_URL}/notes/`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(newNote),
         });
 
-        const data = await response.json();
+        const data = await res.json();
         setNotes([...notes, data]); // Update state with new note
         setNotesName('');
         setNotesContent('');
+        openCreateModal(false);
       } catch (error) {
         console.error("Error adding note:", error);
       }
@@ -63,47 +61,67 @@ export default function NotesPage() {
   };
 
   /** 🔹 Delete a note */
-  const removeNotes = async (id) => {
+  const removeNote = async (id) => {
     try {
-      await fetch(`https://your-api.com/api/notes/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
+      const res = await fetch(`${API_URL}/notes/${id}`, {
+        method: "DELETE",
       });
+      const data = await res.json();
+      if (!res.ok) { 
+        console.error("failure to delete.");
+      };
 
-      setNotes(notes.filter((note) => note._id !== id)); // Remove note from state
+      fetchNotes();
     } catch (error) {
       console.error("Error deleting note:", error);
     }
   };
+
+  const handleEditNote = async (id) => {
+    if (notesName.trim() && notesContent.trim()) {
+      try {
+        const newNote = { name: notesName, content: notesContent };
+
+        const res = await fetch(`${API_URL}/notes/${id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newNote),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+        setNotesName('');
+        setNotesContent('');
+        fetchNotes();
+        openCreateModal(false);
+        } else {
+          console.error("Couldn't find Note")
+        }
+      } catch (error) {
+        console.error("Error editing note:", error);
+      }
+    }
+  };
+
 
   return (
     <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
       <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Your Notes</Text>
 
       {/* Input Fields */}
-      <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
-        <TextInput
-          style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
-          placeholder="Note Title"
-          placeholderTextColor={isDarkTheme ? "#AAA" : "#666"}
-          value={notesName}
-          onChangeText={setNotesName}
-        />
-        <TextInput
-          style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
-          placeholder="Enter your note..."
-          placeholderTextColor={isDarkTheme ? "#AAA" : "#666"}
-          value={notesContent}
-          onChangeText={setNotesContent}
-          multiline
-        />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddNotes}>
+
+      <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
+        <Text style={[styles.addNoteText,isDarkTheme ? styles.darkInput : styles.lightInput}>Add Note</Text>
+        <TouchableOpacity style={styles.addButton} onPress={() => { openCreateModal(true) }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
 
       {/* List of Notes */}
       <FlatList
+        style={styles.listContainer}
         data={notes}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
@@ -124,6 +142,18 @@ export default function NotesPage() {
                 <Icon name="delete" size={24} color="red" />
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity onPress={() => {
+              setNotesName(item.name);
+              setNotesContent(item.content); 
+              openEditModal(true);
+            }}>
+              <Icon name="edit" size={24} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => removeNote(item._id)}>
+              <Icon name="delete" size={24} color="red" />
+            </TouchableOpacity>
+
           </View>
         )}
       />
@@ -133,14 +163,77 @@ export default function NotesPage() {
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal for Creating Group */}
+      <Modal visible={createModal} animationType="slide" transparent={true}>
+          <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Create a Note</Text>
+                  <TextInput
+                      style={styles.modalInput}
+                      placeholder="Note Name"
+                      value={notesName}
+                      onChangeText={setNotesName}
+                  />
+                  <TextInput
+                      style={styles.modalInput}
+                      placeholder="Write in your notes here...."
+                      value={notesContent}
+                      onChangeText={setNotesContent}
+                  />
+                  <TouchableOpacity style={styles.modalButton} onPress={handleAddNote}>
+                      <Text style={styles.buttonText}>Create Note</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => { 
+                    openCreateModal(false); 
+                    setNotesContent(''); 
+                    setNotesName('');
+                  }}>
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+              </View>
+          </View>
+      </Modal>
+
+      <Modal visible={editModal} animationType="slide" transparent={true}>
+          <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Edit a Note</Text>
+                  <TextInput
+                      style={styles.modalInput}
+                      value={notesName}
+                      onChangeText={setNotesName}
+                  />
+                  <TextInput
+                      style={styles.modalInput}
+                      value={notesContent}
+                      onChangeText={setNotesContent}
+                  />
+                  <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
+                      <Text style={styles.buttonText}>Edit Note</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => { 
+                    openEditModal(false); 
+                    setNotesContent(''); 
+                    setNotesName('');
+                  }}>
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+              </View>
+          </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    width: "100%",
+    alignSelf: "center", 
+    justifyContent: "center", 
+    alignItems: "center", 
+    backgroundColor: "#CFB991",
     flex: 1,
-    padding: 16,
   },
   title: {
     fontSize: 24,
@@ -160,13 +253,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 10,
-  },
-  addButton: {
-    backgroundColor: '#1D3D47',
-    padding: 10,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   notesItem: {
     flexDirection: 'row',
@@ -206,6 +292,100 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+
+  addNoteContainer: {
+    flexDirection: "row", 
+    alignItems: "center",
+    width: '60%',
+    justifyContent: "center",
+    backgroundColor: '#CFB991',
+    borderWidth: 6,
+    borderColor: "black",
+  },
+  addNoteText: {
+    color: "white", 
+    fontWeight: "bold", 
+    fontSize: 18,
+    marginRight: 8,
+    marginTop: '1%',
+    marginBottom: '1%',
+  },
+  addButton: {
+    backgroundColor: '#1D3D47',
+    padding: 10,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    marginBottom: '1%',
+    marginTop: '1%',
+  },
+  listContainer: {
+    borderBottomWidth: 6, 
+    borderBottomColor: "black",
+    padding: 5,
+    width: '60%',
+    borderRightWidth: 6, 
+    borderRightColor: "black",
+    borderLeftWidth: 6, 
+    borderLeftColor: "black",
+    padding: 5,
+  },
+  modalButton: {
+    width: '100%',
+    padding: 15,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20, // Space above the button
+},
+buttonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold'
+},
+modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+},
+modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 5,
+    justifyContent: 'space-between', // Ensure spacing between the buttons
+    height: 'auto', // Allow height to adjust based on content
+    paddingBottom: 20, // Add padding at the bottom to give space for the buttons
+},
+modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10 },
+modalInput: {
+    width: '100%',
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 10,
+},
+cancelButton: {
+    padding: 10,
+    backgroundColor: 'red',
+    borderRadius: 5,
+    marginTop: 20, // Space between Create Group and Cancel button
+    alignItems: 'center',
+    width: '80%', // Ensure buttons have the same width
+},
+cancelButtonText: {
+    color: '#fff',
+    fontWeight: 'bold'
+},
+});
+
 
   /* Light Mode */
   lightBackground: {

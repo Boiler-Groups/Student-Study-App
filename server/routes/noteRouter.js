@@ -6,14 +6,15 @@ import {
     getNotes,
     createNote,
     deleteNote,
+    editNote,
 } from '../controllers/noteController.js';
 
 const router = express.Router();
 
-router.get('/:id', getNotes);
+router.get('/', getNotes);
 router.post('/', createNote);
 router.delete('/:id', deleteNote);
-//router.put('/:id', editNote);
+router.put('/:id', editNote);
 export default router;
 /*
 userMiddleware, async (req, res) => {
