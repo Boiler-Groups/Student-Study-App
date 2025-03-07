@@ -55,7 +55,7 @@ export default function Home() {
             </TouchableOpacity>
 
             {/* Title for the page */}
-            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>{user?.email}'s Classes</Text>
+            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Classes</Text>
 
             {/* Display a loading indicator or the FlatList */}
             {loading ? (
