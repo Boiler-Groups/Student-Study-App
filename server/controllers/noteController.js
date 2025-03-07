@@ -5,7 +5,8 @@ import jwt from "jsonwebtoken";
 // Find and return all study groups that the given user is a member of
 export const getNotes = async (req, res) => {
   try {
-    
+    const notes = await Note.find();
+    res.status(200).json(notes);
   } catch (e) {
     res.status(500).json({ message: "Server error", error: e.message });
   }

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 import { AuthContext } from './AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@env';
 
 export default function Home() {
     const router = useRouter();
@@ -13,12 +14,24 @@ export default function Home() {
 
     // Simulated API call to fetch groups
     useEffect(() => {
-        setGroups([
-            { id: '1', name: 'CS 307      >' },
-            { id: '2', name: 'CS 252      >' },
-            { id: '3', name: 'MA 265      >' },
-        ]);
         setLoading(false); // Set loading to false immediately
+        const fetchClasses = async () => {
+            try {
+                const response = await fetch(`${API_URL}/classes`);
+                if (!response.ok) {
+                    console.log("Fetch classes failed!")
+                    throw new Error('Failed to fetch classes');
+
+                }
+                const data = await response.json();
+                setGroups(data);
+                console.log("Data info: ", data[0]);
+            } catch (error) {
+                console.error('Error fetching classes:', error);
+            } 
+        };
+    
+        fetchClasses();
     }, []);
 
     if (authLoading) {
@@ -48,14 +61,15 @@ export default function Home() {
             ) : (
                 <FlatList
                     data={groups}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item._id} // MongoDB uses _id
                     contentContainerStyle={styles.listContainer}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.groupItem}
-                            onPress={() => router.push(`/group/${item.id}`)}
+                            onPress={() => router.push(`/group/${item._id}`)}
                         >
                             <Text style={styles.groupText}>{item.name}</Text>
+                            <Text style={styles.creditsText}>Credits: {item.credits}</Text>
                         </TouchableOpacity>
                     )}
                 />
@@ -87,9 +101,10 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginVertical: 5,
         alignItems: 'center',
-        borderWidth: 2,  // Add border to each group item
+        borderWidth: 2,
     },
-    groupText: { fontSize: 18 },
+    groupText: { fontSize: 18, fontWeight: 'bold' },
+    creditsText: { fontSize: 16, color: '#555', marginTop: 5 }, // New style for credits
     button: {
         backgroundColor: '#007AFF',
         padding: 12,
@@ -127,7 +142,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     listContainer: {
-        paddingLeft: 20,  // Move the list 20 units to the right (adjust the number as needed)
-        marginBottom: 80,  // Ensure space for the bottom buttons
+        paddingLeft: 20,
+        marginBottom: 80,
     },
 });

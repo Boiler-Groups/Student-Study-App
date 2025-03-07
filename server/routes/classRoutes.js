@@ -7,7 +7,7 @@ import {
 
 const router = express.Router();
 
-router.get('/:id', getClasses);
+router.get('/', getClasses);
 router.post('/', createClass);
 router.delete('/:id', deleteClass);
 //router.put('/:id',editClass);   <- add this if necesary, lets avoid it for now

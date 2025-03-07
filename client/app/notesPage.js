@@ -108,8 +108,10 @@ export default function NotesPage() {
           <View style={styles.notesItem}>
             <View>
               <Text style={styles.notesText}>{item.name}</Text>
-              <Text style={styles.notesContent}>{item.content}</Text>
             </View>
+            <TouchableOpacity onPress={() => removeNotes(item._id)}>
+              <Icon name="edit" size={24} color="black" />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => removeNotes(item._id)}>
               <Icon name="delete" size={24} color="red" />
             </TouchableOpacity>
