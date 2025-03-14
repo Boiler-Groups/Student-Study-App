@@ -2,6 +2,40 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import { json } from "express";
 import jwt from "jsonwebtoken";
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/profile-images';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniquePrefix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniquePrefix}${ext}`);
+  }
+});
+
+export const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 1024 * 1024 * 5 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only .jpeg, .jpg and .png format allowed!'));
+    }
+  }
+});
 
 export const register = async (req, res) => {
   try {
@@ -142,5 +176,41 @@ export const searchUser = async (req, res) => {
   } catch (error) {
     console.error("Error searching users:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateProfileImage = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an image file' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user already has a profile image and delete it
+    if (user.profileImage) {
+      const oldImagePath = path.join('uploads/profile-images', path.basename(user.profileImage));
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
+
+    // Update user's profile image path
+    const imageUrl = `${process.env.API_URL}/uploads/profile-images/${req.file.filename}`;
+    user.profileImage = imageUrl;
+    await user.save();
+
+    res.status(200).json({ 
+      message: 'Profile image updated successfully',
+      profileImageUrl: imageUrl
+    });
+  } catch (error) {
+    console.error('Error updating profile image:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
