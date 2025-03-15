@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { API_URL } from '@env';
 import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Profile() {
     const router = useRouter();
@@ -15,6 +16,7 @@ export default function Profile() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [message, setMessage] = useState({ text: '', isError: false });
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
     const [usernameModalVisible, setUsernameModalVisible] = useState(false);
@@ -31,7 +33,6 @@ export default function Profile() {
                 return;
             }
 
-            // server fix console.log(`test: ${process.env.TEST}`);
             const response = await fetch(`${API_URL}/users/me`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -88,16 +89,13 @@ export default function Profile() {
         setUpdating(true);
         setMessage({ text: '', isError: false });
 
-        if (!newUsername || !newUsername.trim()) {
+        if (updateData.username && (!updateData.username.trim())) {
             setMessage({ text: 'Display name cannot be empty', isError: true });
             return;
         }
 
         try {
             const token = await AsyncStorage.getItem('token');
-
-            console.log("Token available:", !!token);
-            console.log("User ID:", user?._id);
 
             if (!token) {
                 throw new Error('Authentication token missing');
@@ -117,7 +115,6 @@ export default function Profile() {
             });
 
             const responseData = await response.json();
-            console.log("Update response:", responseData);
 
             if (response.ok) {
                 setMessage({
@@ -144,6 +141,80 @@ export default function Profile() {
         }
     };
 
+    const handleImageUpload = async () => {
+        try {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            
+            if (permissionResult.granted === false) {
+                setMessage({ text: 'Permission to access images required', isError: true });
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.7,
+            });
+
+            if (!result.canceled) {
+                await uploadProfileImage(result.assets[0]);
+            }
+        } catch (error) {
+            console.error("Error picking image:", error);
+            setMessage({ text: 'Failed to pick image', isError: true });
+        }
+    };
+
+    const uploadProfileImage = async (imageAsset) => {
+        setUploadingImage(true);
+        setMessage({ text: '', isError: false });
+        
+        try {
+          const token = await AsyncStorage.getItem('token');
+          if (!token || !user?._id) {
+            throw new Error('Authentication failed');
+          }
+      
+          let mimeType = 'image/png';
+          let fileName = 'profile-image.png';
+          
+          const response = await fetch(imageAsset.uri);
+          const blob = await response.blob();
+          
+          const file = new File([blob], fileName, { type: mimeType });
+          
+          const formData = new FormData();
+          formData.append('profileImage', file);
+          
+          console.log('Uploading image with type:', mimeType);
+          
+          const responseUpload = await fetch(`${API_URL}/users/${user._id}/profile-image`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+            },
+            body: formData
+          });
+          
+          const responseData = await responseUpload.json();
+          
+          if (responseUpload.ok) {
+            setMessage({ text: 'Profile image updated successfully', isError: false });
+            setUser(prev => ({ ...prev, profileImage: responseData.profileImageUrl }));
+          } else {
+            setMessage({ text: responseData.message || 'Failed to upload image', isError: true });
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          setMessage({ text: 'Failed to upload image: ' + error.message, isError: true });
+        } finally {
+          setUploadingImage(false);
+        }
+      };
+      
+
     if (loading) {
         return (
             <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
@@ -164,6 +235,30 @@ export default function Profile() {
                     {message.text}
                 </Text>
             ) : null}
+
+            <View style={styles.profileImageContainer}>
+                {user?.profileImage ? (
+                    <Image 
+                        source={{ uri: user.profileImage }} 
+                        style={styles.profileImage} 
+                    />
+                ) : (
+                    <View style={[styles.profileImagePlaceholder, isDarkTheme ? styles.darkPlaceholder : styles.lightPlaceholder]}>
+                        <Text style={[styles.profileImagePlaceholderText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                            {user?.username?.charAt(0)?.toUpperCase() || "?"}
+                        </Text>
+                    </View>
+                )}
+                <TouchableOpacity 
+                    style={styles.uploadButton}
+                    onPress={handleImageUpload}
+                    disabled={uploadingImage}
+                >
+                    <Text style={styles.buttonText}>
+                        {uploadingImage ? 'Uploading...' : 'Change Profile Picture'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
 
             <View style={styles.infoContainer}>
                 <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Email:</Text>
@@ -310,6 +405,42 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         marginBottom: 15
+    },
+    profileImageContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    profileImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        marginBottom: 10,
+    },
+    profileImagePlaceholder: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#E1E1E1',
+    },
+    darkPlaceholder: {
+        backgroundColor: '#444',
+    },
+    lightPlaceholder: {
+        backgroundColor: '#E1E1E1',
+    },
+    profileImagePlaceholderText: {
+        fontSize: 48,
+        fontWeight: 'bold',
+    },
+    uploadButton: {
+        backgroundColor: '#007AFF',
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginVertical: 5,
     },
     infoContainer: {
         width: '25%',

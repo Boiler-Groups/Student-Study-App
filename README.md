@@ -3,29 +3,30 @@ Study app for CS 307 using MongoDB, Express.js, React Native, and Node.js
 
 ## Launch Instructions
 
-Clone the repository
+1. Clone the repository
 ```
 git clone https://github.com/GavinMcCormack912/Student-Study-App.git
 ```
 
-Get server dependencies
+2. Get server dependencies
 ```
 cd server
 npm install
 ```
 
-Get client dependencies
+3. Get client dependencies
 ```
 cd client
 npm install
 ```
 
-Create a .env file in the server folder with the following fields filled in
+4. Create a .env file in `server` with the following fields filled in
 ```
 MONGO_URI=
 PORT=
 NODE_ENV=
 JWT_SECRET=
+API_URL=
 ```
 - MONGO_URI: This is the connection string to your MongoDB database. If you're using MongoDB Atlas or any cloud-hosted MongoDB service, you'll get a connection string from their dashboard. Replace <username> and <password> with your actual MongoDB credentials, and mydatabase with the name of your database.
 
@@ -35,7 +36,9 @@ JWT_SECRET=
 
 - JWT_SECRET: A secret key used for signing JSON Web Tokens (JWT) for authentication. This key should be kept secure and private. You can generate any random string to use as a secret key. Ensure this value is not exposed in public repositories.
 
-Create a .env file in the client folder with the following fields filled in
+- API_URL: Base URL where the API server is accessed.
+
+5. Create a .env file in `client` with the following fields filled in
 ```
 API_URL=
 ```
@@ -44,7 +47,7 @@ For example, if your backend is running on http://localhost:8080 (Port 8080 is d
 and your frontend is running on http://localhost:8081 (Port 8081 is defualt for metro builder), you would set the API_URL to your backend's URL.
 Ex. API_URL=http://localhost:8080. During production it might look something like https://api.yoursite.com in production.
 
-Start the server and client on separate terminals and open the application
+6. Start the server and client on separate terminals and open the application
 ```
 cd server
 npm start
