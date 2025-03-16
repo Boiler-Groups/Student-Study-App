@@ -11,7 +11,8 @@ import {
     getGroupsAll,
     addMemberToGroup,
     deleteMessage,
-    getStudyGroupName
+    getStudyGroupName,
+    likeMessage
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -29,5 +30,6 @@ router.get('/name/:groupId', getStudyGroupName)
 router.patch('/remove/:groupId', userMiddleware, removeMember)
 router.patch('/addMember/:id', addMemberToGroup);
 router.patch('/delete/:groupId', userMiddleware, deleteMessage);
+router.post('/react/:groupId', userMiddleware, likeMessage);
 
 export default router;

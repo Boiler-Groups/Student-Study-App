@@ -229,6 +229,7 @@ export const sendMessage = async (req, res) => {
             _id: new mongoose.Types.ObjectId(),
             sender: username,
             text,
+            reactions: [],
             timestamp: new Date(),
         };
 
@@ -240,6 +241,40 @@ export const sendMessage = async (req, res) => {
         res.status(500).json({ message: "Server error", error: e.message });
     }
 };
+
+export const likeMessage = async (req, res) => {
+    const { groupId } = req.params;
+    const { messageId } = req.body;
+
+    const userId = req.user._id;
+    const userEmail = req.user.email; // Assuming authentication middleware sets req.user
+    const username = req.user.username;
+
+    if (!messageId) {
+        return res.status(400).json({ message: "MessageId is required" });
+    }
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
+
+
+        // Check if the message exists
+        const messageIndex = group.messages.findIndex(msg => msg._id.toString() === messageId);
+        if (messageIndex === -1) {
+            return res.status(404).json({ message: "Message not found in the group" });
+        }
+
+        group.messages[messageIndex].reactions.push(userId);
+
+        res.status(200).json({ message: "Message liked", updatedGroup: group });
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
+}
 
 export const removeMember = async (req, res) => {
     const { groupId } = req.params;
@@ -280,7 +315,7 @@ export const removeMember = async (req, res) => {
 
 export const deleteMessage = async (req, res) => {
     const { groupId } = req.params;
-    const { messageId } = req.body; // Email of the user to remove
+    const { messageId } = req.body;
 
     if (!messageId) {
         return res.status(400).json({ message: "MessageId is required" });
