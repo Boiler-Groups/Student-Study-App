@@ -45,6 +45,8 @@ export const sendMessage = (token, groupId, message) =>
       return null;
     });
 
+export const likeMessage = (token, groupId, message) => StudyGroupClient.post(`/react/${groupId}`, {messageId: message}, authHeader(token));
+
 export const getGroupMembers = (token, groupId) =>
   StudyGroupClient.get(`/members/${groupId}`, authHeader(token))
     .then(res => res.data)

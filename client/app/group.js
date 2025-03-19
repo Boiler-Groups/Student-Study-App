@@ -132,10 +132,13 @@ const GroupChatPage = ({ }) => {
                                 styles.messageContainer,
                                 item.sender === username ? styles.myMessage : styles.otherMessage
                             ]}
-                            onPress={() => handleSelectMessage(item._id)} // Click to select message
+                            onPress={() => handleSelectMessage(item._id)}
                         >
                             <Text style={styles.sender}>{item.sender}</Text>
                             <Text style={[styles.messageText, { color: item.sender === username ? '#FFFFFF' : '#000000' }]}>{item.text}</Text>
+                            {item.reactions && item.reactions.length > 0 && (
+                                <Text style={styles.reactionIcon}>👍</Text>
+                            )}
                             {item._id === selectedMessageId && (
                                 <TouchableOpacity
                                     style={styles.deleteButton}
@@ -297,6 +300,10 @@ const styles = StyleSheet.create({
     },
     darkText: {
         color: "#F1F1F1",
+    },
+    reactionIcon: {
+        marginTop: 5,
+        alignSelf: 'flex-start',
     },
 });
 
