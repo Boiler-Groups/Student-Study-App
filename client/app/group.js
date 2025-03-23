@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
-import { getGroupMessages, sendMessage, deleteMessage, getStudyGroupName } from './api/studygroup.js'; // Import API functions
+import { getGroupMessages, sendMessage, deleteMessage, getStudyGroupName, likeMessage } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -106,6 +106,39 @@ const GroupChatPage = ({ }) => {
         }
     };
 
+    const handleReactToMessage = async (messageId, reaction) => {
+        const token = await AsyncStorage.getItem('token');
+        if (reaction === 'like') {
+            const response = likeMessage(token, groupId, messageId);
+        } else {
+            const response = likeMessage(token, groupId, messageId);
+        }
+        loadMessages();
+
+        setSelectedMessageId(null);
+    }
+
+    const handleToggleReaction = async (messageId) => {
+        const token = await AsyncStorage.getItem('token');
+
+        // setMessages(prevMessages =>
+        //     prevMessages.map(msg => {
+        //         if (msg._id === messageId) {
+        //             const hasReacted = msg.reactions?.includes(username);
+        //             return {
+        //                 ...msg,
+        //                 reactions: hasReacted
+        //                     ? msg.reactions.filter(user => user !== username) // Remove reaction
+        //                     : [...(msg.reactions || []), username] // Add reaction
+        //             };
+        //         }
+        //         return msg;
+        //     })
+        // );
+
+        //await toggleMessageReaction(token, groupId, messageId);
+    };
+
     // Navigate to the Members List page
     const handleNavigateToMembers = () => {
         navigation.navigate('membersList', { groupId });
@@ -122,35 +155,44 @@ const GroupChatPage = ({ }) => {
                 data={messages}
                 keyExtractor={item => item._id}
                 renderItem={({ item }) => (
-                    item.sender === '_status_' ? (
-                        <View style={styles.statusMessageContainer}>
-                            <Text style={styles.statusMessage}>{item.text}</Text>
-                        </View>
-                    ) : (
-                        <TouchableOpacity
-                            style={[
-                                styles.messageContainer,
-                                item.sender === username ? styles.myMessage : styles.otherMessage
-                            ]}
-                            onPress={() => handleSelectMessage(item._id)}
-                        >
-                            <Text style={styles.sender}>{item.sender}</Text>
-                            <Text style={[styles.messageText, { color: item.sender === username ? '#FFFFFF' : '#000000' }]}>{item.text}</Text>
-                            {item.reactions && item.reactions.length > 0 && (
-                                <Text style={styles.reactionIcon}>👍</Text>
-                            )}
-                            {item._id === selectedMessageId && (
-                                <TouchableOpacity
-                                    style={styles.deleteButton}
-                                    onPress={() => handleDeleteMessage(item._id)}
-                                >
-                                    <Text style={styles.deleteText}>Delete</Text>
+                    <TouchableOpacity
+                        style={[
+                            styles.messageContainer,
+                            item.sender === username ? styles.myMessage : styles.otherMessage
+                        ]}
+                        onPress={() => handleSelectMessage(item._id)}
+                    >
+                        <Text style={styles.sender}>{item.sender}</Text>
+                        <Text style={[styles.messageText, { color: item.sender === username ? '#FFFFFF' : '#000000' }]}>
+                            {item.text}
+                        </Text>
+
+                        {/* Display reactions */}
+                        {item.reactions && item.reactions.length > 0 && (
+                            <Text style={styles.reactionText}>
+                                {item.reactions.join(' ')}
+                            </Text>
+                        )}
+
+                        {/* Show reaction options if the message is selected */}
+                        {item._id === selectedMessageId && (
+                            <View style={styles.reactionContainer}>
+                                <TouchableOpacity onPress={() => handleToggleReaction(item._id)} style={styles.reactionButton}>
+                                    <Text style={styles.reactionIcon}>{item.reactions?.includes(username) ? '👍' : '👍🏻'}</Text>
                                 </TouchableOpacity>
-                            )}
-                        </TouchableOpacity>
-                    )
+                                <TouchableOpacity onPress={() => handleReactToMessage(item._id, 'dislike')}>
+                                    <Text style={styles.reactionButton}>👎</Text>
+                                </TouchableOpacity>
+                                {item.sender === username && (
+                                    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteMessage(item._id)}>
+                                        <Text style={styles.deleteText}>Delete</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        )}
+                    </TouchableOpacity>
                 )}
-                extraData={selectedMessageId} 
+                extraData={selectedMessageId}
             />
             <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
                 <TextInput
@@ -158,18 +200,15 @@ const GroupChatPage = ({ }) => {
                     value={text}
                     onChangeText={setText}
                     placeholder="Type a message..."
-                    onSubmitEditing={handleSendMessage} // Send message on Enter key press
-                    blurOnSubmit={false} // Prevent keyboard from closing
-                    returnKeyType="send" // Improve UX on mobile keyboards
+                    onSubmitEditing={handleSendMessage}
+                    blurOnSubmit={false}
+                    returnKeyType="send"
                 />
                 <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
                     <Text style={styles.sendText}>Send</Text>
                 </TouchableOpacity>
             </View>
-
-
         </KeyboardAvoidingView>
-
     );
 };
 
@@ -302,6 +341,10 @@ const styles = StyleSheet.create({
         color: "#F1F1F1",
     },
     reactionIcon: {
+        marginTop: 5,
+        alignSelf: 'flex-start',
+    },
+    reactionButton: {
         marginTop: 5,
         alignSelf: 'flex-start',
     },

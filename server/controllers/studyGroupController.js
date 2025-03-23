@@ -268,11 +268,51 @@ export const likeMessage = async (req, res) => {
             return res.status(404).json({ message: "Message not found in the group" });
         }
 
-        group.messages[messageIndex].reactions.push(userId);
+        if (!group.messages[messageIndex].reactions.includes(userId.toString())) {
+            group.messages[messageIndex].reactions.push(userId.toString());
+            group.markModified("messages");
+
+            await group.save();
+        }
+        
 
         res.status(200).json({ message: "Message liked", updatedGroup: group });
     } catch (e) {
         res.status(500).json({ message: "Server error", error: e.message });
+    }
+}
+
+export const toggleMessageReaction = async (req, res) => {
+    try {
+        const { groupId, messageId } = req.params;
+        const userId = req.user._id;
+
+        const group = await StudyGroup.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: 'Study group not found' });
+        }
+
+        const message = group.messages.id(messageId);
+        if (!message) {
+            return res.status(404).json({ message: 'Message not found' });
+        }
+
+        // Check if the user has already reacted
+        const reactionIndex = message.reactions.indexOf(userId);
+        if (reactionIndex !== -1) {
+            // User already reacted, remove reaction
+            message.reactions.splice(reactionIndex, 1);
+        } else {
+            // User has not reacted, add reaction
+            message.reactions.push(userId);
+        }
+
+        await group.save();
+
+        res.status(200).json({ message: 'Reaction updated', updatedMessage: message });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
     }
 }
 
