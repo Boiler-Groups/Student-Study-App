@@ -30,6 +30,7 @@ export default function NotesPage() {
   const [cards, setCards] = useState([]);
   const [cardNum, setCardNum] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const { dark: isDarkTheme } = useTheme();
   /* AI gemini portion */
   
   const apiKey = process.env.GEMINI_API_KEY;
@@ -207,7 +208,7 @@ export default function NotesPage() {
 
       <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
         <Text style={[styles.addNoteText, isDarkTheme ? styles.darkInput : styles.lightInput]}>Add Note</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => { openCreateModal(true) }}>
+        <TouchableOpacity testID="add-btn" style={styles.addButton} onPress={() => { openCreateModal(true) }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
@@ -352,7 +353,7 @@ export default function NotesPage() {
                     </ScrollView>
                   )}
                   <TouchableOpacity style={styles.modalButton} onPress={handleFlashCards}>
-                      <Text style={styles.buttonText}>Make Flash Cards</Text>
+                      <Text style={styles.buttonText}>Download Flashcards File</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.cancelButton} onPress={() => { 
                     openFlashModal(false); 
