@@ -11,6 +11,10 @@ const StudyGroupSchema = new mongoose.Schema({
   messages: {
     type: Array,
   },
+  newMessage: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 export default mongoose.model('StudyGroup', StudyGroupSchema);

@@ -13,8 +13,12 @@ const __dirname = path.dirname(__filename);
 
 const app = express()
 
+const allowedOrigins = ['http://localhost:8081', 'http://localhost:8082'];
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:8081');
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Credentials', 'true');
