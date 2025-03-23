@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
+import { useTheme } from '@react-navigation/native';
 
 export default function NotesPage() {
   const router = useRouter();
@@ -113,7 +114,7 @@ export default function NotesPage() {
       {/* Input Fields */}
 
       <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
-        <Text style={[styles.addNoteText,isDarkTheme ? styles.darkInput : styles.lightInput}>Add Note</Text>
+        <Text style={[styles.addNoteText, isDarkTheme ? styles.darkInput : styles.lightInput]}>Add Note</Text>
         <TouchableOpacity style={styles.addButton} onPress={() => { openCreateModal(true) }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
@@ -130,17 +131,6 @@ export default function NotesPage() {
               <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
                 {item.name}
               </Text>
-              <Text style={[styles.notesContent, isDarkTheme ? styles.darkText : styles.lightText]}>
-                {item.content}
-              </Text>
-            </View>
-            <View style={styles.iconContainer}>
-              <TouchableOpacity onPress={() => removeNotes(item._id)}>
-                <Icon name="edit" size={24} color={isDarkTheme ? "#AAA" : "black"} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => removeNotes(item._id)}>
-                <Icon name="delete" size={24} color="red" />
-              </TouchableOpacity>
             </View>
 
             <TouchableOpacity onPress={() => {
@@ -339,55 +329,52 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20, // Space above the button
-},
-buttonText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: 'bold'
-},
-modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-},
-modalContent: {
-    width: '80%',
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    elevation: 5,
-    justifyContent: 'space-between', // Ensure spacing between the buttons
-    height: 'auto', // Allow height to adjust based on content
-    paddingBottom: 20, // Add padding at the bottom to give space for the buttons
-},
-modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10 },
-modalInput: {
-    width: '100%',
-    padding: 10,
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
-},
-cancelButton: {
-    padding: 10,
-    backgroundColor: 'red',
-    borderRadius: 5,
-    marginTop: 20, // Space between Create Group and Cancel button
-    alignItems: 'center',
-    width: '80%', // Ensure buttons have the same width
-},
-cancelButtonText: {
-    color: '#fff',
-    fontWeight: 'bold'
-},
-});
-
-
+  },
+  buttonText: {
+      fontSize: 18,
+      color: '#fff',
+      fontWeight: 'bold'
+  },
+  modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+      width: '80%',
+      backgroundColor: '#fff',
+      padding: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+      elevation: 5,
+      justifyContent: 'space-between', // Ensure spacing between the buttons
+      height: 'auto', // Allow height to adjust based on content
+      paddingBottom: 20, // Add padding at the bottom to give space for the buttons
+  },
+  modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 10 },
+  modalInput: {
+      width: '100%',
+      padding: 10,
+      borderWidth: 1,
+      borderRadius: 5,
+      marginBottom: 10,
+  },
+  cancelButton: {
+      padding: 10,
+      backgroundColor: 'red',
+      borderRadius: 5,
+      marginTop: 20, // Space between Create Group and Cancel button
+      alignItems: 'center',
+      width: '80%', // Ensure buttons have the same width
+  },
+  cancelButtonText: {
+      color: '#fff',
+      fontWeight: 'bold'
+  },
   /* Light Mode */
   lightBackground: {
     backgroundColor: "#FFFFFF",
