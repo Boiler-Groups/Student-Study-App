@@ -11,7 +11,6 @@ import { useTheme } from '@react-navigation/native';
 
 export default function NotesPage() {
   const router = useRouter();
-  const { isDarkTheme } = useTheme(); // Get dark mode state
   const [notesName, setNotesName] = useState('');
   const [notesContent, setNotesContent] = useState('');
   const [notes, setNotes] = useState([]);
@@ -108,8 +107,8 @@ export default function NotesPage() {
 
 
   return (
-    <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
-      <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Your Notes</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Your Notes</Text>
 
       {/* Input Fields */}
 
@@ -126,13 +125,13 @@ export default function NotesPage() {
         data={notes}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <View style={[styles.notesItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
+          <View style={styles.notesItem}>
             <View>
               <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
                 {item.name}
               </Text>
-            </View>
 
+            </View>
             <TouchableOpacity onPress={() => {
               setNotesName(item.name);
               setNotesContent(item.content); 
@@ -144,13 +143,12 @@ export default function NotesPage() {
             <TouchableOpacity onPress={() => removeNote(item._id)}>
               <Icon name="delete" size={24} color="red" />
             </TouchableOpacity>
-
           </View>
         )}
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.button} onPress={() => router.dismissTo('/home')}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
@@ -235,13 +233,12 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'column',
     marginBottom: 12,
-    borderRadius: 8,
-    padding: 10,
   },
   input: {
     padding: 10,
     fontSize: 16,
     borderWidth: 1,
+    borderColor: "#ddd",
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -251,10 +248,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     borderBottomWidth: 1,
-  },
-  iconContainer: {
-    flexDirection: 'row',
-    gap: 10,
+    borderBottomColor: '#ddd',
   },
   notesText: {
     fontSize: 18,
@@ -262,6 +256,7 @@ const styles = StyleSheet.create({
   },
   notesContent: {
     fontSize: 14,
+    color: "#333",
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -283,7 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-
   addNoteContainer: {
     flexDirection: "row", 
     alignItems: "center",

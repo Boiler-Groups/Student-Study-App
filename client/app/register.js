@@ -59,7 +59,6 @@ export default function Register() {
             const data = await response.json();
             if (response.ok) {
                 await AsyncStorage.setItem('token', data.token);
-                await AsyncStorage.setItem('password', password);
                 router.push('/landing');
             } else {
                 setErrorMessage('Registration failed. User already exists.');
