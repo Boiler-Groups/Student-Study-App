@@ -3,12 +3,19 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Modal, TextInput, Dimensions,
   ScrollView, Platform
+  ActivityIndicator, Modal, TextInput, Dimensions,
+  ScrollView, Platform
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 import { useTheme } from '@react-navigation/native';
+import { GoogleGenerativeAI, HarmCategory,
+  HarmBlockThreshold } from "@google/generative-ai";
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+
 import { GoogleGenerativeAI, HarmCategory,
   HarmBlockThreshold } from "@google/generative-ai";
 import * as FileSystem from 'expo-file-system';
@@ -24,13 +31,13 @@ export default function NotesPage() {
   const [editModal, openEditModal] = useState(false);
   const [createModal, openCreateModal] = useState(false);
   const [flashModal, openFlashModal] = useState(false);
+  const [flashModal, openFlashModal] = useState(false);
   const [objId, setObjId] = useState("");
   const screenHeight = Dimensions.get('window').height;
   const [card, setCard] = useState('');
   const [cards, setCards] = useState([]);
   const [cardNum, setCardNum] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const { dark: isDarkTheme } = useTheme();
   /* AI gemini portion */
   
   const apiKey = process.env.GEMINI_API_KEY;
@@ -166,6 +173,7 @@ export default function NotesPage() {
       const text = await result.response.text();
   
       if (Platform.OS === 'web') {
+        // ✅ Web fallback: download file using Blob
         const blob = new Blob([text], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -176,6 +184,7 @@ export default function NotesPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
+        // ✅ Mobile (iOS/Android)
         const fileUri = FileSystem.documentDirectory + `flashcards_${Date.now()}.txt`;
         await FileSystem.writeAsStringAsync(fileUri, text, {
           encoding: FileSystem.EncodingType.UTF8,
@@ -188,6 +197,8 @@ export default function NotesPage() {
           alert("Sharing is not available on this device.");
         }
       }
+  
+      // ✅ Reset state & close modal
       openFlashModal(false);
       setNotesContent('');
       setNotesName('');
@@ -241,6 +252,7 @@ export default function NotesPage() {
             }}>
               <Icon name="style" size={24} color="blue" />
             </TouchableOpacity>
+
           </View>
         )}
       />
@@ -271,6 +283,10 @@ export default function NotesPage() {
                       numberOfLines={6}
                       textAlignVertical='top'
                       scrollEnabled={true}
+                      multiline={true}
+                      numberOfLines={6}
+                      textAlignVertical='top'
+                      scrollEnabled={true}
                   />
                   <TouchableOpacity style={styles.modalButton} onPress={handleAddNote}>
                       <Text style={styles.buttonText}>Create Note</Text>
@@ -286,6 +302,7 @@ export default function NotesPage() {
           </View>
       </Modal>
       {/* Modal for editing Notes */}
+      {/* Modal for editing Notes */}
       <Modal visible={editModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -299,6 +316,10 @@ export default function NotesPage() {
                       style={styles.modalInput}
                       value={notesContent}
                       onChangeText={setNotesContent}
+                      multiline={true}
+                      numberOfLines={6}
+                      textAlignVertical='top'
+                      scrollEnabled={true}
                       multiline={true}
                       numberOfLines={6}
                       textAlignVertical='top'
@@ -349,7 +370,7 @@ export default function NotesPage() {
                     </ScrollView>
                   )}
                   <TouchableOpacity style={styles.modalButton} onPress={handleFlashCards}>
-                      <Text style={styles.buttonText}>Download Flashcards File</Text>
+                      <Text style={styles.buttonText}>Make Flash Cards</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.cancelButton} onPress={() => { 
                     openFlashModal(false); 
@@ -381,6 +402,14 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderBottomWidth: 1,
   },  
+  },
+  cardItem: {
+    textAlign: "center",
+    fontSize: 16,
+    padding: 15,
+    borderColor: '#ddd',
+    borderBottomWidth: 1,
+  },  
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -396,6 +425,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#ddd",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  dropdownToggle: {
+    padding: 10,
+    backgroundColor: '#eee',
     borderRadius: 8,
     marginBottom: 10,
   },
