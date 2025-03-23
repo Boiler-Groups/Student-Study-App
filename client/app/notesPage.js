@@ -1,13 +1,19 @@
 import React, { useContext, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Modal, TextInput,
+  ActivityIndicator, Modal, TextInput, Dimensions,
+  ScrollView, Platform
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 import { useTheme } from '@react-navigation/native';
+import { GoogleGenerativeAI, HarmCategory,
+  HarmBlockThreshold } from "@google/generative-ai";
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+
 
 export default function NotesPage() {
   const router = useRouter();
@@ -18,7 +24,42 @@ export default function NotesPage() {
   const [token, setToken] = useState('');
   const [editModal, openEditModal] = useState(false);
   const [createModal, openCreateModal] = useState(false);
+  const [flashModal, openFlashModal] = useState(false);
   const [objId, setObjId] = useState("");
+  const screenHeight = Dimensions.get('window').height;
+  const [card, setCard] = useState('');
+  const [cards, setCards] = useState([]);
+  const [cardNum, setCardNum] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  /* AI gemini portion */
+  
+  const apiKey = process.env.GEMINI_API_KEY;
+  const genAI = new GoogleGenerativeAI(apiKey);
+  
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+  });
+  
+  const generationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 40,
+    maxOutputTokens: 8192,
+    responseMimeType: "text/plain",
+  };
+  
+  async function run() {
+    const chatSession = model.startChat({
+      generationConfig,
+      history: [
+      ],
+    });
+  
+    const result = await chatSession.sendMessage("INSERT_INPUT_HERE");
+    console.log(result.response.text());
+  }
+  
+  //run();
   /** 🔹 Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
     try {
@@ -106,7 +147,59 @@ export default function NotesPage() {
     }
   };
 
-
+  const handleFlashCards = async () => {
+    if (!notesContent || !cardNum) {
+      alert('Please enter notes and select number of flashcards');
+      return;
+    }
+  
+    try {
+      const prompt = `Generate ${cardNum} flashcards from the following notes. Format:
+  Flashcard 1:
+  Front: [question]
+  Back: [answer]
+  
+  Notes:
+  ${notesContent}`;
+  
+      const result = await model.generateContent(prompt);
+      const text = await result.response.text();
+  
+      if (Platform.OS === 'web') {
+        // ✅ Web fallback: download file using Blob
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `flashcards_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        // ✅ Mobile (iOS/Android)
+        const fileUri = FileSystem.documentDirectory + `flashcards_${Date.now()}.txt`;
+        await FileSystem.writeAsStringAsync(fileUri, text, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+  
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(fileUri);
+        } else {
+          alert("Sharing is not available on this device.");
+        }
+      }
+  
+      // ✅ Reset state & close modal
+      openFlashModal(false);
+      setNotesContent('');
+      setNotesName('');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate or share flashcards.');
+    }
+  };
   return (
     <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
       <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Your Notes</Text>
@@ -144,6 +237,14 @@ export default function NotesPage() {
             <TouchableOpacity onPress={() => removeNote(item._id)}>
               <Icon name="delete" size={24} color="red" />
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => {
+              setNotesName(item.name);
+              setNotesContent(item.content); 
+              setObjId(item._id);
+              openFlashModal(true);
+            }}>
+              <Icon name="style" size={24} color="blue" />
+            </TouchableOpacity>
 
           </View>
         )}
@@ -155,7 +256,7 @@ export default function NotesPage() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal for Creating Group */}
+      {/* Modal for Creating Note */}
       <Modal visible={createModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -167,10 +268,14 @@ export default function NotesPage() {
                       onChangeText={setNotesName}
                   />
                   <TextInput
-                      style={styles.modalInput}
+                      style={[styles.modalInput, { height: screenHeight * 0.3}]}
                       placeholder="Write in your notes here...."
                       value={notesContent}
                       onChangeText={setNotesContent}
+                      multiline={true}
+                      numberOfLines={6}
+                      textAlignVertical='top'
+                      scrollEnabled={true}
                   />
                   <TouchableOpacity style={styles.modalButton} onPress={handleAddNote}>
                       <Text style={styles.buttonText}>Create Note</Text>
@@ -185,7 +290,7 @@ export default function NotesPage() {
               </View>
           </View>
       </Modal>
-
+      {/* Modal for editing Notes */}
       <Modal visible={editModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -199,12 +304,60 @@ export default function NotesPage() {
                       style={styles.modalInput}
                       value={notesContent}
                       onChangeText={setNotesContent}
+                      multiline={true}
+                      numberOfLines={6}
+                      textAlignVertical='top'
+                      scrollEnabled={true}
                   />
                   <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
                       <Text style={styles.buttonText}>Edit Note</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.cancelButton} onPress={() => { 
                     openEditModal(false); 
+                    setNotesContent(''); 
+                    setNotesName('');
+                  }}>
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+              </View>
+          </View>
+      </Modal>
+      {/* Modal for Creating Flashcards */}
+      <Modal visible={flashModal} animationType="slide" transparent={true}>
+          <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Select Number of Flashcards</Text>
+                  {/* Toggle Button for Dropdown */}
+                  <TouchableOpacity
+                    style={styles.dropdownToggle}
+                    onPress={() => setShowDropdown(!showDropdown)}
+                  >
+                    <Text style={styles.cardItem}>
+                      {cardNum ? `Cards: ${cardNum}` : 'Select number'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Dropdown List */}
+                  {showDropdown && (
+                    <ScrollView style={[styles.dropdownList, { maxHeight: screenHeight * 0.3 }]}>
+                      {Array.from({ length: 50 }, (_, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          onPress={() => {
+                            setCardNum(i + 1);
+                            setShowDropdown(false); // close dropdown after selection
+                          }}
+                        >
+                          <Text style={styles.cardItem}>Cards: {i + 1}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+                  <TouchableOpacity style={styles.modalButton} onPress={handleFlashCards}>
+                      <Text style={styles.buttonText}>Make Flash Cards</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => { 
+                    openFlashModal(false); 
                     setNotesContent(''); 
                     setNotesName('');
                   }}>
@@ -226,6 +379,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#CFB991",
     flex: 1,
   },
+  cardItem: {
+    textAlign: "center",
+    fontSize: 16,
+    padding: 15,
+    borderColor: '#ddd',
+    borderBottomWidth: 1,
+  },  
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -243,6 +403,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderRadius: 8,
+    marginBottom: 10,
+  },
+  dropdownToggle: {
+    padding: 10,
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: '#fff',
     marginBottom: 10,
   },
   notesItem: {
@@ -328,7 +501,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20, // Space above the button
+    marginTop: 20, 
   },
   buttonText: {
       fontSize: 18,
@@ -348,9 +521,9 @@ const styles = StyleSheet.create({
       borderRadius: 10,
       alignItems: 'center',
       elevation: 5,
-      justifyContent: 'space-between', // Ensure spacing between the buttons
-      height: 'auto', // Allow height to adjust based on content
-      paddingBottom: 20, // Add padding at the bottom to give space for the buttons
+      justifyContent: 'space-between', 
+      height: 'auto', 
+      paddingBottom: 20, 
   },
   modalTitle: {
       fontSize: 20,
