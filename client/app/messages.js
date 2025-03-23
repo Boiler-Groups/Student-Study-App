@@ -6,11 +6,20 @@ import {
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
 import {
-    getStudyGroups, createStudyGroup, deleteStudyGroup, editStudyGroupName, getStudyGroupsAll, addStudyGroupMembers
+    resetNewMessageForGroup,
+    getStudyGroups,
+    createStudyGroup,
+    deleteStudyGroup,
+    editStudyGroupName,
+    getStudyGroupsAll,
+    addStudyGroupMembers,
+    setNewMessageFlagForGroup
 } from './api/studygroup'; // Ensure correct path
 import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from './api/user';
+import { MaterialIcons } from '@expo/vector-icons'; // Import icon library
+
 
 
 export default function Messages() {
@@ -28,23 +37,27 @@ export default function Messages() {
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [groupToEdit, setGroupToEdit] = useState(null);
-    const currentUserEmail = "foobar@gmail.com"; // Replace with dynamic user email
-
+    const [newMessage, setNewMessage] = useState(false);
     const navigation = useNavigation();
 
     // Fetch groups function
     const fetchGroups = async () => {
         try {
-
             const token = await AsyncStorage.getItem('token');
-
             const user = await getCurrentUser({ token });
-
             const email = user.data.email;
             const response = await getStudyGroups({ email });
             //console.log(response.data);
             if (Array.isArray(response.data)) {
                 setGroups(response.data);
+
+                // Check each group for the newMessage flag
+                const hasNewMessage = response.data.some(group => group.newMessage);
+                // If any group has newMessage set to true, set the newMessage state to true
+                if (hasNewMessage) {
+                    console.log("Setting New Message to True")
+                    setNewMessage(true);
+                }
             } else {
                 console.error("Data is not an array:", response.data);
             }
@@ -57,6 +70,8 @@ export default function Messages() {
             setLoading(false);
         }
     };
+
+
 
     const fetchGroupsAll = async () => {
         try {
@@ -77,9 +92,10 @@ export default function Messages() {
         }
     };
 
-    useFocusEffect(
+    useEffect(
         useCallback(() => {
-            fetchGroups();
+                fetchGroups();
+
         }, [])
     );
 
@@ -102,7 +118,7 @@ export default function Messages() {
             setSuccessModalVisible(true);
             setGroupName('');
             setMembers('');
-            fetchGroups(); // Refresh the study groups list
+            await fetchGroups(); // Refresh the study groups list
         } catch (error) {
             Alert.alert('Error', error.response?.data?.message || 'Failed to create group');
             setErrorModalVisible(true);
@@ -125,6 +141,31 @@ export default function Messages() {
             setErrorModalVisible(true);
         }
     };
+
+    const setNewMessageFlag = async (groupId,flag) => {
+        try {
+            console.log("groupID was", groupId);
+
+            if(groupId === -1){
+                for (let group of groups) {
+                    const response = await setNewMessageFlagForGroup(group._id, false);
+                    if (response.status === 200) {
+                        console.log(`New message flag for group ${group._id} set to false.`);
+                    } else {
+                        console.error(`Failed to reset new message flag for group ${group._id}.`);
+                    }
+                }
+                setNewMessage(false);
+            } else {
+                const response = await setNewMessageFlagForGroup(groupId, flag);
+                console.log("Setting New Message for Group");
+                setNewMessage(false);
+            }
+        } catch (error) {
+            console.log("Could not Set new Message for Group");
+        }
+    };
+
     const updateStudyGroupName = async (groupId, newName) => {
         if (!groupId || !newName) {
             Alert.alert('Error', 'Please enter a new group name .');
@@ -152,6 +193,7 @@ export default function Messages() {
             }
             // Refresh the list of study groups
             await fetchGroups(); // Assuming this fetches the updated list of groups
+            setSuccessModalVisible(true);
         } catch (error) {
             console.log("Error occurred while updating study group:", error);
             //setErrorModalVisible(true);
@@ -173,6 +215,12 @@ export default function Messages() {
                 >
                     <Text style={styles.joinButtonText}>Join Group</Text>
                 </TouchableOpacity>
+
+                {newMessage && (
+                    <TouchableOpacity style={styles.notificationIcon} onPress={() => setNewMessageFlag(-1,false)}>
+                        <MaterialIcons name="notifications" size={30} color="red" />
+                    </TouchableOpacity>
+                )}
             </View>
             {loading ? (
                 <ActivityIndicator size="large" color="#007AFF" />
@@ -188,7 +236,10 @@ export default function Messages() {
                             <TouchableOpacity
                                 style={styles.groupItemTouchable}
                                 //onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
-                                onPress={() => navigation.navigate('group', { groupId: item._id } )} // Navigate on touch
+                                onPress={() => {
+                                    setNewMessageFlag( item._id, false);
+                                    navigation.navigate('group', { groupId: item._id } )
+                                }}
                             >
                                 <Text style={styles.groupText}>{item.name}</Text>
                             </TouchableOpacity>
@@ -325,7 +376,7 @@ export default function Messages() {
             <Modal visible={successModalVisible} animationType="slide" transparent={true}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Study Group Successfully Created!</Text>
+                        <Text style={styles.modalTitle}>Task Completed Successfully!</Text>
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setSuccessModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
@@ -438,7 +489,6 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 5,
-        marginLeft: 10, // Adds spacing between the title and button
     },
     joinButtonText: {
         color: 'white',
@@ -455,6 +505,12 @@ const styles = StyleSheet.create({
     lightText: { color: "#333" },
     lightModal: { backgroundColor: "white" },
     lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" 
+    },
+    notificationIcon: {
+        position: 'absolute',
+        right: -40,
+        top: 10,
+        padding: 50
     },
 });
 
