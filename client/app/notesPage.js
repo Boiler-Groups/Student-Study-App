@@ -166,7 +166,6 @@ export default function NotesPage() {
       const text = await result.response.text();
   
       if (Platform.OS === 'web') {
-        // ✅ Web fallback: download file using Blob
         const blob = new Blob([text], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -177,7 +176,6 @@ export default function NotesPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
-        // ✅ Mobile (iOS/Android)
         const fileUri = FileSystem.documentDirectory + `flashcards_${Date.now()}.txt`;
         await FileSystem.writeAsStringAsync(fileUri, text, {
           encoding: FileSystem.EncodingType.UTF8,
@@ -191,7 +189,6 @@ export default function NotesPage() {
         }
       }
   
-      // ✅ Reset state & close modal
       openFlashModal(false);
       setNotesContent('');
       setNotesName('');
