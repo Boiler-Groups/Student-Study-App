@@ -3,11 +3,13 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Modal, TextInput, Dimensions,
   ScrollView, Platform
+
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
+
 import { useTheme } from '@react-navigation/native';
 import { GoogleGenerativeAI, HarmCategory,
   HarmBlockThreshold } from "@google/generative-ai";
@@ -18,12 +20,14 @@ import * as Sharing from 'expo-sharing';
 export default function NotesPage() {
   const router = useRouter();
   const { isDarkTheme } = useTheme(); // Get dark mode state
+
   const [notesName, setNotesName] = useState('');
   const [notesContent, setNotesContent] = useState('');
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState('');
   const [editModal, openEditModal] = useState(false);
   const [createModal, openCreateModal] = useState(false);
+
   const [flashModal, openFlashModal] = useState(false);
   const [objId, setObjId] = useState("");
   const screenHeight = Dimensions.get('window').height;
@@ -59,7 +63,7 @@ export default function NotesPage() {
     console.log(result.response.text());
   }
   
-  //run();
+
   /** 🔹 Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
     try {
@@ -146,7 +150,6 @@ export default function NotesPage() {
       }
     }
   };
-
   const handleFlashCards = async () => {
     if (!notesContent || !cardNum) {
       alert('Please enter notes and select number of flashcards');
@@ -216,12 +219,14 @@ export default function NotesPage() {
         data={notes}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
+
           <View style={[styles.notesItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
             <View>
               <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
                 {item.name}
               </Text>
             </View>
+
 
             <TouchableOpacity onPress={() => {
               setNotesName(item.name);
@@ -234,6 +239,7 @@ export default function NotesPage() {
             <TouchableOpacity onPress={() => removeNote(item._id)}>
               <Icon name="delete" size={24} color="red" />
             </TouchableOpacity>
+
             <TouchableOpacity onPress={() => {
               setNotesName(item.name);
               setNotesContent(item.content); 
@@ -243,17 +249,21 @@ export default function NotesPage() {
               <Icon name="style" size={24} color="blue" />
             </TouchableOpacity>
 
+
           </View>
         )}
       />
 
       <View style={styles.buttonContainer}>
+
         <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
 
+
       {/* Modal for Creating Note */}
+
       <Modal visible={createModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -265,6 +275,7 @@ export default function NotesPage() {
                       onChangeText={setNotesName}
                   />
                   <TextInput
+
                       style={[styles.modalInput, { height: screenHeight * 0.3}]}
                       placeholder="Write in your notes here...."
                       value={notesContent}
@@ -287,6 +298,7 @@ export default function NotesPage() {
               </View>
           </View>
       </Modal>
+
       {/* Modal for editing Notes */}
       <Modal visible={editModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
@@ -319,6 +331,7 @@ export default function NotesPage() {
               </View>
           </View>
       </Modal>
+
       {/* Modal for Creating Flashcards */}
       <Modal visible={flashModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
@@ -392,13 +405,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'column',
     marginBottom: 12,
+
     borderRadius: 8,
     padding: 10,
+
   },
   input: {
     padding: 10,
     fontSize: 16,
     borderWidth: 1,
+
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -415,12 +431,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginBottom: 10,
   },
+
   notesItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 10,
     borderBottomWidth: 1,
+
   },
   iconContainer: {
     flexDirection: 'row',
@@ -432,6 +450,7 @@ const styles = StyleSheet.create({
   },
   notesContent: {
     fontSize: 14,
+    color: "#333",
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -498,6 +517,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderRadius: 8,
     alignItems: 'center',
+
     marginTop: 20, 
   },
   buttonText: {

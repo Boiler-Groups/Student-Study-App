@@ -21,6 +21,32 @@ export const getGroups = async (req, res) => {
     }
 };
 
+
+//Set the new message flag
+export const setNewMessageFlag = async (req, res) => {
+    const { groupId } = req.params;
+    const { newMessage } = req.body;  // Get the flag value from the request body
+
+    try {
+        // Find the group by ID
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
+
+        // Set the newMessage flag based on the request body
+        group.newMessage = newMessage;
+        await group.save();
+
+        // Return the updated group
+        res.status(200).json(group);
+    } catch (e) {
+        // Handle any errors
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
+};
+
 // Find and return all study groups
 export const getGroupsAll = async (req, res) => {
     try {
@@ -233,6 +259,9 @@ export const sendMessage = async (req, res) => {
         };
 
         group.messages.push(newMessage);
+
+        group.newMessage=true;
+
         await group.save();
 
         res.status(201).json({ message: "Message sent", newMessage });
