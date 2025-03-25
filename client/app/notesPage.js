@@ -3,8 +3,6 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Modal, TextInput, Dimensions,
   ScrollView, Platform
-  ActivityIndicator, Modal, TextInput, Dimensions,
-  ScrollView, Platform
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
@@ -16,21 +14,16 @@ import { GoogleGenerativeAI, HarmCategory,
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
-import { GoogleGenerativeAI, HarmCategory,
-  HarmBlockThreshold } from "@google/generative-ai";
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-
 
 export default function NotesPage() {
   const router = useRouter();
+  const { isDarkTheme } = useTheme(); // Get dark mode state
   const [notesName, setNotesName] = useState('');
   const [notesContent, setNotesContent] = useState('');
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState('');
   const [editModal, openEditModal] = useState(false);
   const [createModal, openCreateModal] = useState(false);
-  const [flashModal, openFlashModal] = useState(false);
   const [flashModal, openFlashModal] = useState(false);
   const [objId, setObjId] = useState("");
   const screenHeight = Dimensions.get('window').height;
@@ -173,7 +166,6 @@ export default function NotesPage() {
       const text = await result.response.text();
   
       if (Platform.OS === 'web') {
-        // ✅ Web fallback: download file using Blob
         const blob = new Blob([text], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -184,7 +176,6 @@ export default function NotesPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
-        // ✅ Mobile (iOS/Android)
         const fileUri = FileSystem.documentDirectory + `flashcards_${Date.now()}.txt`;
         await FileSystem.writeAsStringAsync(fileUri, text, {
           encoding: FileSystem.EncodingType.UTF8,
@@ -198,7 +189,6 @@ export default function NotesPage() {
         }
       }
   
-      // ✅ Reset state & close modal
       openFlashModal(false);
       setNotesContent('');
       setNotesName('');
@@ -208,14 +198,14 @@ export default function NotesPage() {
     }
   };
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your Notes</Text>
+    <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+      <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Your Notes</Text>
 
       {/* Input Fields */}
 
       <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
         <Text style={[styles.addNoteText, isDarkTheme ? styles.darkInput : styles.lightInput]}>Add Note</Text>
-        <TouchableOpacity testID="add-btn" style={styles.addButton} onPress={() => { openCreateModal(true) }}>
+        <TouchableOpacity style={styles.addButton} onPress={() => { openCreateModal(true) }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
@@ -226,13 +216,13 @@ export default function NotesPage() {
         data={notes}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <View style={styles.notesItem}>
+          <View style={[styles.notesItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
             <View>
               <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
                 {item.name}
               </Text>
-
             </View>
+
             <TouchableOpacity onPress={() => {
               setNotesName(item.name);
               setNotesContent(item.content); 
@@ -258,7 +248,7 @@ export default function NotesPage() {
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.dismissTo('/home')}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
@@ -283,10 +273,6 @@ export default function NotesPage() {
                       numberOfLines={6}
                       textAlignVertical='top'
                       scrollEnabled={true}
-                      multiline={true}
-                      numberOfLines={6}
-                      textAlignVertical='top'
-                      scrollEnabled={true}
                   />
                   <TouchableOpacity style={styles.modalButton} onPress={handleAddNote}>
                       <Text style={styles.buttonText}>Create Note</Text>
@@ -302,7 +288,6 @@ export default function NotesPage() {
           </View>
       </Modal>
       {/* Modal for editing Notes */}
-      {/* Modal for editing Notes */}
       <Modal visible={editModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -316,10 +301,6 @@ export default function NotesPage() {
                       style={styles.modalInput}
                       value={notesContent}
                       onChangeText={setNotesContent}
-                      multiline={true}
-                      numberOfLines={6}
-                      textAlignVertical='top'
-                      scrollEnabled={true}
                       multiline={true}
                       numberOfLines={6}
                       textAlignVertical='top'
@@ -402,14 +383,6 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderBottomWidth: 1,
   },  
-  },
-  cardItem: {
-    textAlign: "center",
-    fontSize: 16,
-    padding: 15,
-    borderColor: '#ddd',
-    borderBottomWidth: 1,
-  },  
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -419,18 +392,13 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'column',
     marginBottom: 12,
+    borderRadius: 8,
+    padding: 10,
   },
   input: {
     padding: 10,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  dropdownToggle: {
-    padding: 10,
-    backgroundColor: '#eee',
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -453,7 +421,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+  },
+  iconContainer: {
+    flexDirection: 'row',
+    gap: 10,
   },
   notesText: {
     fontSize: 18,
@@ -461,7 +432,6 @@ const styles = StyleSheet.create({
   },
   notesContent: {
     fontSize: 14,
-    color: "#333",
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -483,6 +453,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+
   addNoteContainer: {
     flexDirection: "row", 
     alignItems: "center",
