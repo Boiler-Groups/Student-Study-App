@@ -1,19 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View, Text, FlatList, TouchableOpacity, StyleSheet,
     ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
 import {
-    getStudyGroups,
-    createStudyGroup,
-    deleteStudyGroup,
-    editStudyGroupName
+    getStudyGroups, createStudyGroup, deleteStudyGroup, editStudyGroupName, getStudyGroupsAll, addStudyGroupMembers
 } from './api/studygroup'; // Ensure correct path
+import { useTheme } from '../components/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser } from './api/user';
+
 
 export default function Messages() {
     const router = useRouter();
+    const { isDarkTheme } = useTheme();
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [successModalVisible, setSuccessModalVisible] = useState(false);
+    const [groupsAll, setGroupsAll] = useState([]);
+    const [joinModalVisible, setJoinModalVisible] = useState(false);
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -22,13 +28,21 @@ export default function Messages() {
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [groupToEdit, setGroupToEdit] = useState(null);
+    const currentUserEmail = "foobar@gmail.com"; // Replace with dynamic user email
+
+    const navigation = useNavigation();
 
     // Fetch groups function
     const fetchGroups = async () => {
         try {
-            const email = "foobar@gmail.com"; // Replace with dynamic user email
+
+            const token = await AsyncStorage.getItem('token');
+
+            const user = await getCurrentUser({ token });
+
+            const email = user.data.email;
             const response = await getStudyGroups({ email });
-            console.log(response.data);
+            //console.log(response.data);
             if (Array.isArray(response.data)) {
                 setGroups(response.data);
             } else {
@@ -36,6 +50,7 @@ export default function Messages() {
             }
         } catch (error) {
             console.log("Failed to fetch study groups:", error);
+            //setErrorModalVisible(true);
             console.log("Returning Empty List");
             setGroups([]); // Clear groups if the fetch fails
         } finally {
@@ -43,9 +58,30 @@ export default function Messages() {
         }
     };
 
-    useEffect(() => {
-        fetchGroups();
-    }, []);
+    const fetchGroupsAll = async () => {
+        try {
+            const response = await getStudyGroupsAll();
+            console.log(response.data);
+            if (Array.isArray(response.data)) {
+                setGroupsAll(response.data);
+            } else {
+                console.error("Data is not an array:", response.data);
+            }
+        } catch (error) {
+            console.log("Failed to fetch All study groups:", error);
+            //setErrorModalVisible(true);
+            console.log("Returning Empty List");
+            setGroupsAll([]); // Clear groups if the fetch fails
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchGroups();
+        }, [])
+    );
 
     // Create Study Group Function
     const handleCreateGroup = async () => {
@@ -56,14 +92,20 @@ export default function Messages() {
 
         try {
             const memberArray = members.split(',').map(m => m.trim());
+            const token = await AsyncStorage.getItem('token');
+            const user = await getCurrentUser({ token });
+            const email = user.data.email;
+            memberArray.push(email);
             await createStudyGroup({ name: groupName, members: memberArray });
             Alert.alert('Success', 'Study group created successfully!');
             setCreateModalVisible(false);
+            setSuccessModalVisible(true);
             setGroupName('');
             setMembers('');
             fetchGroups(); // Refresh the study groups list
         } catch (error) {
             Alert.alert('Error', error.response?.data?.message || 'Failed to create group');
+            setErrorModalVisible(true);
         }
     };
     const handleDeleteGroup = async (groupId) => {
@@ -80,6 +122,7 @@ export default function Messages() {
         } catch (error) {
             // Show error message if deletion fails
             Alert.alert('Error', error.response?.data?.message || 'Failed to delete group');
+            setErrorModalVisible(true);
         }
     };
     const updateStudyGroupName = async (groupId, newName) => {
@@ -105,21 +148,32 @@ export default function Messages() {
                 // Example: setGroups(updatedGroups); or update the specific group in your state
             } else {
                 console.error("Failed to update group name:", response.data);
+                setErrorModalVisible(true);
             }
             // Refresh the list of study groups
             await fetchGroups(); // Assuming this fetches the updated list of groups
         } catch (error) {
             console.log("Error occurred while updating study group:", error);
+            //setErrorModalVisible(true);
         } finally {
             // Perform any cleanup or loading state reset if necessary
         }
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
             <Header />
-            <Text style={styles.title}>Study Groups and Messaging</Text>
 
+            <View style={styles.headerContainer}>
+                <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Study Groups and Messaging</Text>
+                <TouchableOpacity style={styles.joinButton} onPress={() => {
+                        fetchGroupsAll();
+                        setJoinModalVisible(true);
+                    }}
+                >
+                    <Text style={styles.joinButtonText}>Join Group</Text>
+                </TouchableOpacity>
+            </View>
             {loading ? (
                 <ActivityIndicator size="large" color="#007AFF" />
             ) : (
@@ -133,7 +187,8 @@ export default function Messages() {
                             {/* Group Item (Touchable for navigation) */}
                             <TouchableOpacity
                                 style={styles.groupItemTouchable}
-                                onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                                //onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                                onPress={() => navigation.navigate('group', { groupId: item._id } )} // Navigate on touch
                             >
                                 <Text style={styles.groupText}>{item.name}</Text>
                             </TouchableOpacity>
@@ -156,7 +211,7 @@ export default function Messages() {
                 />
             )}
 
-            {/* Button to Open Modal */}
+            {/* Button to Open Create Modal */}
             <TouchableOpacity style={styles.button} onPress={() => setCreateModalVisible(true)}>
                 <Text style={styles.buttonText}>Create New Group</Text>
             </TouchableOpacity>
@@ -210,6 +265,68 @@ export default function Messages() {
                             <Text style={styles.buttonText}>Save Changes</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
+                            <Text style={styles.cancelButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal for Joining Group  */}
+            <Modal visible={joinModalVisible} animationType="slide" transparent={true}>
+                <View style={[{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+                    <View style={[{ width: '80%', backgroundColor: '#fff', borderRadius: 10, padding: 20 }, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+                        <Text style={[{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }, isDarkTheme ? styles.darkText : styles.lightText]}>Select a Study Group</Text>
+                        {loading ? (
+                            <ActivityIndicator size="large" color="#007AFF" />
+                        ) : (
+                            <FlatList
+                                data={groupsAll}
+                                keyExtractor={(item) => item._id}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' }, isDarkTheme ? styles.darkText : styles.lightText]}
+                                        onPress={async() => {
+                                            // Handle group selection
+                                            setGroupToEdit(item); // Set the group being edited
+                                            console.log('Selected group:', item);
+                                            const token = await AsyncStorage.getItem('token');
+                                            const user = await getCurrentUser({ token });
+                                            const email = user.data.email;
+                                            await addStudyGroupMembers(item._id,email);
+                                            fetchGroups();
+                                            setJoinModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={[{ fontSize: 16 }, isDarkTheme ? styles.darkText : styles.lightText]}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        )}
+                        <TouchableOpacity onPress={() => setJoinModalVisible(false)} style={{ marginTop: 10, padding: 10, backgroundColor: '#ccc', borderRadius: 5 }}>
+                            <Text>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/*Error Modal*/}
+            <Modal visible={errorModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>There Was An Error Completing the Task</Text>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setErrorModalVisible(false)}>
+                            <Text style={styles.cancelButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/*Success Modal*/}
+            <Modal visible={successModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Study Group Successfully Created!</Text>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setSuccessModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -308,6 +425,36 @@ const styles = StyleSheet.create({
         marginVertical: 1,
         borderWidth: 2,
         width: '10%',
-    }
+    },
+    headerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between', // Ensures spacing between the title and button
+        paddingHorizontal: 10,
+        marginBottom: 10,
+    },
+    joinButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 5,
+        marginLeft: 10, // Adds spacing between the title and button
+    },
+    joinButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    /* Dark Mode */
+    darkBackground: { backgroundColor: "#121212" },
+    darkText: { color: "#F1F1F1" },
+    darkModal: { backgroundColor: "#1E1E1E" },
+    darkInput: { backgroundColor: "#333", borderColor: "#555", color: "#F1F1F1" 
+    },
+    /* Light Mode */
+    lightBackground: { backgroundColor: "#FFFFFF" },
+    lightText: { color: "#333" },
+    lightModal: { backgroundColor: "white" },
+    lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" 
+    },
 });
 

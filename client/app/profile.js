@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { API_URL } from '@env';
+import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Profile() {
     const router = useRouter();
+    const { isDarkTheme } = useTheme();
     const [user, setUser] = useState(null);
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [message, setMessage] = useState({ text: '', isError: false });
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
     const [usernameModalVisible, setUsernameModalVisible] = useState(false);
@@ -75,6 +79,7 @@ export default function Profile() {
         }
 
         await updateUser({ password: newPassword });
+
         setNewPassword('');
         setConfirmPassword('');
         setPasswordModalVisible(false);
@@ -84,11 +89,13 @@ export default function Profile() {
         setUpdating(true);
         setMessage({ text: '', isError: false });
 
+        if (updateData.username && (!updateData.username.trim())) {
+            setMessage({ text: 'Display name cannot be empty', isError: true });
+            return;
+        }
+
         try {
             const token = await AsyncStorage.getItem('token');
-
-            console.log("Token available:", !!token);
-            console.log("User ID:", user?._id);
 
             if (!token) {
                 throw new Error('Authentication token missing');
@@ -108,7 +115,6 @@ export default function Profile() {
             });
 
             const responseData = await response.json();
-            console.log("Update response:", responseData);
 
             if (response.ok) {
                 setMessage({
@@ -121,31 +127,108 @@ export default function Profile() {
                 if (updateData.username) {
                     setUser(prev => ({ ...prev, username: updateData.username }));
                 }
+                return true;
             } else {
                 setMessage({ text: responseData.message || 'Update failed', isError: true });
+                return false;
             }
         } catch (error) {
             console.error("Update error:", error);
             setMessage({ text: 'Update failed: ' + error.message, isError: true });
+            return false;
         } finally {
             setUpdating(false);
         }
     };
 
+    const handleImageUpload = async () => {
+        try {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            
+            if (permissionResult.granted === false) {
+                setMessage({ text: 'Permission to access images required', isError: true });
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.7,
+            });
+
+            if (!result.canceled) {
+                await uploadProfileImage(result.assets[0]);
+            }
+        } catch (error) {
+            console.error("Error picking image:", error);
+            setMessage({ text: 'Failed to pick image', isError: true });
+        }
+    };
+
+    const uploadProfileImage = async (imageAsset) => {
+        setUploadingImage(true);
+        setMessage({ text: '', isError: false });
+        
+        try {
+          const token = await AsyncStorage.getItem('token');
+          if (!token || !user?._id) {
+            throw new Error('Authentication failed');
+          }
+      
+          let mimeType = 'image/png';
+          let fileName = 'profile-image.png';
+          
+          const response = await fetch(imageAsset.uri);
+          const blob = await response.blob();
+          
+          const file = new File([blob], fileName, { type: mimeType });
+          
+          const formData = new FormData();
+          formData.append('profileImage', file);
+          
+          console.log('Uploading image with type:', mimeType);
+          
+          const responseUpload = await fetch(`${API_URL}/users/${user._id}/profile-image`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+            },
+            body: formData
+          });
+          
+          const responseData = await responseUpload.json();
+          
+          if (responseUpload.ok) {
+            setMessage({ text: 'Profile image updated successfully', isError: false });
+            setUser(prev => ({ ...prev, profileImage: responseData.profileImageUrl }));
+          } else {
+            setMessage({ text: responseData.message || 'Failed to upload image', isError: true });
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          setMessage({ text: 'Failed to upload image: ' + error.message, isError: true });
+        } finally {
+          setUploadingImage(false);
+        }
+      };
+      
+
     if (loading) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
                 <Header />
                 <ActivityIndicator size="large" color="#007AFF" />
-                <Text>Loading profile...</Text>
+                <Text style={isDarkTheme ? styles.darkText : styles.lightText}>Loading profile...</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
             <Header />
-            <Text style={styles.title}>My Profile</Text>
+            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>My Account Settings</Text>
 
             {message.text ? (
                 <Text style={message.isError ? styles.errorText : styles.successText}>
@@ -153,12 +236,40 @@ export default function Profile() {
                 </Text>
             ) : null}
 
-            <View style={styles.infoContainer}>
-                <Text style={styles.label}>Email:</Text>
-                <Text style={styles.value}>{user?.email || 'Not available'}</Text>
+            <View style={styles.profileImageContainer}>
+                {user?.profileImage ? (
+                    <Image 
+                        source={{ uri: user.profileImage }} 
+                        style={styles.profileImage} 
+                    />
+                ) : (
+                    <View style={[styles.profileImagePlaceholder, isDarkTheme ? styles.darkPlaceholder : styles.lightPlaceholder]}>
+                        <Text style={[styles.profileImagePlaceholderText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                            {user?.username?.charAt(0)?.toUpperCase() || "?"}
+                        </Text>
+                    </View>
+                )}
+                <TouchableOpacity 
+                    style={styles.uploadButton}
+                    onPress={handleImageUpload}
+                    disabled={uploadingImage}
+                >
+                    <Text style={styles.buttonText}>
+                        {uploadingImage ? 'Uploading...' : 'Change Profile Picture'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
 
-                <Text style={styles.label}>Display Name:</Text>
-                <Text style={styles.value}>{user?.username || 'Not available'}</Text>
+            <View style={styles.infoContainer}>
+                <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Email:</Text>
+                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
+                    {user?.email || 'Not available'}
+                </Text>
+
+                <Text style={[styles.label, isDarkTheme ? styles.darkText : styles.lightText]}>Display Name:</Text>
+                <Text style={[styles.value, isDarkTheme ? styles.darkText : styles.lightText]}>
+                    {user?.username || 'Not available'}
+                </Text>
             </View>
 
             <View style={styles.actionsContainer}>
@@ -191,12 +302,13 @@ export default function Profile() {
                 onRequestClose={() => setUsernameModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Change Display Name</Text>
+                    <View style={[styles.modalContent, isDarkTheme ? styles.darkModal : styles.lightModal]}>
+                        <Text style={[styles.modalTitle, isDarkTheme ? styles.darkText : styles.lightText]}>Change Display Name</Text>
 
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                             placeholder="New Display Name"
+                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={newUsername}
                             onChangeText={setNewUsername}
                         />
@@ -233,19 +345,21 @@ export default function Profile() {
                 onRequestClose={() => setPasswordModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Change Password</Text>
+                    <View style={[styles.modalContent, isDarkTheme ? styles.darkModal : styles.lightModal]}>
+                        <Text style={[styles.modalTitle, isDarkTheme ? styles.darkText : styles.lightText]}>Change Password</Text>
 
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                             placeholder="New Password"
+                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={newPassword}
                             secureTextEntry
                             onChangeText={setNewPassword}
                         />
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                             placeholder="Confirm New Password"
+                            placeholderTextColor={isDarkTheme ? "#BBB" : "#555"}
                             value={confirmPassword}
                             secureTextEntry
                             onChangeText={setConfirmPassword}
@@ -291,6 +405,42 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         marginBottom: 15
+    },
+    profileImageContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    profileImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        marginBottom: 10,
+    },
+    profileImagePlaceholder: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#E1E1E1',
+    },
+    darkPlaceholder: {
+        backgroundColor: '#444',
+    },
+    lightPlaceholder: {
+        backgroundColor: '#E1E1E1',
+    },
+    profileImagePlaceholderText: {
+        fontSize: 48,
+        fontWeight: 'bold',
+    },
+    uploadButton: {
+        backgroundColor: '#007AFF',
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginVertical: 5,
     },
     infoContainer: {
         width: '25%',
@@ -369,5 +519,16 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         backgroundColor: '#FF3B30',
-    }
+    },
+    /* Dark Mode */
+    darkBackground: { backgroundColor: "#121212" },
+    darkText: { color: "#F1F1F1" },
+    darkModal: { backgroundColor: "#1E1E1E" },
+    darkInput: { backgroundColor: "#333", borderColor: "#555", color: "#F1F1F1" },
+
+    /* Light Mode */
+    lightBackground: { backgroundColor: "#FFFFFF" },
+    lightText: { color: "#333" },
+    lightModal: { backgroundColor: "white" },
+    lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" },
 });

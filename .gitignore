@@ -3,3 +3,6 @@
 
 # Don't add enviornment variables to git
 **/.env*
+
+# Don't track uploaded profile images
+server/uploads/

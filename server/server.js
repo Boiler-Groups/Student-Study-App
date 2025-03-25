@@ -3,6 +3,13 @@ import 'dotenv/config';
 import mongoConnect from './config/db.js';
 import userRoutes from './routes/userRoutes.js';
 import studyGroupRoutes from './routes/studyGroupRoutes.js';
+import noteRouter from './routes/noteRouter.js';
+import classRoutes from './routes/classRoutes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express()
 
@@ -18,9 +25,11 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/users', userRoutes);
 app.use('/api/studygroups', studyGroupRoutes);
-
+app.use('/api/notes', noteRouter);
+app.use('/api/classes', classRoutes);
 const port = process.env.PORT || 8080
 
 mongoConnect().then(async () => {

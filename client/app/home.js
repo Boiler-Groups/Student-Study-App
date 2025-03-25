@@ -3,22 +3,37 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 import { AuthContext } from './AuthContext';
+import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@env';
 
 export default function Home() {
     const router = useRouter();
+    const { isDarkTheme } = useTheme();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user, logout, authLoading} = useContext(AuthContext);
 
     // Simulated API call to fetch groups
     useEffect(() => {
-        setGroups([
-            { id: '1', name: 'CS 307      >' },
-            { id: '2', name: 'CS 252      >' },
-            { id: '3', name: 'MA 265      >' },
-        ]);
         setLoading(false); // Set loading to false immediately
+        const fetchClasses = async () => {
+            try {
+                const response = await fetch(`${API_URL}/classes`);
+                if (!response.ok) {
+                    console.log("Fetch classes failed!")
+                    throw new Error('Failed to fetch classes');
+
+                }
+                const data = await response.json();
+                setGroups(data);
+                console.log("Data info: ", data[0]);
+            } catch (error) {
+                console.error('Error fetching classes:', error);
+            } 
+        };
+    
+        fetchClasses();
     }, []);
 
     if (authLoading) {
@@ -31,16 +46,16 @@ export default function Home() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
             {/* Header with its own styles */}
             <Header />
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText}>Logout</Text>
+            <TouchableOpacity style={[styles.button, styles.logoutButton]}  onPress={handleLogout}>
+                <Text style={[styles.darkText, isDarkTheme ? styles.darkText : styles.darkText]}>Logout</Text>
             </TouchableOpacity>
 
             {/* Title for the page */}
-            <Text style={styles.title}>{user?.email}'s Classes</Text>
+            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Classes</Text>
 
             {/* Display a loading indicator or the FlatList */}
             {loading ? (
@@ -48,14 +63,15 @@ export default function Home() {
             ) : (
                 <FlatList
                     data={groups}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item._id} // MongoDB uses _id
                     contentContainerStyle={styles.listContainer}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.groupItem}
-                            onPress={() => router.push(`/group/${item.id}`)}
+                            onPress={() => router.push(`/group/${item._id}`)}
                         >
                             <Text style={styles.groupText}>{item.name}</Text>
+                            <Text style={styles.creditsText}>Credits: {item.credits}</Text>
                         </TouchableOpacity>
                     )}
                 />
@@ -63,7 +79,7 @@ export default function Home() {
 
             {/* Bottom buttons container */}
             <View style={styles.bottomButtonsContainer}>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/notes')}>
+                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/notesPage')}>
                     <Text style={styles.buttonText}>Notes</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/AddClass')}>
@@ -87,14 +103,21 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginVertical: 5,
         alignItems: 'center',
-        borderWidth: 2,  // Add border to each group item
+        borderWidth: 2,
     },
-    groupText: { fontSize: 18 },
-    button: {
+    groupText: { fontSize: 18, fontWeight: 'bold' },
+    creditsText: { fontSize: 16, color: '#555', marginTop: 5 }, // New style for credits
+    button: { 
         backgroundColor: '#007AFF',
-        padding: 12,
-        borderRadius: 8,
-        marginTop: 20,
+        padding: 10, 
+        borderRadius: 5,
+        width: '25%',
+        alignItems: 'center',
+        marginBottom: 10
+    },
+    logoutButton: {
+        backgroundColor: '#FF3B30',
+        marginTop: 10
     },
     buttonText: { color: '#fff', fontSize: 16 },
     bottomButtonsContainer: {
@@ -127,7 +150,18 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     listContainer: {
-        paddingLeft: 20,  // Move the list 20 units to the right (adjust the number as needed)
-        marginBottom: 80,  // Ensure space for the bottom buttons
+        paddingLeft: 20,
+        marginBottom: 80,
     },
+    /* Dark Mode */
+    darkBackground: { backgroundColor: "#121212" },
+    darkText: { color: "#F1F1F1" },
+    darkModal: { backgroundColor: "#1E1E1E" },
+    darkInput: { backgroundColor: "#333", borderColor: "#555", color: "#F1F1F1" },
+
+    /* Light Mode */
+    lightBackground: { backgroundColor: "#FFFFFF" },
+    lightText: { color: "#333" },
+    lightModal: { backgroundColor: "white" },
+    lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" },
 });
