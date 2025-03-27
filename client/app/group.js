@@ -14,6 +14,7 @@ const GroupChatPage = ({ }) => {
     const flatListRef = useRef(null);
     const { isDarkTheme } = useTheme();
     const [username, setUsername] = useState("");
+    const [userEmail, setUserEmail] = useState("");
     const [groupTitle, setGroupTitle] = useState('');
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
 
@@ -28,12 +29,14 @@ const GroupChatPage = ({ }) => {
     };
 
     useEffect(() => {
-        const fetchUsername = async () => {
-            const user = await getUsername();
-            setUsername(user);
+        const fetchUserData = async () => {
+            const token = await AsyncStorage.getItem('token');
+            const user = await getCurrentUser({ token });
+            setUsername(user.data.username);
+            setUserEmail(user.data.email);
         };
 
-        fetchUsername();
+        fetchUserData();
     }, []);
 
     useEffect(() => {
@@ -73,6 +76,37 @@ const GroupChatPage = ({ }) => {
         }, [groupId])
     );
 
+    const renderMessageWithTags = (text) => {
+        if (!text) return null;
+        
+        const emailRegex = /(@[\w.-]+@[\w.-]+\.\w+)/g;
+        const parts = text.split(emailRegex);
+        
+        return parts.map((part, index) => {
+            if (part.match(emailRegex)) {
+                return (
+                    <Text 
+                        key={index} 
+                        style={[
+                            styles.taggedEmail,
+                            { color: isDarkTheme ? '#FFD700' : '#0066CC' }
+                        ]}
+                    >
+                        {part}
+                    </Text>
+                );
+            }
+            return <Text key={index}>{part}</Text>;
+        });
+    };
+
+    const isUserTagged = (messageText) => {
+        if (!messageText || !userEmail) return false;
+        
+        const userTag = `@${userEmail}`;
+        return messageText.includes(userTag);
+    };
+
     const handleSendMessage = async () => {
         if (text.trim() === '') return;
 
@@ -84,7 +118,6 @@ const GroupChatPage = ({ }) => {
             flatListRef.current?.scrollToEnd({ animated: true });
         }
     };
-
     const handleDeleteMessage = async (messageId) => {
         const token = await AsyncStorage.getItem('token');
         const response = await deleteMessage(token, groupId, messageId);
@@ -130,12 +163,19 @@ const GroupChatPage = ({ }) => {
                         <TouchableOpacity
                             style={[
                                 styles.messageContainer,
-                                item.sender === username ? styles.myMessage : styles.otherMessage
+                                item.sender === username ? styles.myMessage : styles.otherMessage,
+                                isUserTagged(item.text) && {
+                                    borderWidth: 2,
+                                    borderColor: '#FFD700',
+                                    backgroundColor: isDarkTheme ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 224, 0.5)'
+                                }
                             ]}
-                            onPress={() => handleSelectMessage(item._id)} // Click to select message
+                            onPress={() => handleSelectMessage(item._id)}
                         >
                             <Text style={styles.sender}>{item.sender}</Text>
-                            <Text style={[styles.messageText, { color: item.sender === username ? '#FFFFFF' : '#000000' }]}>{item.text}</Text>
+                            <View style={styles.messageTextContainer}>
+                                {renderMessageWithTags(item.text)}
+                            </View>
                             {item._id === selectedMessageId && (
                                 <TouchableOpacity
                                     style={styles.deleteButton}
@@ -147,7 +187,7 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
                     )
                 )}
-                extraData={selectedMessageId} 
+                extraData={[selectedMessageId, userEmail]} // Add userEmail to trigger re-renders when it's set
             />
             <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
                 <TextInput
@@ -198,6 +238,17 @@ const styles = StyleSheet.create({
     },
     messageText: {
         fontSize: 16,
+    },
+    messageTextContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    taggedEmail: {
+        fontWeight: 'bold',
+        backgroundColor: 'rgb(200, 255, 0)',
+        borderRadius: 3,
+        paddingHorizontal: 2,
+        marginHorizontal: 1,
     },
     statusMessageContainer: {
         alignSelf: 'center',
