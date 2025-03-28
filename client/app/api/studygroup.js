@@ -41,13 +41,22 @@ export const getGroupMessages = (token, groupId) =>
       return [];
     });
 
-export const sendMessage = (token, groupId, message) =>
-  StudyGroupClient.post(`/messages/${groupId}`, { text: message }, authHeader(token))
-    .then(res => res.data)
-    .catch(err => {
-      console.error("Error sending message:", err);
-      return null;
-    });
+    export const sendMessage = (token, groupId, message, replyData = null) => {
+      const payload = { text: message };
+      
+      if (replyData) {
+        payload.replyToId = replyData.replyToId;
+        payload.replyToSender = replyData.replyToSender;
+        payload.replyToText = replyData.replyToText;
+      }
+    
+      return StudyGroupClient.post(`/messages/${groupId}`, payload, authHeader(token))
+        .then(res => res.data)
+        .catch(err => {
+          console.error("Error sending message:", err);
+          return null;
+        });
+    }
 
 export const getGroupMembers = (token, groupId) =>
   StudyGroupClient.get(`/members/${groupId}`, authHeader(token))

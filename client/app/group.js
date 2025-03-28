@@ -17,6 +17,7 @@ const GroupChatPage = ({ }) => {
     const [userEmail, setUserEmail] = useState("");
     const [groupTitle, setGroupTitle] = useState('');
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
+    const [replyingTo, setReplyingTo] = useState(null);
 
     const { groupId } = useLocalSearchParams();
     const navigation = useNavigation();
@@ -78,15 +79,15 @@ const GroupChatPage = ({ }) => {
 
     const renderMessageWithTags = (text) => {
         if (!text) return null;
-        
+
         const emailRegex = /(@[\w.-]+@[\w.-]+\.\w+)/g;
         const parts = text.split(emailRegex);
-        
+
         return parts.map((part, index) => {
             if (part.match(emailRegex)) {
                 return (
-                    <Text 
-                        key={index} 
+                    <Text
+                        key={index}
                         style={[
                             styles.taggedEmail,
                             { color: isDarkTheme ? '#FFD700' : '#0066CC' }
@@ -102,7 +103,7 @@ const GroupChatPage = ({ }) => {
 
     const isUserTagged = (messageText) => {
         if (!messageText || !userEmail) return false;
-        
+
         const userTag = `@${userEmail}`;
         return messageText.includes(userTag);
     };
@@ -111,13 +112,28 @@ const GroupChatPage = ({ }) => {
         if (text.trim() === '') return;
 
         const token = await AsyncStorage.getItem('token');
-        const newMessage = await sendMessage(token, groupId, text);
+
+        // Check if this is a reply
+        let newMessage;
+        if (replyingTo) {
+            const replyData = {
+                replyToId: replyingTo._id,
+                replyToSender: replyingTo.sender,
+                replyToText: replyingTo.text
+            };
+            newMessage = await sendMessage(token, groupId, text, replyData);
+            setReplyingTo(null);
+        } else {
+            newMessage = await sendMessage(token, groupId, text);
+        }
+
         if (newMessage) {
             loadMessages();
             setText('');
             flatListRef.current?.scrollToEnd({ animated: true });
         }
     };
+
     const handleDeleteMessage = async (messageId) => {
         const token = await AsyncStorage.getItem('token');
         const response = await deleteMessage(token, groupId, messageId);
@@ -132,11 +148,29 @@ const GroupChatPage = ({ }) => {
 
     const handleSelectMessage = (messageId) => {
         const message = messages.find(msg => msg._id === messageId);
-        console.log(message)
-        console.log(messageId)
-        if (message && message.sender === username) {
-            setSelectedMessageId(prevSelected => (prevSelected === messageId ? null : messageId)); // Toggle selection
+
+        if (message) {
+            setSelectedMessageId(prevSelected => (prevSelected === messageId ? null : messageId));
         }
+    };
+
+    const handleReply = (message) => {
+        setReplyingTo(message);
+        setSelectedMessageId(null);
+        if (inputRef && inputRef.current) {
+            inputRef.current.focus();
+        }
+    };
+
+    const inputRef = useRef(null);
+
+    const cancelReply = () => {
+        setReplyingTo(null);
+    };
+
+    const isReplyToCurrentUser = (message) => {
+        if (!message || !message.replyToSender || !username) return false;
+        return message.replyToSender === username;
     };
 
     // Navigate to the Members List page
@@ -164,7 +198,14 @@ const GroupChatPage = ({ }) => {
                             style={[
                                 styles.messageContainer,
                                 item.sender === username ? styles.myMessage : styles.otherMessage,
+                                // Highlight tagged messages
                                 isUserTagged(item.text) && {
+                                    borderWidth: 2,
+                                    borderColor: '#FFD700',
+                                    backgroundColor: isDarkTheme ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 224, 0.5)'
+                                },
+                                // Highlight replies to current user
+                                isReplyToCurrentUser(item) && {
                                     borderWidth: 2,
                                     borderColor: '#FFD700',
                                     backgroundColor: isDarkTheme ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 224, 0.5)'
@@ -173,40 +214,100 @@ const GroupChatPage = ({ }) => {
                             onPress={() => handleSelectMessage(item._id)}
                         >
                             <Text style={styles.sender}>{item.sender}</Text>
+
+                            {/* Display reply information if this message is a reply */}
+                            {item.replyToId && (
+                                <View style={[
+                                    styles.replyPreview,
+                                    isDarkTheme ? styles.darkReplyPreview : styles.lightReplyPreview,
+                                    isReplyToCurrentUser(item) && styles.highlightedReply
+                                ]}>
+                                    <Text style={styles.replyToSender}>
+                                        Reply to {isReplyToCurrentUser(item) ? "you" : `@${item.replyToSender}`}
+                                    </Text>
+                                    <View style={styles.replyToContent}>
+                                        <Text
+                                            style={[
+                                                styles.replyToText,
+                                                isDarkTheme ? styles.darkReplyToText : styles.lightReplyToText
+                                            ]}
+                                            numberOfLines={2}
+                                        >
+                                            {item.replyToText}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
                             <View style={styles.messageTextContainer}>
                                 {renderMessageWithTags(item.text)}
                             </View>
+
                             {item._id === selectedMessageId && (
-                                <TouchableOpacity
-                                    style={styles.deleteButton}
-                                    onPress={() => handleDeleteMessage(item._id)}
-                                >
-                                    <Text style={styles.deleteText}>Delete</Text>
-                                </TouchableOpacity>
+                                <View style={styles.messageActions}>
+                                    {/* Only show delete for user's own messages */}
+                                    {item.sender === username && (
+                                        <TouchableOpacity
+                                            style={styles.deleteButton}
+                                            onPress={() => handleDeleteMessage(item._id)}
+                                        >
+                                            <Text style={styles.deleteText}>Delete</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    {/* Show reply for all messages */}
+                                    <TouchableOpacity
+                                        style={styles.replyButton}
+                                        onPress={() => handleReply(item)}
+                                    >
+                                        <Text style={styles.replyText}>Reply</Text>
+                                    </TouchableOpacity>
+                                </View>
                             )}
                         </TouchableOpacity>
                     )
                 )}
-                extraData={[selectedMessageId, userEmail]} // Add userEmail to trigger re-renders when it's set
+                extraData={[selectedMessageId, userEmail, replyingTo, username, isDarkTheme]}
             />
+
+            {/* Reply Preview */}
+            {replyingTo && (
+                <View style={[styles.replyingToContainer, isDarkTheme ? styles.darkReplyContainer : styles.lightReplyContainer]}>
+                    <View style={styles.replyingToContent}>
+                        <Text style={[styles.replyingToHeader, isDarkTheme ? styles.darkText : styles.lightText]}>
+                            Replying to <Text style={styles.replyingToName}>@{replyingTo.sender}</Text>
+                        </Text>
+                        <Text
+                            style={[
+                                styles.replyingToText,
+                                isDarkTheme ? styles.darkReplyToText : styles.lightReplyToText
+                            ]}
+                            numberOfLines={1}
+                        >
+                            {replyingTo.text}
+                        </Text>
+                    </View>
+                    <TouchableOpacity style={styles.cancelReplyButton} onPress={cancelReply}>
+                        <Text style={styles.cancelReplyText}>✕</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
                 <TextInput
+                    ref={inputRef}
                     style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                     value={text}
                     onChangeText={setText}
-                    placeholder="Type a message..."
-                    onSubmitEditing={handleSendMessage} // Send message on Enter key press
-                    blurOnSubmit={false} // Prevent keyboard from closing
-                    returnKeyType="send" // Improve UX on mobile keyboards
+                    placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
+                    onSubmitEditing={handleSendMessage}
+                    blurOnSubmit={false}
+                    returnKeyType="send"
                 />
                 <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-                    <Text style={styles.sendText}>Send</Text>
+                    <Text style={styles.sendText}>{replyingTo ? "Reply" : "Send"}</Text>
                 </TouchableOpacity>
             </View>
-
-
         </KeyboardAvoidingView>
-
     );
 };
 
@@ -295,6 +396,112 @@ const styles = StyleSheet.create({
     },
     deleteText: {
         color: '#fff',
+        fontWeight: 'bold',
+    },
+    messageActions: {
+        flexDirection: 'row',
+        marginTop: 5,
+    },
+    deleteButton: {
+        backgroundColor: '#ff4d4d',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginRight: 8,
+    },
+    deleteText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    replyButton: {
+        backgroundColor: '#2196F3',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+    },
+    replyText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    replyPreview: {
+        padding: 8,
+        borderRadius: 8,
+        marginBottom: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: '#2196F3',
+    },
+    lightReplyPreview: {
+        backgroundColor: '#e6e6e6',
+        borderWidth: 1,
+        borderColor: '#d0d0d0',
+    },
+    darkReplyPreview: {
+        backgroundColor: '#2c2c2c',
+        borderWidth: 1,
+        borderColor: '#444',
+    },
+    replyToSender: {
+        fontWeight: 'bold',
+        fontSize: 12,
+        marginBottom: 3,
+        color: '#2196F3',
+    },
+    replyToContent: {
+        opacity: 1,
+    },
+    replyToText: {
+        fontSize: 13,
+    },
+    lightReplyToText: {
+        color: '#666',
+    },
+    darkReplyToText: {
+        color: '#aaa',
+    },
+    highlightedReply: {
+        borderLeftColor: '#FFD700',
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    },
+    replyingToContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: '#f5f5f5',
+        borderTopWidth: 1,
+        borderColor: '#ddd',
+    },
+    lightReplyContainer: {
+        backgroundColor: '#f0f0f0',
+        borderTopColor: '#ddd',
+    },
+    darkReplyContainer: {
+        backgroundColor: '#2A2A2A',
+        borderTopColor: '#444',
+    },
+    replyingToContent: {
+        flex: 1,
+        borderLeftWidth: 3,
+        borderLeftColor: '#2196F3',
+        paddingLeft: 8,
+    },
+    replyingToHeader: {
+        fontSize: 12,
+        marginBottom: 2,
+    },
+    replyingToName: {
+        fontWeight: 'bold',
+        color: '#2196F3',
+    },
+    replyingToText: {
+        fontSize: 13,
+        opacity: 0.7,
+    },
+    cancelReplyButton: {
+        padding: 8,
+    },
+    cancelReplyText: {
+        fontSize: 16,
+        color: '#888',
         fontWeight: 'bold',
     },
     /* Light Mode Styles */

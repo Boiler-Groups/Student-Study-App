@@ -235,7 +235,7 @@ export const getGroupMembers = async (req, res) => {
 // Send a message to a study group
 export const sendMessage = async (req, res) => {
     const { groupId } = req.params;
-    const { text } = req.body;
+    const { text, replyToId, replyToSender, replyToText } = req.body;
     const userEmail = req.user.email; // Assuming authentication middleware sets req.user
     const username = req.user.username
 
@@ -257,8 +257,14 @@ export const sendMessage = async (req, res) => {
             timestamp: new Date(),
         };
 
+        if (replyToId && replyToSender && replyToText) {
+            newMessage.replyToId = replyToId;
+            newMessage.replyToSender = replyToSender;
+            newMessage.replyToText = replyToText;
+        }
+
         group.messages.push(newMessage);
-        group.newMessage=true;
+        group.newMessage = true;
         await group.save();
 
         res.status(201).json({ message: "Message sent", newMessage });
