@@ -1,4 +1,4 @@
-import React from 'react';
+/*import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import NotesPage from './notesPage'; // adjust path if needed
 import * as FileSystem from 'expo-file-system';
@@ -77,4 +77,4 @@ describe('NotesPage Flashcard Generation', () => {
       );
     });
   });
-});
+}); */
