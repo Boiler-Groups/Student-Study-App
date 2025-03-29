@@ -6,7 +6,6 @@ import {
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
 import {
-    resetNewMessageForGroup,
     getStudyGroups,
     createStudyGroup,
     deleteStudyGroup,
