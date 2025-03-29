@@ -22,9 +22,13 @@ export const deleteStudyGroup = (studyGroupId) => StudyGroupClient.delete(`/id/$
 
 export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/editName/${id}`, newName );
 
-export const resetNewMessageForGroup = (groupId) => StudyGroupClient.patch(`/reset/${groupId}`);
-
 export const setNewMessageFlagForGroup = (groupId, newMessage) => StudyGroupClient.patch(`/setNewMessageFlag/${groupId}`, { newMessage });
+
+export const addAllMembersToUnopenedMessageGroup = (groupId) => StudyGroupClient.put(`/addAllMembersToUnopenedMessageGroup/${groupId}`);
+
+export const removeMemberFromUnopenedMessageGroup = (groupId, email) => StudyGroupClient.patch(`/removeMemberFromUnopenedMessageGroup/${groupId}/${email}`);
+
+export const getMembersWithUnopenedMessages = (groupId) => StudyGroupClient.get(`/getMembersWithUnopenedMessages/${groupId}`);
 
 export const getStudyGroupName = (groupId) => StudyGroupClient.get(`/name/${groupId}`);
 

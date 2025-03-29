@@ -11,7 +11,10 @@ import {
     getGroupsAll,
     addMemberToGroup,
     deleteMessage,
-    getStudyGroupName, setNewMessageFlag
+    getStudyGroupName,
+    setNewMessageFlag,
+    addAllMembersToUnopenedMessageGroup,
+    removeMemberFromUnopenedMessageGroup, getMembersWithUnopenedMessages
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -22,6 +25,9 @@ router.get('/:email', getGroups);
 router.post('/', createStudyGroup);
 router.delete('/id/:id', deleteStudyGroup);
 router.patch('/setNewMessageFlag/:groupId', setNewMessageFlag);
+router.put('/addAllMembersToUnopenedMessageGroup/:groupId', addAllMembersToUnopenedMessageGroup);
+router.patch('/removeMemberFromUnopenedMessageGroup/:groupId/:email', removeMemberFromUnopenedMessageGroup);
+router.get('/getMembersWithUnopenedMessages/:groupId', getMembersWithUnopenedMessages);
 router.patch('/editName/:id',editStudyGroupName); //Editing is done by the group id
 router.get("/messages/:groupId", userMiddleware, getGroupMessages);
 router.post("/messages/:groupId", userMiddleware, sendMessage);

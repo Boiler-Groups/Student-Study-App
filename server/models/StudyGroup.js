@@ -15,6 +15,9 @@ const StudyGroupSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  membersWithUnopenedMessages: {
+    type: Array,
+  },
 });
 
 export default mongoose.model('StudyGroup', StudyGroupSchema);
