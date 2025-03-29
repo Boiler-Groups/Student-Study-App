@@ -51,11 +51,15 @@ export default function Messages() {
     const [currEmail, setEmail] = useState(null); // State to store AsyncStorage data
     const [newGroupMessages, setNewGroupMessages] = useState({});
     const [groups, setGroups] = useState([]);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
     const handler_removeMemberFromUnopenedMessageGroup = async (groupId) => {
         removeMemberFromUnopenedMessageGroup(groupId,currEmail);
     }
 
+    const toggleNotifications = () => {
+        setNotificationsEnabled(!notificationsEnabled);
+    };
 
     // Fetch groups function
     const fetchGroups = async () => {
@@ -75,7 +79,7 @@ export default function Messages() {
                 for (const group of response.data) {
                     const membersWithUnopenedMessages = await getMembersWithUnopenedMessages(group._id);
                     //console.log('Response for group', group._id, membersWithUnopenedMessages);
-                    if (Array.isArray(membersWithUnopenedMessages.data.members)) {
+                    if (Array.isArray(membersWithUnopenedMessages.data.members) && !notificationsEnabled) {
                         const hasNewMessage = membersWithUnopenedMessages.data.members.includes(email);
                         messages[group._id] = hasNewMessage;
                     } else {
@@ -251,13 +255,29 @@ export default function Messages() {
 
             <View style={styles.headerContainer}>
                 <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Study Groups and Messaging</Text>
-                <TouchableOpacity style={styles.joinButton} onPress={() => {
-                        fetchGroupsAll();
-                        setJoinModalVisible(true);
-                    }}
-                >
-                    <Text style={styles.joinButtonText}>Join Group</Text>
-                </TouchableOpacity>
+                <View style={styles.buttonsContainer}>
+                    <TouchableOpacity
+                        style={styles.joinButton}
+                        onPress={() => {
+                            fetchGroupsAll();
+                            setJoinModalVisible(true);
+                        }}
+                    >
+                        <Text style={styles.joinButtonText}>Join Group</Text>
+                    </TouchableOpacity>
+
+                    {/* Notification toggle button */}
+                    <TouchableOpacity
+                        style={styles.toggleButton}
+                        onPress={toggleNotifications}
+                    >
+                        <MaterialIcons
+                            name={notificationsEnabled ? 'notifications-off' : 'notifications'}
+                            size={20}
+                            color="white"
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 {newMessage && (
                     <TouchableOpacity style={styles.notificationIcon} onPress={() => setNewMessageFlag(-1,false)}>
@@ -578,5 +598,19 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,  // Shadow opacity
         shadowRadius: 4,  // Shadow blur radius
     },
+    toggleButton: {
+        backgroundColor: '#f1c40f', // Change the color as per your design
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 5,
+        marginLeft: 10, // Add space between buttons
+    },
+    buttonsContainer: {
+        flexDirection: 'row',     // Aligns buttons horizontally (side by side)
+        alignItems: 'center',     // Ensures buttons are vertically centered
+        justifyContent: 'center', // Aligns buttons in the center, or use 'flex-start' if you want them aligned to the left
+        marginTop: 10,            // Adds space between title and buttons
+    },
+
 });
 
