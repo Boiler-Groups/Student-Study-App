@@ -46,6 +46,119 @@ export const setNewMessageFlag = async (req, res) => {
     }
 };
 
+//Add all group members to membersWithUnopenedMessages array
+export const addAllMembersToUnopenedMessageGroup = async(req,res)=> {
+    //console.log("Received add ALL To UnopenedMessages Request");
+    const { groupId } = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if(!group){
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${id}.`
+            });
+        }
+        //Combine the current membersWithUnopenedMessages with the all group members
+        const combinedMembers = [...group.membersWithUnopenedMessages, ...group.members];
+
+        //Use a set to remove duplicates
+        const uniqueMembers = new Set(combinedMembers);
+
+        //Convert the set back to an array
+        group.membersWithUnopenedMessages = [...uniqueMembers];
+
+        ///Save the update group
+        const updatedGroup = await group.save();
+
+        res.status(200).json({
+            message:'All members added to UnopenedMessageGroup successfully',
+            group: updatedGroup
+        });
+    } catch (e) {
+        //Log Any errors
+        console.error('Error Updating members with New MEssages');
+        res.status(500).json({
+            message: 'Server error occurred while attempting to addAllMembersToUnopenedMessageGroup' ,
+            errorDetails: `An error occurred while processing the request for group id: ${id}, Error:${e.message}`,
+            errorStack: e.stack
+        });
+    }
+
+};
+
+//Function nto remove a member from the memberWithUnopenedMessages Array
+export const removeMemberFromUnopenedMessageGroup = async (req, res) => {
+    //console.log("Received remove from UnopenedMessages Request");
+    const { groupId, email} = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if(!group){
+            return res.status(404).json({
+                message:'Study group was not found',
+                errorDetails: `No study group was found with the id: ${groupId}`
+            });
+        }
+
+        //Use the .filter() to create a new array that constains only the members who are not the email
+        //we want to remove
+        group.membersWithUnopenedMessages = group.membersWithUnopenedMessages.filter(members => members !== email);
+
+        const updatedGroup = await group.save();
+
+        res.status(200).json({
+            message:`${email} removed from membersWithUnopenedMessages successfully`,
+            group: updatedGroup
+        });
+
+    } catch (e) {
+        //Log Any errors
+        console.error('Error Updating members with New MEssages');
+        res.status(500).json({
+            message: 'Server error occurred while attempting to addAllMembersToUnopenedMessageGroup' ,
+            errorDetails: `An error occurred while processing the request for group id: ${groupId}, Error:${e.message}`,
+            errorStack: e.stack
+        });
+    }
+}
+
+// Function to get the list of members with unopened messages
+export const getMembersWithUnopenedMessages = async (req, res) => {
+    //console.log("Received get Members with UnopenedMessages Request");
+    const { groupId } = req.params; // Get group ID from URL parameters
+
+    try {
+        // Find the study group by ID
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        // Get the list of members with unopened messages
+        const membersWithUnopenedMessages = group.membersWithUnopenedMessages;
+
+        // Return the list of members as a response
+        res.status(200).json({
+            message: 'Members with unopened messages fetched successfully',
+            members: membersWithUnopenedMessages
+        });
+    } catch (e) {
+        console.error('Error fetching members with unopened messages:', e);
+
+        res.status(500).json({
+            message: 'Server error occurred while fetching members with unopened messages',
+            errorDetails: `An error occurred while processing the request for group id: ${groupId}. Error: ${e.message}`,
+            errorStack: e.stack
+        });
+    }
+};
 // Find and return all study groups
 export const getGroupsAll = async (req, res) => {
     try {

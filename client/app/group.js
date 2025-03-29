@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
-import { getGroupMessages, sendMessage, deleteMessage, getStudyGroupName } from './api/studygroup.js'; // Import API functions
+import {
+    getGroupMessages,
+    sendMessage,
+    deleteMessage,
+    getStudyGroupName,
+    addAllMembersToUnopenedMessageGroup,
+    removeMemberFromUnopenedMessageGroup,
+    getMembersWithUnopenedMessages } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -126,12 +133,15 @@ const GroupChatPage = ({ }) => {
         } else {
             newMessage = await sendMessage(token, groupId, text);
         }
-
+        let addAll = await addAllMembersToUnopenedMessageGroup(groupId);
+        console.log("User email was:",userEmail);
+        let removed = await removeMemberFromUnopenedMessageGroup(groupId,userEmail);
         if (newMessage) {
             loadMessages();
             setText('');
             flatListRef.current?.scrollToEnd({ animated: true });
         }
+
     };
 
     const handleDeleteMessage = async (messageId) => {

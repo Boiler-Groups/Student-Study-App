@@ -1,10 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { throttle } from 'lodash';
 import {
     View, Text, FlatList, TouchableOpacity, StyleSheet,
     ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
+import { useTheme } from '../components/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser } from './api/user';
+import { MaterialIcons } from '@expo/vector-icons'; // Import icon library
+
+
 import {
     getStudyGroups,
     createStudyGroup,
@@ -12,23 +19,22 @@ import {
     editStudyGroupName,
     getStudyGroupsAll,
     addStudyGroupMembers,
-    setNewMessageFlagForGroup
-} from './api/studygroup'; // Ensure correct path
-import { useTheme } from '../components/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCurrentUser } from './api/user';
-import { MaterialIcons } from '@expo/vector-icons'; // Import icon library
-
+    setNewMessageFlagForGroup,
+    addAllMembersToUnopenedMessageGroup,
+    removeMemberFromUnopenedMessageGroup,
+    getMembersWithUnopenedMessages
+} from './api/studygroup';
+import group from "@/app/group"; // Server function calls, Ensure correct path
 
 
 export default function Messages() {
+
     const router = useRouter();
     const { isDarkTheme } = useTheme();
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [successModalVisible, setSuccessModalVisible] = useState(false);
     const [groupsAll, setGroupsAll] = useState([]);
     const [joinModalVisible, setJoinModalVisible] = useState(false);
-    const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [createModalVisible, setCreateModalVisible] = useState(false);
     const [groupName, setGroupName] = useState('');
@@ -39,38 +45,83 @@ export default function Messages() {
     const [newMessage, setNewMessage] = useState(false);
     const navigation = useNavigation();
 
+
+    const [currToken, setToken] = useState(null); // State to store AsyncStorage data
+    const [currUser, setUser] = useState(null); // State to store AsyncStorage data
+    const [currEmail, setEmail] = useState(null); // State to store AsyncStorage data
+    const [newGroupMessages, setNewGroupMessages] = useState({});
+    const [groups, setGroups] = useState([]);
+
+    const handler_removeMemberFromUnopenedMessageGroup = async (groupId) => {
+        removeMemberFromUnopenedMessageGroup(groupId,currEmail);
+    }
+
+
     // Fetch groups function
     const fetchGroups = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
             const user = await getCurrentUser({ token });
             const email = user.data.email;
+
             const response = await getStudyGroups({ email });
             //console.log(response.data);
             if (Array.isArray(response.data)) {
                 setGroups(response.data);
+                //console.log(response)
 
-                // Check each group for the newMessage flag
-                const hasNewMessage = response.data.some(group => group.newMessage);
-                // If any group has newMessage set to true, set the newMessage state to true
-                if (hasNewMessage) {
-                    console.log("Setting New Message to True")
-                    setNewMessage(true);
+                //Populate newGroup Message
+                const messages = {};
+                for (const group of response.data) {
+                    const membersWithUnopenedMessages = await getMembersWithUnopenedMessages(group._id);
+                    //console.log('Response for group', group._id, membersWithUnopenedMessages);
+                    if (Array.isArray(membersWithUnopenedMessages.data.members)) {
+                        const hasNewMessage = membersWithUnopenedMessages.data.members.includes(email);
+                        messages[group._id] = hasNewMessage;
+                    } else {
+                        console.warn(`No array in 'members' for group ${group._id}, defaulting to false`);
+                        messages[group._id] = false;
+                    }
                 }
+                setNewGroupMessages(messages);
+
             } else {
                 console.error("Data is not an array:", response.data);
+            }
+
+
+            if (token !== null) {
+                setToken(token); // Set the fetched data to state
+            } else {
+                setToken('No data found'); // Handle case where there's no data
+            }
+            if (user !== null) {
+                setUser(user); // Set the fetched data to state
+            } else {
+                setUser('No data found'); // Handle case where there's no data
+            }
+            if (email !== null) {
+                setEmail(email); // Set the fetched data to state
+            } else {
+                setEmail('No data found'); // Handle case where there's no data
             }
         } catch (error) {
             console.log("Failed to fetch study groups:", error);
             //setErrorModalVisible(true);
             console.log("Returning Empty List");
-            setGroups([]); // Clear groups if the fetch fails
+            //setGroups([]); // Clear groups if the fetch fails
         } finally {
             setLoading(false);
         }
     };
 
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            fetchGroups();
+        }, 1000); // 1000 milliseconds = 1 second
 
+        return () => clearInterval(intervalId); // Cleanup interval on component unmount
+    }, [fetchGroups]);
 
     const fetchGroupsAll = async () => {
         try {
@@ -90,13 +141,6 @@ export default function Messages() {
             setLoading(false);
         }
     };
-
-    useEffect(
-        useCallback(() => {
-                fetchGroups();
-
-        }, [])
-    );
 
     // Create Study Group Function
     const handleCreateGroup = async () => {
@@ -142,27 +186,27 @@ export default function Messages() {
     };
 
     const setNewMessageFlag = async (groupId,flag) => {
-        try {
-            console.log("groupID was", groupId);
-
-            if(groupId === -1){
-                for (let group of groups) {
-                    const response = await setNewMessageFlagForGroup(group._id, false);
-                    if (response.status === 200) {
-                        console.log(`New message flag for group ${group._id} set to false.`);
-                    } else {
-                        console.error(`Failed to reset new message flag for group ${group._id}.`);
-                    }
-                }
-                setNewMessage(false);
-            } else {
-                const response = await setNewMessageFlagForGroup(groupId, flag);
-                console.log("Setting New Message for Group");
-                setNewMessage(false);
-            }
-        } catch (error) {
-            console.log("Could not Set new Message for Group");
-        }
+        // try {
+        //     console.log("groupID was", groupId);
+        //
+        //     if(groupId === -1){
+        //         for (let group of groups) {
+        //             const response = await setNewMessageFlagForGroup(group._id, false);
+        //             if (response.status === 200) {
+        //                 console.log(`New message flag for group ${group._id} set to false.`);
+        //             } else {
+        //                 console.error(`Failed to reset new message flag for group ${group._id}.`);
+        //             }
+        //         }
+        //         setNewMessage(false);
+        //     } else {
+        //         const response = await setNewMessageFlagForGroup(groupId, flag);
+        //         console.log("Setting New Message for Group");
+        //         setNewMessage(false);
+        //     }
+        // } catch (error) {
+        //     console.log("Could not Set new Message for Group");
+        //}
     };
 
     const updateStudyGroupName = async (groupId, newName) => {
@@ -227,16 +271,15 @@ export default function Messages() {
                 <FlatList
                     data={groups}
                     keyExtractor={(item) => item._id}
-                    contentContainerStyle={styles.listContainer}
-                    style={{ flex: 1 }} // Make FlatList fill available space
                     renderItem={({ item }) => (
+
                         <View style={styles.groupItem}>
                             {/* Group Item (Touchable for navigation) */}
                             <TouchableOpacity
-                                style={styles.groupItemTouchable}
-                                //onPress={() => router.push(`/group/${item._id}`)} // Navigate on touch
+                                style={newGroupMessages[item._id] ? styles.groupItemMessage : styles.groupItemNoMessage}  // Use the function to determine style
                                 onPress={() => {
                                     setNewMessageFlag( item._id, false);
+                                    handler_removeMemberFromUnopenedMessageGroup(item._id);
                                     navigation.navigate('group', { groupId: item._id } )
                                 }}
                             >
@@ -510,6 +553,30 @@ const styles = StyleSheet.create({
         right: -40,
         top: 10,
         padding: 50
+    },
+    groupItemNoMessage: {
+        backgroundColor: '#f8f8f8',  // Light background color for the group item
+        paddingVertical: 15,
+        paddingHorizontal: 20,
+        borderRadius: 8,  // Rounded corners for a button-like appearance
+        marginBottom: 8,  // Spacing between items
+        elevation: 2,  // Shadow for Android
+        shadowColor: '#000',  // Shadow for iOS
+        shadowOffset: { width: 0, height: 2 },  // Vertical shadow offset
+        shadowOpacity: 0.1,  // Shadow opacity
+        shadowRadius: 4,  // Shadow blur radius
+    },
+    groupItemMessage: {
+        backgroundColor: '#e0f7fa',  // Light blue background color for the group item with a new message
+        paddingVertical: 15,
+        paddingHorizontal: 20,
+        borderRadius: 8,  // Rounded corners for a button-like appearance
+        marginBottom: 8,  // Spacing between items
+        elevation: 2,  // Shadow for Android
+        shadowColor: '#000',  // Shadow for iOS
+        shadowOffset: { width: 0, height: 2 },  // Vertical shadow offset
+        shadowOpacity: 0.1,  // Shadow opacity
+        shadowRadius: 4,  // Shadow blur radius
     },
 });
 

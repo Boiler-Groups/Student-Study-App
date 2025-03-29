@@ -24,6 +24,12 @@ export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/edit
 
 export const setNewMessageFlagForGroup = (groupId, newMessage) => StudyGroupClient.patch(`/setNewMessageFlag/${groupId}`, { newMessage });
 
+export const addAllMembersToUnopenedMessageGroup = (groupId) => StudyGroupClient.put(`/addAllMembersToUnopenedMessageGroup/${groupId}`);
+
+export const removeMemberFromUnopenedMessageGroup = (groupId, email) => StudyGroupClient.patch(`/removeMemberFromUnopenedMessageGroup/${groupId}/${email}`);
+
+export const getMembersWithUnopenedMessages = (groupId) => StudyGroupClient.get(`/getMembersWithUnopenedMessages/${groupId}`);
+
 export const getStudyGroupName = (groupId) => StudyGroupClient.get(`/name/${groupId}`);
 
 // Function to add member emails to a study group
