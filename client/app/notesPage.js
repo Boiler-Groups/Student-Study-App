@@ -146,7 +146,6 @@ export default function NotesPage() {
       }
     }
   };
-
   const handleFlashCards = async () => {
     if (!notesContent || !cardNum) {
       alert('Please enter notes and select number of flashcards');
@@ -253,7 +252,9 @@ export default function NotesPage() {
         </TouchableOpacity>
       </View>
 
+
       {/* Modal for Creating Note */}
+
       <Modal visible={createModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -392,8 +393,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'column',
     marginBottom: 12,
+
     borderRadius: 8,
     padding: 10,
+
   },
   input: {
     padding: 10,

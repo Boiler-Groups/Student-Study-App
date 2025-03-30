@@ -21,6 +21,10 @@ export const getGroups = async (req, res) => {
     }
 };
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 14cf8c80e15e099e22449676ca14014b88fe7740
 //Set the new message flag
 export const setNewMessageFlag = async (req, res) => {
     const { groupId } = req.params;
@@ -258,7 +262,13 @@ export const sendMessage = async (req, res) => {
         };
 
         group.messages.push(newMessage);
+<<<<<<< HEAD
         group.newMessage=true;
+=======
+
+        group.newMessage=true;
+
+>>>>>>> 14cf8c80e15e099e22449676ca14014b88fe7740
         await group.save();
 
         res.status(201).json({ message: "Message sent", newMessage });

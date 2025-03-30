@@ -18,7 +18,9 @@ import {
 import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from './api/user';
+
 import { MaterialIcons } from '@expo/vector-icons'; // Import icon library
+
 
 
 
@@ -37,14 +39,18 @@ export default function Messages() {
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [groupToEdit, setGroupToEdit] = useState(null);
+
     const [newMessage, setNewMessage] = useState(false);
+
     const navigation = useNavigation();
 
     // Fetch groups function
     const fetchGroups = async () => {
         try {
+
             const token = await AsyncStorage.getItem('token');
             const user = await getCurrentUser({ token });
+
             const email = user.data.email;
             const response = await getStudyGroups({ email });
             //console.log(response.data);
@@ -71,8 +77,6 @@ export default function Messages() {
         }
     };
 
-
-
     const fetchGroupsAll = async () => {
         try {
             const response = await getStudyGroupsAll();
@@ -92,10 +96,10 @@ export default function Messages() {
         }
     };
 
+
     useEffect(
         useCallback(() => {
                 fetchGroups();
-
         }, [])
     );
 
@@ -139,6 +143,7 @@ export default function Messages() {
             // Show error message if deletion fails
             Alert.alert('Error', error.response?.data?.message || 'Failed to delete group');
             setErrorModalVisible(true);
+
         }
     };
 
@@ -163,6 +168,7 @@ export default function Messages() {
             }
         } catch (error) {
             console.log("Could not Set new Message for Group");
+
         }
     };
 
@@ -376,7 +382,9 @@ export default function Messages() {
             <Modal visible={successModalVisible} animationType="slide" transparent={true}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
+
                         <Text style={styles.modalTitle}>Task Completed Successfully!</Text>
+
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setSuccessModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
