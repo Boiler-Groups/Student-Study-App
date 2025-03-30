@@ -14,7 +14,8 @@ import {
     getStudyGroupName,
     setNewMessageFlag,
     addAllMembersToUnopenedMessageGroup,
-    removeMemberFromUnopenedMessageGroup, getMembersWithUnopenedMessages
+    removeMemberFromUnopenedMessageGroup,
+    getMembersWithUnopenedMessages,
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 

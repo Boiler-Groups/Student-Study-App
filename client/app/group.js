@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Alert,
+    Modal,
+    ScrollView,
+    Image
+} from 'react-native'; // Import react Native
 import {
     getGroupMessages,
     sendMessage,
@@ -7,7 +20,7 @@ import {
     getStudyGroupName,
     addAllMembersToUnopenedMessageGroup,
     removeMemberFromUnopenedMessageGroup,
-    getMembersWithUnopenedMessages } from './api/studygroup.js'; // Import API functions
+} from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -25,7 +38,8 @@ const GroupChatPage = ({ }) => {
     const [groupTitle, setGroupTitle] = useState('');
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
     const [replyingTo, setReplyingTo] = useState(null);
-
+    const [imageUploadModule,setImageUploadModule] = useState(false);
+    const [image, setImage] = useState('');
     const { groupId } = useLocalSearchParams();
     const navigation = useNavigation();
     const router = useRouter();
@@ -188,6 +202,31 @@ const GroupChatPage = ({ }) => {
         navigation.navigate('membersList', { groupId });
 
     };
+    const convertToBase64 = (file) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            setImage(reader.result);
+        };
+        reader.onerror = (error) => {
+            console.error('Error:', error);
+        };
+
+    };
+    const handleImageUpload = () => {
+        //Can be adjusted to send automatically if needed
+        setText(image)
+        //Reset the current image value
+        setImage(null)
+    };
+    const isBase64Image = (encodedBase64ImageStr) => {
+        //Create a regex expression to deter Users from accidentally writing something that would be considered an image.
+        const base64ImageRegex = /^data:image\/(png|jpeg|jpg|gif|bmp|webp);base64,[A-Za-z0-9+/=]+$/;
+
+        //Check if the encoded string is indeed an image.
+        return base64ImageRegex.test(encodedBase64ImageStr);
+    };
+
 
     return (
         <KeyboardAvoidingView
@@ -236,21 +275,34 @@ const GroupChatPage = ({ }) => {
                                         Reply to {isReplyToCurrentUser(item) ? "you" : `@${item.replyToSender}`}
                                     </Text>
                                     <View style={styles.replyToContent}>
-                                        <Text
-                                            style={[
-                                                styles.replyToText,
-                                                isDarkTheme ? styles.darkReplyToText : styles.lightReplyToText
-                                            ]}
-                                            numberOfLines={2}
-                                        >
-                                            {item.replyToText}
-                                        </Text>
+                                        {isBase64Image(item.replyToText) ? (
+                                            // Display image if it's a base64 image
+                                            <Image source={{ uri: item.replyToText }} style={styles.messageImage} />
+                                        ) : (
+                                            <Text
+                                                style={[
+                                                    styles.replyToText,
+                                                    isDarkTheme ? styles.darkReplyToText : styles.lightReplyToText
+                                                ]}
+                                                numberOfLines={2}
+                                            >
+                                                {item.replyToText}
+                                            </Text>
+                                        )}
                                     </View>
                                 </View>
                             )}
 
                             <View style={styles.messageTextContainer}>
-                                {renderMessageWithTags(item.text)}
+                                {isBase64Image(item.text) ? (
+                                    <View>
+                                        <Image source={{ uri: item.text }} style={styles.messageImage} />
+                                    </View>
+                                ) : (
+                                    <>
+                                        {renderMessageWithTags(item.text)} {/* Return your message here */}
+                                    </>
+                                )}
                             </View>
 
                             {item._id === selectedMessageId && (
@@ -286,15 +338,17 @@ const GroupChatPage = ({ }) => {
                         <Text style={[styles.replyingToHeader, isDarkTheme ? styles.darkText : styles.lightText]}>
                             Replying to <Text style={styles.replyingToName}>@{replyingTo.sender}</Text>
                         </Text>
-                        <Text
-                            style={[
-                                styles.replyingToText,
-                                isDarkTheme ? styles.darkReplyToText : styles.lightReplyToText
-                            ]}
-                            numberOfLines={1}
-                        >
-                            {replyingTo.text}
-                        </Text>
+                        {/* Check if the reply is an image */}
+                        {isBase64Image(replyingTo.text) ? (
+                            <Image source={{ uri: replyingTo.text }} style={styles.messageImage} />
+                        ) : (
+                            <Text
+                                style={[styles.replyingToText, isDarkTheme ? styles.darkReplyToText : styles.lightReplyToText]}
+                                numberOfLines={1}
+                            >
+                                {replyingTo.text}
+                            </Text>
+                        )}
                     </View>
                     <TouchableOpacity style={styles.cancelReplyButton} onPress={cancelReply}>
                         <Text style={styles.cancelReplyText}>✕</Text>
@@ -316,7 +370,53 @@ const GroupChatPage = ({ }) => {
                 <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
                     <Text style={styles.sendText}>{replyingTo ? "Reply" : "Send"}</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.moreOptionsButton} onPress={()=>setImageUploadModule(true)}>
+                    <Text style={styles.sendText}>{"+"}</Text>
+                </TouchableOpacity>
             </View>
+
+            {/* Modal for Uploading Images*/}
+            <Modal visible={imageUploadModule} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Upload an Image</Text>
+
+                        {/* Display Selected Image */}
+                        {image ? (
+                            <Image source={{ uri: image }} style={styles.previewImage} />
+                        ) : (
+                            <Text>No image selected</Text>
+                        )}
+
+                        {/* Image Selection Button */}
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = (e) => convertToBase64(e.target.files[0]);
+                                input.click();
+                            }}
+                        >
+                            <Text style={styles.buttonText}>Select Image</Text>
+                        </TouchableOpacity>
+
+                        {/* Upload Button */}
+                        <TouchableOpacity style={styles.button} onPress={()=>{
+                            handleImageUpload()
+                            setImageUploadModule(false)
+                        }}>
+                            <Text style={styles.buttonText}>Upload</Text>
+                        </TouchableOpacity>
+
+                        {/* Close Button */}
+                        <TouchableOpacity style={styles.cancelButton} onPress={()=>setImageUploadModule(false)}>
+                            <Text style={styles.cancelButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 };
@@ -391,6 +491,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 15,
         borderRadius: 20,
+    },
+    moreOptionsButton: {
+        backgroundColor: '#f1c40f',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 5,
     },
     sendText: {
         color: '#fff',
@@ -565,6 +671,69 @@ const styles = StyleSheet.create({
     },
     darkText: {
         color: "#F1F1F1",
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        width: '90%',
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20,
+    },
+    inputModal: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        padding: 10,
+        marginBottom: 15,
+        borderRadius: 5,
+    },
+    button: {
+        backgroundColor: '#007BFF',
+        padding: 12,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    cancelButton: {
+        backgroundColor: '#FF5733',
+        padding: 12,
+        borderRadius: 5,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    previewImage: {
+        width: 350,
+        height: 350,
+        marginVertical: 10,
+    },
+    uploadedImage: {
+        width: 350,
+        height: 350,
+        marginHorizontal: 5,
+        borderRadius: 5,
+    },
+    messageImage: {
+        width: 350,       // Set the width of the image
+        height: 350,      // Set the height of the image
+        borderRadius: 8,  // Optional: to give rounded corners to the image
+        marginBottom: 10, // Optional: adds space below the image
     },
 });
 
