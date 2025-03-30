@@ -85,6 +85,9 @@ export default function Home() {
                 <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/AddClass')}>
                     <Text style={styles.buttonText}>Add Class</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/leaderboard')}>
+                    <Text style={styles.buttonText}>Leaderboard</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/messages')}>
                     <Text style={styles.buttonText}>Messages</Text>
                 </TouchableOpacity>

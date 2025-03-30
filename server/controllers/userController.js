@@ -263,7 +263,7 @@ export const getPoints = async (req, res) => {
 //DO NOT return password field with the users
 export const getAllUsers = async (req, res) => {
   try {
-    const users = User.find().select("-password");
+    const users = await User.find().select("-password");
     if (!users) {
       return res.status(400).json({ message: "Users not found" });
     }

@@ -60,7 +60,7 @@ export default function NotesPage() {
   }
   
   //run();
-  /** 🔹 Fetch notes from backend when the component mounts */
+  /* Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
     try {
       const response = await fetch(`${API_URL}/notes`, {
@@ -76,7 +76,7 @@ export default function NotesPage() {
 
   useEffect(() => { fetchNotes() }, []);
 
-  /** 🔹 Add a new note */
+  /* Add a new note */
   const handleAddNote = async () => {
     if (notesName.trim() && notesContent.trim()) {
       try {
@@ -101,7 +101,7 @@ export default function NotesPage() {
     }
   };
 
-  /** 🔹 Delete a note */
+  /* Delete a note */
   const removeNote = async (id) => {
     try {
       const res = await fetch(`${API_URL}/notes/${id}`, {
