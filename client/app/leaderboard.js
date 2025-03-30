@@ -26,21 +26,17 @@ export default function leaderboard() {
     }
   };
 
-  useEffect(() => { fetchUsers() }, []);
-
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      const current = new Date();
-      // Runs function at midnight
-      if (current.getHours() === 0 && current.getMinutes() === 0) {
-        fetchUsers();
-      }
-      setNow(current); 
-    }, 60000);
-
-    // Clean up the interval on component unmount
-    return () => clearInterval(intervalId);
+    fetchUsers();
+    // 24 hrs * 60 minutes * 60 seconds * 1000 ms
+    const oneDay = 24 * 60 * 60 * 1000;
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, oneDay);
+  
+    return () => clearInterval(interval);
   }, []);
+  
 
   const handleEditPoints = async (userId) => {
     if (points.toString().trim()) {
