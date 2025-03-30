@@ -11,21 +11,36 @@ export default function leaderboard() {
   const { isDarkTheme } = useTheme(); // Get dark mode state
   const [users, setUsers] = useState([]);
   const [points, setPoints] = useState(0);
-  
+  const [now, setNow] = useState(new Date());
+
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/users`, {
         method: 'GET',
       });
-
       const data = await response.json();
-      setUsers(data);
+      const sortedData = data.sort((a, b) => b.points - a.points);
+      setUsers(sortedData);
     } catch (error) {
       console.error("Error fetching users:", error);
     }
   };
 
   useEffect(() => { fetchUsers() }, []);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const current = new Date();
+      // Runs function at midnight
+      if (current.getHours() === 0 && current.getMinutes() === 0) {
+        fetchUsers();
+      }
+      setNow(current); 
+    }, 60000);
+
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleEditPoints = async (userId) => {
     if (points.toString().trim()) {
