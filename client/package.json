@@ -14,8 +14,10 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@expo/metro-runtime": "^4.0.1",
     "@expo/vector-icons": "^14.0.2",
     "@google/generative-ai": "^0.24.0",
+    "@jridgewell/resolve-uri": "^3.1.2",
     "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.19",
@@ -35,6 +37,7 @@
     "expo-symbols": "~0.2.2",
     "expo-system-ui": "~4.0.8",
     "expo-web-browser": "~14.0.2",
+    "metro": "^0.76.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.7",

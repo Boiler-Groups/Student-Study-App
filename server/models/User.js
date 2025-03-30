@@ -18,6 +18,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  points: {
+    type: Number,
+    default: 0,
+  },
 });
 
 export default mongoose.model('User', UserSchema);

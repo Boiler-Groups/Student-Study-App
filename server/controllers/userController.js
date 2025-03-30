@@ -218,3 +218,58 @@ export const updateProfileImage = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const updatePoints = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { points } = req.body;
+
+    // Find user by Id
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    // Update User's Points if provided
+    if (points) {
+      user.points = points;
+    }
+
+    await user.save();
+    res.json({ message: "User updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getPoints = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find user by Id
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    upoints = user.select("points");
+
+    // return number of user's points
+    res.status(200).json(upoints);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//DO NOT return password field with the users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = User.find().select("-password");
+    if (!users) {
+      return res.status(400).json({ message: "Users not found" });
+    }
+
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+}
