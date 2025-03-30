@@ -241,7 +241,7 @@ export const updatePoints = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
+// Get user's points
 export const getPoints = async (req, res) => {
   try {
     const { userId } = req.params;
