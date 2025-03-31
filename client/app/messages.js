@@ -374,6 +374,13 @@ export default function Messages() {
                 <Text style={styles.buttonText}>Create New Group</Text>
             </TouchableOpacity>
 
+            {/* Button to navigate to Landing */}
+            <TouchableOpacity 
+                style={[styles.button, { marginTop: 10, backgroundColor: '#6c757d' }]} 
+                onPress={() => router.push('/landing')}>
+                <Text style={styles.buttonText}>Home</Text>
+            </TouchableOpacity>
+
             {/* Modal for Creating Group */}
             <Modal visible={createModalVisible} animationType="slide" transparent={true}>
                 <View style={styles.modalContainer}>
