@@ -18,6 +18,10 @@ const StudyGroupSchema = new mongoose.Schema({
   membersWithUnopenedMessages: {
     type: Array,
   },
+  membersTaggedOrReplied: {
+    type: Array,
+    default: []
+  }
 });
 
 export default mongoose.model('StudyGroup', StudyGroupSchema);
