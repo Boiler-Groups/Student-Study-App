@@ -6,6 +6,7 @@ import studyGroupRoutes from './routes/studyGroupRoutes.js';
 import noteRouter from './routes/noteRouter.js';
 import classRoutes from './routes/classRoutes.js';
 import summarizeRoutes from "./routes/summarizeRoutes.js";
+import conceptsRoute from './routes/conceptRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -38,6 +39,7 @@ app.use('/api/studygroups', studyGroupRoutes);
 app.use('/api/notes', noteRouter);
 app.use('/api/classes', classRoutes);
 app.use("/api/summarize", summarizeRoutes);
+app.use("/api/concepts", conceptsRoute);
 const port = process.env.PORT || 8080
 
 mongoConnect().then(async () => {
