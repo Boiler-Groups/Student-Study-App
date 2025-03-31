@@ -1,11 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Modal, TextInput,
+  ActivityIndicator, Modal, TextInput, ScrollView
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Markdown from 'react-native-markdown-display';
 import { API_URL } from '@env';
 
 export default function NotesPage() {
@@ -16,6 +17,8 @@ export default function NotesPage() {
   const [token, setToken] = useState('');
   const [editModal, openEditModal] = useState(false);
   const [createModal, openCreateModal] = useState(false);
+  const [summary, setSummary] = useState('');
+  const [loadingSummary, setLoadingSummary] = useState(false);
   const [objId, setObjId] = useState("");
   /** 🔹 Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
@@ -193,6 +196,41 @@ export default function NotesPage() {
                       value={notesContent}
                       onChangeText={setNotesContent}
                   />
+
+                  <TouchableOpacity 
+                    style={[styles.modalButton, { backgroundColor: '#444' }]}
+                    onPress={async () => {
+                      setLoadingSummary(true);
+                      try {
+                        const response = await fetch(`${API_URL}/summarize`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ notes: notesContent }),
+                        });
+                        const data = await response.json();
+                        setSummary(data.summary);
+                      } catch (err) {
+                        console.error("Failed to fetch summary:", err);
+                        setSummary("Error fetching summary.");
+                      }
+                      setLoadingSummary(false);
+                    }}
+                  >
+                  <Text style={styles.buttonText}>Generate AI Summary</Text>
+                  </TouchableOpacity>
+                  
+                  
+                    {loadingSummary ? (
+                      <ActivityIndicator size="small" color="#0000ff" />
+                    ) : (
+                      <ScrollView style={{ maxHeight: 200, width: '100%', }}>
+                      <Markdown style={{ body: { fontSize: 16, borderWidth: 1, width: '100%', padding: 10, borderWidth: 1, borderRadius: 5, marginBottom: 10,} }}>
+                        {summary}
+                      </Markdown>
+                      </ScrollView>
+                    )}
+                  
+
                   <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
                       <Text style={styles.buttonText}>Edit Note</Text>
                   </TouchableOpacity>
@@ -351,6 +389,14 @@ modalInput: {
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 10,
+},
+summaryBox: {
+  width: '100%',
+  padding: 10,
+  borderRadius: 5,
+  backgroundColor: '#eee',
+  marginTop: 10,
+  color: '#333',
 },
 cancelButton: {
     padding: 10,
