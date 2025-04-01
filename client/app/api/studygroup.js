@@ -51,40 +51,49 @@ export const getGroupMessages = (token, groupId) =>
       return [];
     });
 
-export const sendMessage = (token, groupId, message, replyData = null) => {
-  const payload = { text: message };
-
-  if (replyData) {
-    payload.replyToId = replyData.replyToId;
-    payload.replyToSender = replyData.replyToSender;
-    payload.replyToText = replyData.replyToText;
-  }
-
-  return StudyGroupClient.post(`/messages/${groupId}`, payload, authHeader(token))
-    .then(async res => {
-      if (replyData && replyData.replyToSender) {
-        try {
-          const allMembers = await StudyGroupClient.get(`/members/${groupId}`, authHeader(token));
-          const memberEmail = allMembers.data.find(member =>
-            member.includes('@') &&
-            member.split('@')[0].toLowerCase() === replyData.replyToSender.toLowerCase()
-          );
-
-          if (memberEmail) {
-            await addTaggedOrRepliedUser(groupId, memberEmail);
-          }
-        } catch (err) {
-          console.error("Error adding replied user to notifications:", err);
-        }
+    export const sendMessage = (token, groupId, message, replyData = null) => {
+      const payload = { text: message };
+    
+      if (replyData) {
+        payload.replyToId = replyData.replyToId;
+        payload.replyToSender = replyData.replyToSender;
+        payload.replyToText = replyData.replyToText;
       }
-
-      return res.data;
-    })
-    .catch(err => {
-      console.error("Error sending message:", err);
-      return null;
-    });
-}
+    
+      return StudyGroupClient.post(`/messages/${groupId}`, payload, authHeader(token))
+        .then(async res => {
+          if (replyData && replyData.replyToSender) {
+            try {
+              const messages = await getGroupMessages(token, groupId);
+              const originalMessage = messages.find(msg => msg._id === replyData.replyToId);
+              
+              if (originalMessage) {
+                const allMembers = await StudyGroupClient.get(`/members/${groupId}`, authHeader(token));
+                
+                const memberEmail = allMembers.data.find(member => {
+                  const emailUsername = member.includes('@') ? member.split('@')[0] : '';
+                  
+                  return emailUsername.toLowerCase() === replyData.replyToSender.toLowerCase();
+                });
+    
+                console.log("Member email found for reply:", memberEmail);
+    
+                if (memberEmail) {
+                  await addTaggedOrRepliedUser(groupId, memberEmail);
+                }
+              }
+            } catch (err) {
+              console.error("Error adding replied user to notifications:", err);
+            }
+          }
+    
+          return res.data;
+        })
+        .catch(err => {
+          console.error("Error sending message:", err);
+          return null;
+        });
+    }
 
 export const getGroupMembers = (token, groupId) =>
   StudyGroupClient.get(`/members/${groupId}`, authHeader(token))

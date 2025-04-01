@@ -375,19 +375,23 @@ export const sendMessage = async (req, res) => {
             newMessage.replyToSender = replyToSender;
             newMessage.replyToText = replyToText;
             
-            const repliedToUser = group.members.find(member => {
-                return group.messages.some(msg => 
-                    msg.sender === replyToSender && 
-                    group.members.includes(member)
-                );
-            });
+            const originalMessage = group.messages.find(msg => 
+                msg._id.toString() === replyToId
+            );
             
-            if (repliedToUser && repliedToUser !== userEmail) {
-                if (!group.membersTaggedOrReplied) {
-                    group.membersTaggedOrReplied = [];
-                }
-                if (!group.membersTaggedOrReplied.includes(repliedToUser)) {
-                    group.membersTaggedOrReplied.push(repliedToUser);
+            if (originalMessage && originalMessage.sender === replyToSender) {
+                const repliedToUser = group.members.find(member => {
+                    const memberUsername = member.split('@')[0];
+                    return memberUsername.toLowerCase() === replyToSender.toLowerCase();
+                });
+                
+                if (repliedToUser && repliedToUser !== userEmail) {
+                    if (!group.membersTaggedOrReplied) {
+                        group.membersTaggedOrReplied = [];
+                    }
+                    if (!group.membersTaggedOrReplied.includes(repliedToUser)) {
+                        group.membersTaggedOrReplied.push(repliedToUser);
+                    }
                 }
             }
         }
@@ -556,9 +560,13 @@ export const removeTaggedOrRepliedUser = async (req, res) => {
             });
         }
 
-        group.membersTaggedOrReplied = group.membersTaggedOrReplied.filter(
-            member => member !== email
-        );
+        if (!group.membersTaggedOrReplied) {
+            group.membersTaggedOrReplied = [];
+        } else {
+            group.membersTaggedOrReplied = group.membersTaggedOrReplied.filter(
+                member => member !== email
+            );
+        }
 
         const updatedGroup = await group.save();
 
