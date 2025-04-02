@@ -7,6 +7,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Markdown from 'react-native-markdown-display';
+import * as Speech from 'expo-speech';
+import { MaterialIcons } from '@expo/vector-icons'; 
 import { API_URL } from '@env';
 
 export default function NotesPage() {
@@ -22,6 +24,7 @@ export default function NotesPage() {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [keyConcepts, setKeyConcepts] = useState([]);
   const [loadingConcepts, setLoadingConcepts] = useState(false);
+  const [speakingNoteId, setSpeakingNoteId] = useState(null);
   const [objId, setObjId] = useState("");
   /** 🔹 Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
@@ -181,6 +184,7 @@ export default function NotesPage() {
                     openCreateModal(false); 
                     setNotesContent(''); 
                     setNotesName('');
+                    setCurrentNote(null);
                   }}>
                       <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
@@ -191,7 +195,30 @@ export default function NotesPage() {
       <Modal visible={editModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                   <Text style={styles.modalTitle}>Edit a Note</Text>
+
+                  <TouchableOpacity
+                    style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
+                    onPress={() => {
+                      if (speakingNoteId === objId) {
+                        Speech.stop();
+                        setSpeakingNoteId(null);
+                      } else {
+                        Speech.speak(notesContent, {
+                          onDone: () => setSpeakingNoteId(null),
+                        });
+                        setSpeakingNoteId(objId);
+                      }
+                    }}
+                  >
+                    <MaterialIcons
+                      name={speakingNoteId === objId ? 'pause-circle-filled' : 'volume-up'}
+                      size={28}
+                      color="#007AFF"
+                    />
+                  </TouchableOpacity>
+                </View>
                   <TextInput
                       style={styles.modalInput}
                       value={notesName}
@@ -274,7 +301,7 @@ export default function NotesPage() {
                     )}
 
                   <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
-                      <Text style={styles.buttonText}>Edit Note</Text>
+                      <Text style={styles.buttonText}>Save</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.cancelButton}
@@ -283,6 +310,8 @@ export default function NotesPage() {
                       setNotesContent(''); 
                       setNotesName('');
                       setCurrentNote(null);
+                      Speech.stop();
+                      setSpeakingNoteId(null);
                     }}
                   >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
