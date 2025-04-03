@@ -10,9 +10,6 @@
     "test": "jest --watchAll",
     "lint": "expo lint"
   },
-  "jest": {
-    "preset": "jest-expo"
-  },
   "dependencies": {
     "@expo/metro-runtime": "^4.0.1",
     "@expo/vector-icons": "^14.0.2",

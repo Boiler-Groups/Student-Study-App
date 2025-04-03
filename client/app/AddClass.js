@@ -49,7 +49,7 @@ export default function AddClass() {
   const addAllClassesToDatabase = async () => {
     try {
       for (const classObj of classes) {
-        const newClass = {
+        const newClass = { 
           name: classObj.name,
           credits: classObj.credits,
           userId: classObj.userId,

@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const NoteSchema = new mongoose.Schema({
-    userId: { 
-        type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false
+    userEmail: { 
+        type: String, required: true
     },
     name: { 
         type: String, required: true 

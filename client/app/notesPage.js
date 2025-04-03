@@ -204,7 +204,7 @@ export default function NotesPage() {
 
       <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
         <Text style={[styles.addNoteText, isDarkTheme ? styles.darkInput : styles.lightInput]}>Add Note</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => { openCreateModal(true) }}>
+        <TouchableOpacity style={styles.addButton} testID ='add-btn' onPress={() => { openCreateModal(true) }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
@@ -215,7 +215,7 @@ export default function NotesPage() {
         data={notes}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <View style={[styles.notesItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
+          <View key={item._id} style={[styles.notesItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
             <View>
               <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
                 {item.name}
@@ -233,7 +233,7 @@ export default function NotesPage() {
             <TouchableOpacity onPress={() => removeNote(item._id)}>
               <Icon name="delete" size={24} color="red" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => {
+            <TouchableOpacity testID={`test-btn-${item.name}`} onPress={() => {
               setNotesName(item.name);
               setNotesContent(item.content); 
               setObjId(item._id);
@@ -262,12 +262,14 @@ export default function NotesPage() {
                   <TextInput
                       style={styles.modalInput}
                       placeholder="Note Name"
+                      testID='note-name'
                       value={notesName}
                       onChangeText={setNotesName}
                   />
                   <TextInput
                       style={[styles.modalInput, { height: screenHeight * 0.3}]}
                       placeholder="Write in your notes here...."
+                      testID='write-note'
                       value={notesContent}
                       onChangeText={setNotesContent}
                       multiline={true}
@@ -275,8 +277,10 @@ export default function NotesPage() {
                       textAlignVertical='top'
                       scrollEnabled={true}
                   />
-                  <TouchableOpacity style={styles.modalButton} onPress={handleAddNote}>
-                      <Text style={styles.buttonText}>Create Note</Text>
+                  <TouchableOpacity 
+                    style={styles.modalButton}
+                    onPress={handleAddNote}>
+                    <Text style={styles.buttonText}>Create Note</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.cancelButton} onPress={() => { 
                     openCreateModal(false); 

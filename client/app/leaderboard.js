@@ -16,6 +16,7 @@ export default function leaderboard() {
   const [now, setNow] = useState(new Date());
   const [uname, setUsername] = useState("");
   const [upoints, setUserPoints] = useState(0);
+
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/users`, {
@@ -100,16 +101,27 @@ export default function leaderboard() {
 
       <FlatList
         style={styles.listContainer}
-        data={[...users].sort((a, b) => b.points - a.points)}
+        data={users.slice(0,20)}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View style={[styles.usersItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
             <View style={styles.userRow}>
+
+              {/* Rank */}
+              <View style={styles.rankBox}>
+                <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                  #{index + 1}
+                </Text>
+              </View>
+              
+              {/* Username */}
               <View style={styles.userBox}>
                 <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
                   User: {item.username}
                 </Text>
               </View>
+
+              {/* Points */}
               <View style={styles.pointsBox}>
                 <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
                   {item.points} pts
@@ -122,12 +134,12 @@ export default function leaderboard() {
       <View style={[styles.userPosition, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
       <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}> Your Points </Text>
       <View style={styles.userRow}>
-          <View style={styles.userBox}>
-            <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+          <View style={styles.userBox2}>
+            <Text style={[styles.titleText, isDarkTheme ? styles.darkText : styles.lightText]}>
               User: {uname}
             </Text>
           </View>
-          <View style={styles.pointsBox}>
+          <View style={styles.pointsBox2}>
             <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
               {upoints} pts
             </Text>
@@ -149,11 +161,12 @@ const styles = StyleSheet.create({
   },
   userPosition: {
     width: "100%",
-    alignSelf: "center", 
-    justifyContent: "center", 
-    alignItems: "center", 
-    backgroundColor: "#CFB991",
     height: "10%",
+    backgroundColor: "#CFB991",
+    justifyContent: "center",   
+    alignItems: "center",        
+    flexDirection: "column",       
+    gap: 2,       
   },
   title: {
     fontSize: 28,
@@ -181,18 +194,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
     padding: 10,
     borderRadius: 8,
+    minWidth: '45%',
+    alignItems: 'center',
+    borderColor: 'black',
+    borderWidth: 2,
+  },
+  userBox2: {
+    backgroundColor: '#eee',
+    padding: 10,
+    borderRadius: 8,
     minWidth: '50%',
     alignItems: 'center',
+    borderColor: 'black',
+    borderWidth: 2,
+  },
+  pointsBox2: {
+    backgroundColor: '#eee',
+    padding: 10,
+    borderRadius: 8,
+    minWidth: '50%',
+    alignItems: 'center',
+    borderColor: 'black',
+    borderWidth: 2,
+  },
+  rankBox: {
+    padding: 10,
+    borderRadius: 8,
+    minWidth: '10%',
+    alignItems: 'center',
+    borderColor: 'black',
+    borderWidth: 2,
   },
   pointsBox: {
     backgroundColor: '#ddd',
     padding: 10,
     borderRadius: 8,
-    minWidth: '50%',
+    minWidth: '45%',
     alignItems: 'center',
+    borderColor: 'black',
+    borderWidth: 2,
   },
   pointsText: {
     fontSize: 16,
+  },
+  titleText: {
+    fontSize: 16,
+    font: "bold",
   },
   /* Light Mode */
   lightBackground: {
