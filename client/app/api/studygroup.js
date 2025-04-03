@@ -22,18 +22,10 @@ export const deleteStudyGroup = (studyGroupId) => StudyGroupClient.delete(`/id/$
 
 export const editStudyGroupName = (id, newName) => StudyGroupClient.patch(`/editName/${id}`, newName );
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 14cf8c80e15e099e22449676ca14014b88fe7740
 export const resetNewMessageForGroup = (groupId) => StudyGroupClient.patch(`/reset/${groupId}`);
 
 export const setNewMessageFlagForGroup = (groupId, newMessage) => StudyGroupClient.patch(`/setNewMessageFlag/${groupId}`, { newMessage });
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 14cf8c80e15e099e22449676ca14014b88fe7740
 export const getStudyGroupName = (groupId) => StudyGroupClient.get(`/name/${groupId}`);
 
 // Function to add member emails to a study group

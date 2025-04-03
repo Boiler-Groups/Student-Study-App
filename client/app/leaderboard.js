@@ -28,15 +28,26 @@ export default function leaderboard() {
 
   useEffect(() => {
     fetchUsers();
-    // 24 hrs * 60 minutes * 60 seconds * 1000 ms
-    const oneDay = 24 * 60 * 60 * 1000;
-    const interval = setInterval(() => {
-      fetchUsers();
-    }, oneDay);
+    let hasRefreshedToday = false; //ensure it can't rerun multiple times a day
   
-    return () => clearInterval(interval);
+    const intervalId = setInterval(() => {
+      const current = new Date();
+  
+      if (current.getHours() === 0 && current.getMinutes() === 0) {
+        if (!hasRefreshedToday) {
+          fetchUsers();
+          hasRefreshedToday = true;
+        }
+      } else {
+        hasRefreshedToday = false; // reset after midnight minute passes
+      }
+  
+      setNow(current);
+    }, 60000);
+
+    // Make sure multiple can't be running at once
+    return () => clearInterval(intervalId);
   }, []);
-  
 
   const handleEditPoints = async (userId) => {
     if (points.toString().trim()) {
