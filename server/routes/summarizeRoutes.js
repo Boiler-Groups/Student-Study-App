@@ -12,10 +12,10 @@ router.post("/", async (req, res) => {
   
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-      const prompt = `Summarize these study notes into clear key points:\n\n${notes}`;
+      const prompt = `Summarize these study notes into clear key points:\n\n${notes}.`;
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      const summary = response.text();
+      const summary = response.text().replace(/`(.*?)`/g, "'$1'");
       await Note.findByIdAndUpdate(noteId, { summary });
   
       res.json({ summary });

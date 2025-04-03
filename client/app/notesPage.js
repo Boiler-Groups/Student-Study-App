@@ -172,10 +172,12 @@ export default function NotesPage() {
                       onChangeText={setNotesName}
                   />
                   <TextInput
-                      style={styles.modalInput}
-                      placeholder="Write in your notes here...."
+                      style={styles.noteContentInput}
                       value={notesContent}
                       onChangeText={setNotesContent}
+                      multiline
+                      scrollEnabled
+                      textAlignVertical="top"
                   />
                   <TouchableOpacity style={styles.modalButton} onPress={handleAddNote}>
                       <Text style={styles.buttonText}>Create Note</Text>
@@ -197,7 +199,6 @@ export default function NotesPage() {
               <View style={styles.modalContent}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                   <Text style={styles.modalTitle}>Edit a Note</Text>
-
                   <TouchableOpacity
                     style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
                     onPress={() => {
@@ -206,6 +207,8 @@ export default function NotesPage() {
                         setSpeakingNoteId(null);
                       } else {
                         Speech.speak(notesContent, {
+                          voice: "Microsoft Zira - English (United States)", //Microsoft David - English (United States)
+                                                                             //Microsoft Mark - English (United States)
                           onDone: () => setSpeakingNoteId(null),
                         });
                         setSpeakingNoteId(objId);
@@ -225,9 +228,12 @@ export default function NotesPage() {
                       onChangeText={setNotesName}
                   />
                   <TextInput
-                      style={styles.modalInput}
+                      style={styles.noteContentInput}
                       value={notesContent}
                       onChangeText={setNotesContent}
+                      multiline
+                      scrollEnabled
+                      textAlignVertical="top"
                   />
 
                   <TouchableOpacity 
@@ -464,6 +470,17 @@ modalInput: {
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 10,
+},
+noteContentInput: {
+  width: '100%',
+  height: 250,
+  borderWidth: 1,
+  borderRadius: 8,
+  borderColor: '#ccc',
+  padding: 12,
+  backgroundColor: '#f9f9f9',
+  marginBottom: 10,
+  textAlignVertical: 'top'
 },
 summaryBox: {
   width: '100%',
