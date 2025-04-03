@@ -4,6 +4,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import { API_URL } from '@env';
 import { useTheme } from '../components/ThemeContext'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser } from './api/user';
 
 export default function AddClass() {
   const router = useRouter();
@@ -13,30 +15,44 @@ export default function AddClass() {
   const [classes, setClasses] = useState([]);
   const [credits, setCredits] = useState('');
 
-  const handleAddClass = () => {
+  const handleAddClass = async () => {
     if (!className.trim()) {
       console.error("Class name cannot be empty.");
       setErrMsg('Class name cannot be empty');
       return;
     }
+  
     const credNum = Number(credits);
-    if (!Number.isInteger(credNum) || credits <= 0) {
+    if (!Number.isInteger(credNum) || credNum <= 0) {
       console.error("Credits must be a valid positive integer.");
       setErrMsg('Credits must be a valid positive integer');
       return;
     }
-    setClasses([...classes, { 
-      id: Date.now().toString(), 
-      name: className, 
-      credits,
-      userId: `test Id + ${credits}`,
-      added: false 
-    }]);
-
-    setClassName('');
-    setCredits('');
-    setErrMsg('');
+  
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const user = await getCurrentUser({ token });
+      const response = user.data;
+      setClasses(classes => [
+        ...classes,
+        {
+          id: Date.now().toString(),
+          name: className,
+          credits: credNum,
+          userId: response._id,
+        },
+      ]);
+  
+      setClassName('');
+      setCredits('');
+      setErrMsg('');
+      console.log(classes);
+    } catch (error) {
+      console.error("Error adding class:", error);
+      setErrMsg("Something went wrong while adding the class.");
+    }
   };
+  
 
   const toggleClassAdded = (id) => {
     setClasses(classes.map((c) => (c.id === id ? { ...c, added: !c.added } : c)));

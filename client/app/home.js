@@ -6,6 +6,7 @@ import { AuthContext } from './AuthContext';
 import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
+import { getCurrentUser } from './api/user';
 
 export default function Home() {
     const router = useRouter();

@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useRouter } from "expo-router";
 import { API_URL } from '@env';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native'; 
 import { getCurrentUser } from './api/user';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -34,7 +34,6 @@ export default function leaderboard() {
     try {
       const token = await AsyncStorage.getItem('token');
       const user = await getCurrentUser({ token });
-      console.log(user);
       setUsername(user.data.username);
       setUserPoints(user.data.points);
     } catch (error) {
