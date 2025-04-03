@@ -5,6 +5,8 @@ import {
 import { useRouter } from "expo-router";
 import { API_URL } from '@env';
 import { useTheme } from '@react-navigation/native';
+import { getCurrentUser } from './api/user';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function leaderboard() {
   const router = useRouter();
@@ -12,7 +14,8 @@ export default function leaderboard() {
   const [users, setUsers] = useState([]);
   const [points, setPoints] = useState(0);
   const [now, setNow] = useState(new Date());
-
+  const [uname, setUsername] = useState("");
+  const [upoints, setUserPoints] = useState(0);
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/users`, {
@@ -26,8 +29,21 @@ export default function leaderboard() {
     }
   };
 
+  const getUser = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const user = await getCurrentUser({ token });
+      console.log(user);
+      setUsername(user.data.username);
+      setUserPoints(user.data.points);
+    } catch (error) {
+      console.error("Error getting current user");
+    }
+  }
+
   useEffect(() => {
     fetchUsers();
+    getUser();
     let hasRefreshedToday = false; //ensure it can't rerun multiple times a day
   
     const intervalId = setInterval(() => {
@@ -36,6 +52,7 @@ export default function leaderboard() {
       if (current.getHours() === 0 && current.getMinutes() === 0) {
         if (!hasRefreshedToday) {
           fetchUsers();
+          getUser();
           hasRefreshedToday = true;
         }
       } else {
@@ -102,6 +119,21 @@ export default function leaderboard() {
           </View>
         )}
       />
+      <View style={[styles.userPosition, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+      <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}> Your Points </Text>
+      <View style={styles.userRow}>
+          <View style={styles.userBox}>
+            <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+              User: {uname}
+            </Text>
+          </View>
+          <View style={styles.pointsBox}>
+            <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+              {upoints} pts
+            </Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -113,7 +145,15 @@ const styles = StyleSheet.create({
     justifyContent: "center", 
     alignItems: "center", 
     backgroundColor: "#CFB991",
-    flex: 1,
+    height: "90%",
+  },
+  userPosition: {
+    width: "100%",
+    alignSelf: "center", 
+    justifyContent: "center", 
+    alignItems: "center", 
+    backgroundColor: "#CFB991",
+    height: "10%",
   },
   title: {
     fontSize: 28,

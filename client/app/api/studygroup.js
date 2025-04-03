@@ -63,4 +63,4 @@ export const removeMember = (token, groupId, userEmail) =>
     .catch(err => {
       console.error("Error remove user from group:", err);
       return null;
-    })
+    });
