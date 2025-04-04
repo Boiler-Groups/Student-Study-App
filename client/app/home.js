@@ -24,8 +24,9 @@ export default function Home() {
                 const token = await AsyncStorage.getItem('token');
                 const userData = await getCurrentUser({ token });
                 const userID = userData.data._id;
-
-                const response = await fetch(`${API_URL}/classes/${userID}`);
+                const response = await fetch(`${API_URL}/notes/user/${userID}`, {
+                        method: 'GET',
+                });
                 if (!response.ok) {
                     console.log("Fetch classes failed!")
                     throw new Error('Failed to fetch classes');

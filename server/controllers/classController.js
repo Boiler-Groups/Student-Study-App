@@ -13,9 +13,10 @@ export const getClasses = async (req, res) => {
 };
 
 export const getUserClasses = async (req, res) => {
+  console.log("get user classes is running\n");
   try {
-    const { userID } = req.params;
-    const classes = await Class.find({ userId: userID });
+    const userId = req.params.userId;
+    const classes = await Class.find({ userId });
 
     res.status(200).json(classes);
   } catch (error) {
