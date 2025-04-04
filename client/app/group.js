@@ -20,6 +20,7 @@ import {
     getStudyGroupName,
     addAllMembersToUnopenedMessageGroup,
     removeMemberFromUnopenedMessageGroup,
+    removeTaggedOrRepliedUser
 } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
@@ -41,6 +42,7 @@ const GroupChatPage = ({ }) => {
     const [replyingTo, setReplyingTo] = useState(null);
     const [imageUploadModule,setImageUploadModule] = useState(false);
     const [automateMessageModule,setAutomateMessageModule] = useState(false);
+
     const [image, setImage] = useState('');
     const { groupId } = useLocalSearchParams();
     const navigation = useNavigation();
@@ -102,9 +104,21 @@ const GroupChatPage = ({ }) => {
                 }
             };
 
+            const clearNotifications = async () => {
+                try {
+                    await removeMemberFromUnopenedMessageGroup(groupId, userEmail);
+                    await removeTaggedOrRepliedUser(groupId, userEmail);
+                } catch (e) {
+                    console.error("Failed to clear notifications:", e);
+                }
+            };
+
             loadMessages();
             fetchGroupName();
-        }, [groupId])
+            if (userEmail) {
+                clearNotifications();
+            }
+        }, [groupId, userEmail])
     );
 
     const renderMessageWithTags = (text) => {
@@ -162,8 +176,8 @@ const GroupChatPage = ({ }) => {
             newMessage = await sendMessage(token, groupId, text);
         }
         let addAll = await addAllMembersToUnopenedMessageGroup(groupId);
-        console.log("User email was:",userEmail);
-        let removed = await removeMemberFromUnopenedMessageGroup(groupId,userEmail);
+        console.log("User email was:", userEmail);
+        let removed = await removeMemberFromUnopenedMessageGroup(groupId, userEmail);
         if (newMessage) {
             loadMessages();
             setText('');
@@ -471,7 +485,7 @@ const GroupChatPage = ({ }) => {
                 <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
                     <Text style={styles.sendText}>{replyingTo ? "Reply" : "Send"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.moreOptionsButton} onPress={()=>setImageUploadModule(true)}>
+                <TouchableOpacity style={styles.moreOptionsButton} onPress={() => setImageUploadModule(true)}>
                     <Text style={styles.sendText}>{"+"}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.automateButton} onPress={() => {setAutomateMessageModule(true)}}>
@@ -508,7 +522,7 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
 
                         {/* Upload Button */}
-                        <TouchableOpacity style={styles.button} onPress={()=>{
+                        <TouchableOpacity style={styles.button} onPress={() => {
                             handleImageUpload()
                             setImageUploadModule(false)
                         }}>
@@ -516,7 +530,7 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
 
                         {/* Close Button */}
-                        <TouchableOpacity style={styles.cancelButton} onPress={()=>setImageUploadModule(false)}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setImageUploadModule(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>

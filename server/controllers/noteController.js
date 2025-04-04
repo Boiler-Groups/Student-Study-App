@@ -1,6 +1,7 @@
 import Note from "../models/Note.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from 'mongoose';
 
 // Find and return all study groups that the given user is a member of
 export const getNotes = async (req, res) => {

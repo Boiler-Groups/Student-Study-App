@@ -16,6 +16,9 @@ import {
     addAllMembersToUnopenedMessageGroup,
     removeMemberFromUnopenedMessageGroup,
     getMembersWithUnopenedMessages,
+    addTaggedOrRepliedUser,
+    removeTaggedOrRepliedUser,
+    getTaggedOrRepliedUsers,
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -37,5 +40,8 @@ router.get('/name/:groupId', getStudyGroupName)
 router.patch('/remove/:groupId', userMiddleware, removeMember)
 router.patch('/addMember/:id', addMemberToGroup);
 router.patch('/delete/:groupId', userMiddleware, deleteMessage);
+router.post('/addTaggedUser/:groupId', addTaggedOrRepliedUser);
+router.patch('/removeTaggedUser/:groupId/:email', removeTaggedOrRepliedUser);
+router.get('/getTaggedUsers/:groupId', getTaggedOrRepliedUsers);
 
 export default router;
