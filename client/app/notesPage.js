@@ -1,21 +1,30 @@
 import React, { useContext, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Modal, TextInput,
+  ActivityIndicator, Modal, TextInput, ScrollView
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Markdown from 'react-native-markdown-display';
+import * as Speech from 'expo-speech';
+import { MaterialIcons } from '@expo/vector-icons'; 
 import { API_URL } from '@env';
 
 export default function NotesPage() {
   const router = useRouter();
   const [notesName, setNotesName] = useState('');
   const [notesContent, setNotesContent] = useState('');
+  const [currentNote, setCurrentNote] = useState(null);
   const [notes, setNotes] = useState([]);
   const [token, setToken] = useState('');
   const [editModal, openEditModal] = useState(false);
   const [createModal, openCreateModal] = useState(false);
+  const [summary, setSummary] = useState('');
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [keyConcepts, setKeyConcepts] = useState([]);
+  const [loadingConcepts, setLoadingConcepts] = useState(false);
+  const [speakingNoteId, setSpeakingNoteId] = useState(null);
   const [objId, setObjId] = useState("");
   /** 🔹 Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
@@ -90,11 +99,27 @@ export default function NotesPage() {
 
         const data = await res.json();
         if (res.ok) {
-        setNotesName('');
-        setNotesContent('');
-        setObjId('');
-        fetchNotes();
-        openCreateModal(false);
+          setLoadingConcepts(true);
+          try {
+            const response = await fetch(`${API_URL}/concepts`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notes: notesContent, noteId: objId }),
+            });
+            const data = await response.json();
+            // Split by line to get bullet points
+            const conceptsArray = data.concepts.split('\n').filter(line => line.trim() !== '');
+            setKeyConcepts(conceptsArray);
+          } catch (err) {
+            console.error("Failed to get key concepts:", err);
+            setKeyConcepts(["Error fetching concepts."]);
+          }
+          setLoadingConcepts(false);
+          setNotesName('');
+          setNotesContent('');
+          setObjId('');
+          fetchNotes();
+          openCreateModal(false);
         } else {
           console.error("Couldn't find Note")
         }
@@ -131,6 +156,9 @@ export default function NotesPage() {
               setNotesName(item.name);
               setNotesContent(item.content); 
               setObjId(item._id);
+              setSummary(item.summary || '');
+              setKeyConcepts(item.keyConcepts || []);
+              setCurrentNote(item);
               openEditModal(true);
             }}>
               <Icon name="edit" size={24} color="black" />
@@ -160,10 +188,12 @@ export default function NotesPage() {
                       onChangeText={setNotesName}
                   />
                   <TextInput
-                      style={styles.modalInput}
-                      placeholder="Write in your notes here...."
+                      style={styles.noteContentInput}
                       value={notesContent}
                       onChangeText={setNotesContent}
+                      multiline
+                      scrollEnabled
+                      textAlignVertical="top"
                   />
                   <TouchableOpacity style={styles.modalButton} onPress={handleAddNote}>
                       <Text style={styles.buttonText}>Create Note</Text>
@@ -172,6 +202,7 @@ export default function NotesPage() {
                     openCreateModal(false); 
                     setNotesContent(''); 
                     setNotesName('');
+                    setCurrentNote(null);
                   }}>
                       <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
@@ -182,26 +213,130 @@ export default function NotesPage() {
       <Modal visible={editModal} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                   <Text style={styles.modalTitle}>Edit a Note</Text>
+                  <TouchableOpacity
+                    style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
+                    onPress={() => {
+                      if (speakingNoteId === objId) {
+                        Speech.stop();
+                        setSpeakingNoteId(null);
+                      } else {
+                        Speech.speak(notesContent, {
+                          voice: "Microsoft Zira - English (United States)", //Microsoft David - English (United States)
+                                                                             //Microsoft Mark - English (United States)
+                          onDone: () => setSpeakingNoteId(null),
+                        });
+                        setSpeakingNoteId(objId);
+                      }
+                    }}
+                  >
+                    <MaterialIcons
+                      name={speakingNoteId === objId ? 'pause-circle-filled' : 'volume-up'}
+                      size={28}
+                      color="#007AFF"
+                    />
+                  </TouchableOpacity>
+                </View>
                   <TextInput
                       style={styles.modalInput}
                       value={notesName}
                       onChangeText={setNotesName}
                   />
                   <TextInput
-                      style={styles.modalInput}
+                      style={styles.noteContentInput}
                       value={notesContent}
                       onChangeText={setNotesContent}
+                      multiline
+                      scrollEnabled
+                      textAlignVertical="top"
                   />
-                  <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
-                      <Text style={styles.buttonText}>Edit Note</Text>
+
+                  <TouchableOpacity 
+                    style={[styles.modalButton, { backgroundColor: '#444' }]}
+                    onPress={async () => {
+                      setLoadingSummary(true);
+                      try {
+                        const response = await fetch(`${API_URL}/summarize`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ notes: notesContent, noteId: objId }),
+                        });
+                        const data = await response.json();
+                        setSummary(data.summary);
+                      } catch (err) {
+                        console.error("Failed to fetch summary:", err);
+                        setSummary("Error fetching summary.");
+                      }
+                      setLoadingSummary(false);
+                    }}
+                  >
+                  
+                  <Text style={styles.buttonText}>Generate AI Summary</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => { 
-                    openEditModal(false); 
-                    setNotesContent(''); 
-                    setNotesName('');
-                  }}>
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    {loadingSummary ? (
+                      <ActivityIndicator size="small" color="#0000ff" />
+                    ) : (
+                      <ScrollView style={{ maxHeight: 150, width: '100%', }}>
+                        <Markdown style={{ body: { fontSize: 16, borderWidth: 1, width: '100%', padding: 10, borderWidth: 1, borderRadius: 5, marginBottom: 10,} }}>
+                          {summary}
+                        </Markdown>
+                      </ScrollView>
+                    )}
+                  
+                    <TouchableOpacity
+                      style={[styles.modalButton, { backgroundColor: '#444' }]}
+                      onPress={async () => {
+                        setLoadingConcepts(true);
+                        try {
+                          const response = await fetch(`${API_URL}/concepts`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ notes: notesContent, noteId: objId }),
+                          });
+                          const data = await response.json();
+                          // Split by line to get bullet points
+                          const conceptsArray = data.concepts.split('\n').filter(line => line.trim() !== '');
+                          setKeyConcepts(conceptsArray);
+                        } catch (err) {
+                          console.error("Failed to get key concepts:", err);
+                          setKeyConcepts(["Error fetching concepts."]);
+                        }
+                        setLoadingConcepts(false);
+                      }}
+                    >
+                      <Text style={styles.buttonText}>Find Key Concepts</Text>
+                    </TouchableOpacity>
+
+                    {loadingConcepts ? (
+                      <ActivityIndicator size="small" color="#0000ff" />
+                    ) : (
+                      <ScrollView style={styles.conceptsScroll} nestedScrollEnabled={true}>
+                        <View style={styles.conceptsContainer}>
+                          {keyConcepts.map((concept, idx) => (
+                            <View key={idx} style={styles.conceptPill}>
+                              <Text style={styles.conceptText}>{concept.replace(/^[-*]\s*/, '')}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </ScrollView>
+                    )}
+
+                  <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
+                      <Text style={styles.buttonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => {
+                      openEditModal(false); 
+                      setNotesContent(''); 
+                      setNotesName('');
+                      setCurrentNote(null);
+                      Speech.stop();
+                      setSpeakingNoteId(null);
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
               </View>
           </View>
@@ -351,6 +486,48 @@ modalInput: {
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 10,
+},
+noteContentInput: {
+  width: '100%',
+  height: 150,
+  borderWidth: 1,
+  borderRadius: 8,
+  borderColor: '#ccc',
+  padding: 12,
+  backgroundColor: '#f9f9f9',
+  marginBottom: 10,
+  textAlignVertical: 'top'
+},
+summaryBox: {
+  width: '100%',
+  maxHeight: 50,
+  padding: 10,
+  borderRadius: 5,
+  backgroundColor: '#eee',
+  marginTop: 10,
+  color: '#333',
+},
+conceptsScroll: {
+  maxHeight: 100, // scrollable when content overflows
+  width: '100%',
+  marginTop: 10,
+},
+conceptsContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8, // optional: requires React Native 0.71+
+},
+conceptPill: {
+  backgroundColor: '#E0F7FA',
+  borderRadius: 20,
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  margin: 4,
+},
+conceptText: {
+  color: '#00796B',
+  fontWeight: '600',
+  fontSize: 14,
 },
 cancelButton: {
     padding: 10,
