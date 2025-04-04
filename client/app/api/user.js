@@ -12,12 +12,8 @@ export const getCurrentUser = ({ token }) =>
         headers: {
             Authorization: `Bearer ${token}`,
         },
-<<<<<<< HEAD
-});
-=======
     });
 
 export const searchUser = (query) => UserClient.get('/search', { params: { query } });
 
 export const getUserFromId = (userId) => UserClient.get(`/${userId}`);
->>>>>>> 9f89eb8dcc413c173c79f70ba16770d059dda6ee

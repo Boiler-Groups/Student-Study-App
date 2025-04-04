@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Modal, TextInput, ScrollView, Dimensions,
-  ScrollView, Platform
+  Platform
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
@@ -514,53 +514,7 @@ export default function NotesPage() {
               </View>
           </View>
       </Modal>
-      {/* Modal for Creating Flashcards */}
-      <Modal visible={flashModal} animationType="slide" transparent={true}>
-          <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>Select Number of Flashcards</Text>
-                  {/* Toggle Button for Dropdown */}
-                  <TouchableOpacity
-                    style={styles.dropdownToggle}
-                    onPress={() => setShowDropdown(!showDropdown)}
-                  >
-                    <Text style={styles.cardItem}>
-                      {cardNum ? `Cards: ${cardNum}` : 'Select number'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Dropdown List */}
-                  {showDropdown && (
-                    <ScrollView style={[styles.dropdownList, { maxHeight: screenHeight * 0.3 }]}>
-                      {Array.from({ length: 50 }, (_, i) => (
-                        <TouchableOpacity
-                          key={i}
-                          onPress={() => {
-                            setCardNum(i + 1);
-                            setShowDropdown(false); // close dropdown after selection
-                          }}
-                        >
-                          <Text style={styles.cardItem}>Cards: {i + 1}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  )}
-                  <TouchableOpacity style={styles.modalButton} onPress={ () => {
-                    handleFlashCards();
-                    openFlashModal(false);
-                    }}>
-                      <Text style={styles.buttonText}>Download Flash Cards</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => { 
-                    openFlashModal(false); 
-                    setNotesContent(''); 
-                    setNotesName('');
-                  }}>
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-              </View>
-          </View>
-      </Modal>
+      
     </View>
   );
 }
