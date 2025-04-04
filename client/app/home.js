@@ -84,6 +84,9 @@ export default function Home() {
 
             {/* Bottom buttons container */}
             <View style={styles.bottomButtonsContainer}>
+                <TouchableOpacity style={[styles.bottomButton, { backgroundColor: '#6c757d' }]} onPress={() => router.push('/landing')}>
+                    <Text style={styles.buttonText}>Home</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/notesPage')}>
                     <Text style={styles.buttonText}>Notes</Text>
                 </TouchableOpacity>

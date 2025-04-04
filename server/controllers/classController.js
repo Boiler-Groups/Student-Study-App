@@ -65,3 +65,20 @@ export const deleteClass = async (req, res) => {
     }
 };
 
+export const getICalendar = async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).json({ error: "Missing URL parameter" });
+  }
+
+  try {
+      const response = await fetch(url);
+      if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
+      const data = await response.text();
+      res.send(data);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+}

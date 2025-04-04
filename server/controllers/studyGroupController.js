@@ -46,6 +46,119 @@ export const setNewMessageFlag = async (req, res) => {
     }
 };
 
+//Add all group members to membersWithUnopenedMessages array
+export const addAllMembersToUnopenedMessageGroup = async (req, res) => {
+    //console.log("Received add ALL To UnopenedMessages Request");
+    const { groupId } = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${id}.`
+            });
+        }
+        //Combine the current membersWithUnopenedMessages with the all group members
+        const combinedMembers = [...group.membersWithUnopenedMessages, ...group.members];
+
+        //Use a set to remove duplicates
+        const uniqueMembers = new Set(combinedMembers);
+
+        //Convert the set back to an array
+        group.membersWithUnopenedMessages = [...uniqueMembers];
+
+        ///Save the update group
+        const updatedGroup = await group.save();
+
+        res.status(200).json({
+            message: 'All members added to UnopenedMessageGroup successfully',
+            group: updatedGroup
+        });
+    } catch (e) {
+        //Log Any errors
+        console.error('Error Updating members with New MEssages');
+        res.status(500).json({
+            message: 'Server error occurred while attempting to addAllMembersToUnopenedMessageGroup',
+            errorDetails: `An error occurred while processing the request for group id: ${id}, Error:${e.message}`,
+            errorStack: e.stack
+        });
+    }
+
+};
+
+//Function nto remove a member from the memberWithUnopenedMessages Array
+export const removeMemberFromUnopenedMessageGroup = async (req, res) => {
+    //console.log("Received remove from UnopenedMessages Request");
+    const { groupId, email } = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group was not found',
+                errorDetails: `No study group was found with the id: ${groupId}`
+            });
+        }
+
+        //Use the .filter() to create a new array that constains only the members who are not the email
+        //we want to remove
+        group.membersWithUnopenedMessages = group.membersWithUnopenedMessages.filter(members => members !== email);
+
+        const updatedGroup = await group.save();
+
+        res.status(200).json({
+            message: `${email} removed from membersWithUnopenedMessages successfully`,
+            group: updatedGroup
+        });
+
+    } catch (e) {
+        //Log Any errors
+        console.error('Error Updating members with New MEssages');
+        res.status(500).json({
+            message: 'Server error occurred while attempting to addAllMembersToUnopenedMessageGroup',
+            errorDetails: `An error occurred while processing the request for group id: ${groupId}, Error:${e.message}`,
+            errorStack: e.stack
+        });
+    }
+}
+
+// Function to get the list of members with unopened messages
+export const getMembersWithUnopenedMessages = async (req, res) => {
+    //console.log("Received get Members with UnopenedMessages Request");
+    const { groupId } = req.params; // Get group ID from URL parameters
+
+    try {
+        // Find the study group by ID
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        // Get the list of members with unopened messages
+        const membersWithUnopenedMessages = group.membersWithUnopenedMessages;
+
+        // Return the list of members as a response
+        res.status(200).json({
+            message: 'Members with unopened messages fetched successfully',
+            members: membersWithUnopenedMessages
+        });
+    } catch (e) {
+        console.error('Error fetching members with unopened messages:', e);
+
+        res.status(500).json({
+            message: 'Server error occurred while fetching members with unopened messages',
+            errorDetails: `An error occurred while processing the request for group id: ${groupId}. Error: ${e.message}`,
+            errorStack: e.stack
+        });
+    }
+};
 // Find and return all study groups
 export const getGroupsAll = async (req, res) => {
     try {
@@ -66,7 +179,14 @@ export const getGroupsAll = async (req, res) => {
 };
 
 export const createStudyGroup = async (req, res) => {
-    const { name, members } = req.body;
+    const { name, members, isDM } = req.body;
+    let isNewDM;
+
+    if (!isDM) {
+        isNewDM = false;
+    } else {
+        isNewDM = isDM;
+    }
 
     // Validate input before creating group
     if (!name || !Array.isArray(members)) {
@@ -78,6 +198,7 @@ export const createStudyGroup = async (req, res) => {
             name,
             members,
             messages: [], // Starts with no messages
+            isDM: isNewDM,
         });
 
         const savedGroup = await newGroup.save();
@@ -235,9 +356,9 @@ export const getGroupMembers = async (req, res) => {
 // Send a message to a study group
 export const sendMessage = async (req, res) => {
     const { groupId } = req.params;
-    const { text } = req.body;
-    const userEmail = req.user.email; // Assuming authentication middleware sets req.user
-    const username = req.user.username
+    const { text, replyToId, replyToSender, replyToText } = req.body;
+    const userEmail = req.user.email;
+    const username = req.user.username;
 
     if (!text) {
         return res.status(400).json({ message: "Message text is required" });
@@ -254,18 +375,157 @@ export const sendMessage = async (req, res) => {
             _id: new mongoose.Types.ObjectId(),
             sender: username,
             text,
+            reactions: [],
             timestamp: new Date(),
         };
 
+        if (replyToId && replyToSender && replyToText) {
+            newMessage.replyToId = replyToId;
+            newMessage.replyToSender = replyToSender;
+            newMessage.replyToText = replyToText;
+            
+            const originalMessage = group.messages.find(msg => 
+                msg._id.toString() === replyToId
+            );
+            
+            if (originalMessage && originalMessage.sender === replyToSender) {
+                const repliedToUser = group.members.find(member => {
+                    const memberUsername = member.split('@')[0];
+                    return memberUsername.toLowerCase() === replyToSender.toLowerCase();
+                });
+                
+                if (repliedToUser && repliedToUser !== userEmail) {
+                    if (!group.membersTaggedOrReplied) {
+                        group.membersTaggedOrReplied = [];
+                    }
+                    if (!group.membersTaggedOrReplied.includes(repliedToUser)) {
+                        group.membersTaggedOrReplied.push(repliedToUser);
+                    }
+                }
+            }
+        }
+
+        const emailRegex = /@([\w.-]+@[\w.-]+\.\w+)/g;
+        const taggedEmails = [];
+        let match;
+        
+        while ((match = emailRegex.exec(text)) !== null) {
+            const taggedEmail = match[1];
+            if (group.members.includes(taggedEmail) && taggedEmail !== userEmail) {
+                taggedEmails.push(taggedEmail);
+            }
+        }
+        
+        if (taggedEmails.length > 0) {
+            if (!group.membersTaggedOrReplied) {
+                group.membersTaggedOrReplied = [];
+            }
+            
+            taggedEmails.forEach(email => {
+                if (!group.membersTaggedOrReplied.includes(email)) {
+                    group.membersTaggedOrReplied.push(email);
+                }
+            });
+        }
+
         group.messages.push(newMessage);
-
-        group.newMessage=true;
-
+        group.newMessage = true;
         await group.save();
 
         res.status(201).json({ message: "Message sent", newMessage });
     } catch (e) {
         res.status(500).json({ message: "Server error", error: e.message });
+    }
+};
+
+export const likeMessage = async (req, res) => {
+    const { groupId } = req.params;
+    const { messageId } = req.body;
+
+    const userId = req.user._id;
+    const userEmail = req.user.email; // Assuming authentication middleware sets req.user
+    const username = req.user.username;
+
+    if (!messageId) {
+        return res.status(400).json({ message: "MessageId is required" });
+    }
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
+
+
+        // Check if the message exists
+        const messageIndex = group.messages.findIndex(msg => msg._id.toString() === messageId);
+        if (messageIndex === -1) {
+            return res.status(404).json({ message: "Message not found in the group" });
+        }
+
+        if (!group.messages[messageIndex].reactions.includes(userId.toString())) {
+            group.messages[messageIndex].reactions.push(userId.toString());
+            group.markModified("messages");
+
+            await group.save();
+        }
+        
+
+        res.status(200).json({ message: "Message liked", updatedGroup: group });
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
+}
+
+export const toggleMessageReaction = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+        const { messageId, isLike } = req.body;
+        const userId = req.user._id.toString();
+
+        const group = await StudyGroup.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: 'Study group not found' });
+        }
+
+        const messageIndex = group.messages.findIndex(msg => msg._id.toString() === messageId);
+        if (messageIndex === -1) {
+            return res.status(404).json({ message: 'Message not found in the group' });
+        }
+
+        const message = group.messages[messageIndex];
+        const likeKey = `${userId}-like`;
+        const dislikeKey = `${userId}-dislike`;
+
+        if (isLike) {
+            // Toggle like
+            if (message.reactions.includes(likeKey)) {
+                message.reactions = message.reactions.filter(
+                    r => r !== likeKey
+                );
+            } else {
+                message.reactions.push(likeKey);
+            }
+            
+        } else {
+            // Toggle dislike
+            if (message.reactions.includes(dislikeKey)) {
+                message.reactions = message.reactions.filter(
+                    r => r !== dislikeKey
+                );
+            } else {
+                message.reactions.push(dislikeKey);
+            }
+        }
+
+        group.markModified('messages');
+        await group.save();
+
+        res.status(200).json({ message: 'Reaction updated', updatedMessage: message });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -308,7 +568,7 @@ export const removeMember = async (req, res) => {
 
 export const deleteMessage = async (req, res) => {
     const { groupId } = req.params;
-    const { messageId } = req.body; // Email of the user to remove
+    const { messageId } = req.body;
 
     if (!messageId) {
         return res.status(400).json({ message: "MessageId is required" });
@@ -351,5 +611,124 @@ export const getStudyGroupName = async (req, res) => {
         res.status(200).json(group.name);
     } catch (e) {
         res.status(500).json({ message: "Server error", error: e.message })
+    }
+};
+
+export const addTaggedOrRepliedUser = async (req, res) => {
+    const { groupId } = req.params;
+    const { email } = req.body;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        if (!group.membersTaggedOrReplied.includes(email)) {
+            group.membersTaggedOrReplied.push(email);
+        }
+
+        const updatedGroup = await group.save();
+
+        res.status(200).json({
+            message: `${email} added to taggedOrReplied list successfully`,
+            group: updatedGroup
+        });
+    } catch (e) {
+        console.error('Error updating tagged users:', e);
+        res.status(500).json({
+            message: 'Server error occurred while updating tagged users',
+            errorDetails: e.message
+        });
+    }
+};
+
+export const removeTaggedOrRepliedUser = async (req, res) => {
+    const { groupId, email } = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        if (!group.membersTaggedOrReplied) {
+            group.membersTaggedOrReplied = [];
+        } else {
+            group.membersTaggedOrReplied = group.membersTaggedOrReplied.filter(
+                member => member !== email
+            );
+        }
+
+        const updatedGroup = await group.save();
+
+        res.status(200).json({
+            message: `${email} removed from taggedOrReplied list successfully`,
+            group: updatedGroup
+        });
+    } catch (e) {
+        console.error('Error updating tagged users:', e);
+        res.status(500).json({
+            message: 'Server error occurred while updating tagged users',
+            errorDetails: e.message
+        });
+    }
+};
+
+export const getTaggedOrRepliedUsers = async (req, res) => {
+    const { groupId } = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        res.status(200).json({
+            message: 'Tagged or replied users fetched successfully',
+            users: group.membersTaggedOrReplied
+        });
+    } catch (e) {
+        console.error('Error fetching tagged users:', e);
+        res.status(500).json({
+            message: 'Server error occurred while fetching tagged users',
+            errorDetails: e.message
+        });
+    }
+};
+
+export const isDM = async (req, res) => {
+    const {groupId} = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        res.status(200).json(group.isDM);
+
+    } catch (e) {
+        console.error('Error checking DM status:', e);
+        res.status(500).json({
+            message: 'Server error occurred while checking DM status',
+            errorDetails: e.message
+        });
     }
 }
