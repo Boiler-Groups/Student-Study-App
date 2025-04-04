@@ -6,6 +6,7 @@ import { API_URL } from '@env';
 import { useTheme } from '../components/ThemeContext'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from './api/user';
+import ical from 'ical.js';
 
 export default function AddClass() {
   const router = useRouter();
@@ -67,6 +68,9 @@ export default function AddClass() {
   const addAllClassesToDatabase = async () => {
     try {
       for (const classObj of classes) {
+        if (!classObj.added) {
+          continue;
+        }
         const newClass = { 
           name: classObj.name,
           credits: classObj.credits,
