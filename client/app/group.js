@@ -23,7 +23,8 @@ import {
     removeTaggedOrRepliedUser,
     likeMessage,
     toggleMessageLike,
-    toggleMessageDislike
+    toggleMessageDislike,
+    checkIsDM
 } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
@@ -48,6 +49,7 @@ const GroupChatPage = ({ }) => {
     const [replyingTo, setReplyingTo] = useState(null);
     const [imageUploadModule,setImageUploadModule] = useState(false);
     const [automateMessageModule,setAutomateMessageModule] = useState(false);
+    const [isDM, setDM] = useState(false);
 
     const [image, setImage] = useState('');
     const { groupId } = useLocalSearchParams();
@@ -87,14 +89,18 @@ const GroupChatPage = ({ }) => {
 
     useEffect(() => {
         navigation.setOptions({
-            title: groupTitle || "Group Chat", // Default title if groupTitle is not set
+            title: groupTitle || "Group Chat",
             headerRight: () => (
-                <TouchableOpacity onPress={handleNavigateToMembers}>
-                    <Text style={{ marginRight: 20, color: '#007bff', fontWeight: 'bold' }}>Members</Text>
+                <TouchableOpacity
+                    onPress={isDM ? handleNavigateToDmInfo : handleNavigateToMembers}
+                >
+                    <Text style={{ marginRight: 20, color: '#007bff', fontWeight: 'bold' }}>
+                        {isDM ? "Info" : "Members"}
+                    </Text>
                 </TouchableOpacity>
-            ), // Add Members button to top bar
+            ),
         });
-    }, [groupTitle, navigation]);
+    }, [groupTitle, navigation, isDM]);
 
     const loadMessages = async () => {
         const token = await AsyncStorage.getItem('token');
@@ -111,6 +117,9 @@ const GroupChatPage = ({ }) => {
             const fetchGroupName = async () => {
                 try {
                     const name = await getStudyGroupName(groupId);
+                    const dm = await checkIsDM(groupId);
+                    console.log(dm)
+                    setDM(dm.data);
                     setGroupTitle(name.data);
                 } catch (e) {
                     console.error("Failed to fetch group name:", e);
@@ -305,8 +314,10 @@ const GroupChatPage = ({ }) => {
     // Navigate to the Members List page
     const handleNavigateToMembers = () => {
         navigation.navigate('membersList', { groupId });
-
     };
+    const handleNavigateToDmInfo = () => {
+        navigation.navigate('dmInfo', { groupId });
+    }
     const convertToBase64 = (file) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);

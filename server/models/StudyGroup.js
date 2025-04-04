@@ -11,6 +11,10 @@ const StudyGroupSchema = new mongoose.Schema({
   messages: {
     type: Array,
   },
+  isDM: {
+    type: Boolean,
+    default: false,
+  },
   newMessage: {
     type: Boolean,
     default: false,

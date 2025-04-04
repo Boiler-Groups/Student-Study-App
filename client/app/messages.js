@@ -8,7 +8,7 @@ import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import Header from '../components/Header';
 import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCurrentUser } from './api/user';
+import { getCurrentUser, searchUser } from './api/user';
 import { MaterialIcons } from '@expo/vector-icons'; // Import icon library
 
 
@@ -45,8 +45,11 @@ export default function Messages() {
     const [newGroupName, setNewGroupName] = useState('');
     const [groupToEdit, setGroupToEdit] = useState(null);
     const [newMessage, setNewMessage] = useState(false);
+    const [dmModalVisible, setDmModalVisible] = useState(false);
     const navigation = useNavigation();
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
 
     const [currToken, setToken] = useState(null); // State to store AsyncStorage data
     const [currUser, setUser] = useState(null); // State to store AsyncStorage data
@@ -203,6 +206,33 @@ export default function Messages() {
             setErrorModalVisible(true);
         }
     };
+
+    const handleCreateDm = async (member) => {
+        if (!member) {
+            Alert.alert('Error', 'Please select a user');
+            return;
+        }
+
+        try {
+            const memberArray = [];
+            memberArray.push(member);
+            const token = await AsyncStorage.getItem('token');
+            const user = await getCurrentUser({ token });
+            const email = user.data.email;
+            memberArray.push(email);
+            await createStudyGroup({ name: member, members: memberArray, isDM: true });
+            Alert.alert('Success', 'Direct message created successfully!');
+            setCreateModalVisible(false);
+            setSuccessModalVisible(true);
+            setGroupName('');
+            setMembers('');
+            await fetchGroups(); // Refresh the study groups list
+        } catch (error) {
+            Alert.alert('Error', error.response?.data?.message || 'Failed to create group');
+            setErrorModalVisible(true);
+        }
+    };
+
     const handleDeleteGroup = async (groupId) => {
         console.log("Deleting:", groupId);
         try {
@@ -281,6 +311,24 @@ export default function Messages() {
         }
     };
 
+    const handleSearchUsers = async (query) => {
+        setSearchQuery(query);
+
+        if (query.length < 2) {
+            setSearchResults([]);
+            return;
+        }
+
+        try {
+            //const token = await AsyncStorage.getItem('token');
+            const results = await searchUser(query);
+            setSearchResults(results.data);
+            //console.log("res", results)
+        } catch (e) {
+            console.error('Error searching users:', e);
+        }
+    };
+
     return (
         <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
             <Header />
@@ -288,6 +336,15 @@ export default function Messages() {
             <View style={styles.headerContainer}>
                 <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Study Groups and Messaging</Text>
                 <View style={styles.buttonsContainer}>
+                    <TouchableOpacity
+                        style={styles.joinButton}
+                        onPress={() => {
+                            fetchGroupsAll();
+                            setDmModalVisible(true);
+                        }}
+                    >
+                        <Text style={styles.joinButtonText}>New Direct Message</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.joinButton}
                         onPress={() => {
@@ -323,49 +380,63 @@ export default function Messages() {
                 <FlatList
                     data={groups}
                     keyExtractor={(item) => item._id}
-                    renderItem={({ item }) => (
+                    renderItem={({ item }) => {
+                        const isDM = item.isDM;
+                        const name = item.name;
 
-                        <View style={styles.groupItem}>
-                            {/* Group Item (Touchable for navigation) */}
-                            <TouchableOpacity
-                                style={
-                                    groupsWithTaggedMessages[item._id]
-                                        ? styles.groupItemTaggedMessage
-                                        : newGroupMessages[item._id]
-                                            ? styles.groupItemMessage
-                                            : styles.groupItemNoMessage
-                                }
-                                onPress={() => {
-                                    clearAllNotifications(item._id, currEmail);
-                                    navigation.navigate('group', { groupId: item._id });
-                                }}
-                            >
-                                <View style={styles.groupTextContainer}>
-                                    <Text style={styles.groupText}>{item.name}</Text>
-                                    {groupsWithTaggedMessages[item._id] && (
-                                        <Text style={styles.taggedText}>You were mentioned</Text>
-                                    )}
-                                    {!groupsWithTaggedMessages[item._id] && newGroupMessages[item._id] && (
-                                        <Text style={styles.newMessageText}>New messages</Text>
-                                    )}
-                                </View>
-                            </TouchableOpacity>
+                        return (
+                            <View style={styles.groupItem}>
+                                <TouchableOpacity
+                                    style={
+                                        groupsWithTaggedMessages[item._id]
+                                            ? styles.groupItemTaggedMessage
+                                            : newGroupMessages[item._id]
+                                                ? styles.groupItemMessage
+                                                : styles.groupItemNoMessage
+                                    }
+                                    onPress={() => {
+                                        clearAllNotifications(item._id, currEmail);
+                                        navigation.navigate('group', { groupId: item._id });
+                                    }}
+                                >
+                                    <View style={styles.groupTextContainer}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            {/* DM Profile Circle */}
+                                            {isDM && name && (
+                                                <View style={styles.profileCircle}>
+                                                    <Text style={styles.profileInitial}>
+                                                        {name[0]?.toUpperCase() || '?'}
+                                                    </Text>
+                                                </View>
+                                            )}
 
-                            {/* Edit Button */}
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setGroupToEdit(item); // Set the group being edited
-                                    setEditModalVisible(true); // Open the edit modal
-                                }}
-                            >
-                                <Text style={styles.editText}>Edit Name</Text>
-                            </TouchableOpacity>
-                            {/* Delete Button */}
-                            <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
-                                <Text style={styles.deleteText}>Delete</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                                            <Text style={styles.groupText}>{item.name}</Text>
+                                        </View>
+
+                                        {groupsWithTaggedMessages[item._id] && (
+                                            <Text style={styles.taggedText}>You were mentioned</Text>
+                                        )}
+                                        {!groupsWithTaggedMessages[item._id] && newGroupMessages[item._id] && (
+                                            <Text style={styles.newMessageText}>New messages</Text>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+
+                                {!item.isDM && (
+                                    <TouchableOpacity onPress={() => {
+                                        setGroupToEdit(item);
+                                        setEditModalVisible(true);
+                                    }}>
+                                        <Text style={styles.editText}>Edit Name</Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
+                                    <Text style={styles.deleteText}>Delete</Text>
+                                </TouchableOpacity>
+                            </View>
+                        );
+                    }}
                 />
             )}
 
@@ -375,8 +446,8 @@ export default function Messages() {
             </TouchableOpacity>
 
             {/* Button to navigate to Landing */}
-            <TouchableOpacity 
-                style={[styles.button, { marginTop: 10, backgroundColor: '#6c757d' }]} 
+            <TouchableOpacity
+                style={[styles.button, { marginTop: 10, backgroundColor: '#6c757d' }]}
                 onPress={() => router.push('/landing')}>
                 <Text style={styles.buttonText}>Home</Text>
             </TouchableOpacity>
@@ -431,6 +502,52 @@ export default function Messages() {
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Invite Member Modal */}
+            <Modal visible={dmModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Invite New Member</Text>
+
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search for a user..."
+                            value={searchQuery}
+                            onChangeText={handleSearchUsers}
+                        />
+
+                        {/* Show dropdown only when results exist */}
+                        {searchResults.length != 0 ? (
+                            <FlatList
+                                data={searchResults}
+                                keyExtractor={(item) => item.email}
+                                style={styles.resultsContainer}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.searchResultItem}
+                                        onPress={() => {
+                                            //setMembers(item.email);
+                                            setGroupName(item.email);
+                                            handleCreateDm(item.email);
+                                        }}
+                                    >
+                                        <Text>{item.email}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        ) : (
+                            searchQuery.length > 1 && <Text style={styles.noResults}>No results found.</Text>
+                        )}
+
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setDmModalVisible(false)}
+                        >
+                            <Text style={styles.closeButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -604,6 +721,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 5,
+        marginHorizontal: 7
     },
     joinButtonText: {
         color: 'white',
@@ -695,6 +813,44 @@ const styles = StyleSheet.create({
         color: '#0066cc',
         fontWeight: 'bold',
         marginTop: 4,
+    },
+    searchInput: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 10,
+    },
+    resultsContainer: {
+        maxHeight: 150, // Limits dropdown height
+    },
+    searchResultItem: {
+        padding: 10,
+        backgroundColor: '#f0f0f0',
+        marginBottom: 5,
+        borderRadius: 5,
+    },
+    closeButton: {
+        marginTop: 10,
+        alignSelf: 'center',
+    },
+    closeButtonText: {
+        color: '#007bff',
+        fontWeight: 'bold',
+    },
+    profileCircle: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#007bff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    profileInitial: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
 

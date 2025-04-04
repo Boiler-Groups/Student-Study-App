@@ -14,6 +14,8 @@ const authHeader = (token) => ({
 
 export const getStudyGroups = ({ email }) => StudyGroupClient.get(`/${email}`);
 
+export const checkIsDM = (groupId) => StudyGroupClient.get(`/dm/${groupId}`);
+
 export const getStudyGroupsAll = () => StudyGroupClient.get('/groups');
 
 export const createStudyGroup = (studyGroupData) => StudyGroupClient.post('/', studyGroupData);

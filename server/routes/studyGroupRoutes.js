@@ -21,6 +21,7 @@ import {
     addTaggedOrRepliedUser,
     removeTaggedOrRepliedUser,
     getTaggedOrRepliedUsers,
+    isDM,
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -47,5 +48,6 @@ router.post('/toggleLike/:groupId', userMiddleware, toggleMessageReaction);
 router.post('/addTaggedUser/:groupId', addTaggedOrRepliedUser);
 router.patch('/removeTaggedUser/:groupId/:email', removeTaggedOrRepliedUser);
 router.get('/getTaggedUsers/:groupId', getTaggedOrRepliedUsers);
+router.get('/dm/:groupId', isDM);
 
 export default router;

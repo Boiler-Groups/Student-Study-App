@@ -179,7 +179,14 @@ export const getGroupsAll = async (req, res) => {
 };
 
 export const createStudyGroup = async (req, res) => {
-    const { name, members } = req.body;
+    const { name, members, isDM } = req.body;
+    let isNewDM;
+
+    if (!isDM) {
+        isNewDM = false;
+    } else {
+        isNewDM = isDM;
+    }
 
     // Validate input before creating group
     if (!name || !Array.isArray(members)) {
@@ -191,6 +198,7 @@ export const createStudyGroup = async (req, res) => {
             name,
             members,
             messages: [], // Starts with no messages
+            isDM: isNewDM,
         });
 
         const savedGroup = await newGroup.save();
@@ -700,3 +708,27 @@ export const getTaggedOrRepliedUsers = async (req, res) => {
         });
     }
 };
+
+export const isDM = async (req, res) => {
+    const {groupId} = req.params;
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        res.status(200).json(group.isDM);
+
+    } catch (e) {
+        console.error('Error checking DM status:', e);
+        res.status(500).json({
+            message: 'Server error occurred while checking DM status',
+            errorDetails: e.message
+        });
+    }
+}
