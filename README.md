@@ -27,6 +27,7 @@ PORT=
 NODE_ENV=
 JWT_SECRET=
 API_URL=
+GEMINI_API_KEY=
 ```
 - MONGO_URI: This is the connection string to your MongoDB database. If you're using MongoDB Atlas or any cloud-hosted MongoDB service, you'll get a connection string from their dashboard. Replace <username> and <password> with your actual MongoDB credentials, and mydatabase with the name of your database.
 
@@ -37,6 +38,8 @@ API_URL=
 - JWT_SECRET: A secret key used for signing JSON Web Tokens (JWT) for authentication. This key should be kept secure and private. You can generate any random string to use as a secret key. Ensure this value is not exposed in public repositories.
 
 - API_URL: Base URL where the API server is accessed.
+
+- GEMINI_API_KEY: A secret key used to securely access Google's Gemini AI model for AI tools within the app. To get a key, sign up at Google AI Studio and create a free API key under the API Keys section.
 
 5. Create a .env file in `client` with the following fields filled in
 ```
