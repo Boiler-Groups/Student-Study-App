@@ -16,11 +16,11 @@ describe('Login streak point logic', () => {
   before(async () => {
     const appModule = await import('../testApp.js');
     const userModule = await import('../models/User.js');
-    const bcryptModule = await import('bcryptjs'); // this is the fix
+    const bcryptModule = await import('bcryptjs'); 
   
     app = appModule.default;
     User = userModule.default;
-    bcrypt = bcryptModule.default; // match the controller's import
+    bcrypt = bcryptModule.default;
   });
 
   beforeEach(function () {

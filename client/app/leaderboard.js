@@ -133,7 +133,7 @@ export default function leaderboard() {
       <View style={[styles.userPosition, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
       <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}> Your Points </Text>
       <View style={styles.userRow}>
-          <View style={styles.userBox2}>
+          <View style={styles.userBox2} testID='userBox2'>
             <Text style={[styles.titleText, isDarkTheme ? styles.darkText : styles.lightText]}>
               User: {uname}
             </Text>
