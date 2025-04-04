@@ -29,14 +29,14 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { getCurrentUser } from './api/user.js';
+import { getCurrentUser, getUserFromId } from './api/user.js';
 import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 
 const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
-    const [targetTime , setTargetTime ] = useState(0);
+    const [targetTime, setTargetTime] = useState(0);
     const flatListRef = useRef(null);
     const { isDarkTheme } = useTheme();
     const [user, setUser] = useState("");
@@ -47,17 +47,18 @@ const GroupChatPage = ({ }) => {
     const [groupTitle, setGroupTitle] = useState('');
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
     const [replyingTo, setReplyingTo] = useState(null);
-    const [imageUploadModule,setImageUploadModule] = useState(false);
-    const [automateMessageModule,setAutomateMessageModule] = useState(false);
+    const [imageUploadModule, setImageUploadModule] = useState(false);
+    const [automateMessageModule, setAutomateMessageModule] = useState(false);
     const [isDM, setDM] = useState(false);
+    const [usernamesById, setUsernamesById] = useState({});
 
     const [image, setImage] = useState('');
     const { groupId } = useLocalSearchParams();
     const navigation = useNavigation();
     const intervalRef = useRef(null);  // Store the interval ID
 
-    const scheduleMinuteRef= useRef(0);
-    const scheduleHourRef= useRef(0);
+    const scheduleMinuteRef = useRef(0);
+    const scheduleHourRef = useRef(0);
     const [scheduleMinute, setScheduleMinute] = useState('');
     const [scheduleHour, setScheduleHour] = useState('');
 
@@ -365,8 +366,8 @@ const GroupChatPage = ({ }) => {
             //setText("");
             setScheduleMinute("");
             setScheduleHour("");
-            scheduleMinuteRef.current=0;
-            scheduleHourRef.current=0;
+            scheduleMinuteRef.current = 0;
+            scheduleHourRef.current = 0;
             setTargetTime(0);
         }
     };
@@ -374,11 +375,11 @@ const GroupChatPage = ({ }) => {
     const calculateDelayUntilTargetTime = () => {
         // Target time (24-hour format) → Ex. 15 = 3:00 PM
         const curr = new Date();
-        const defaultHour =  curr.getHours();   // Get current hour
+        const defaultHour = curr.getHours();   // Get current hour
         const defaultMinute = curr.getMinutes(); // Get Current minute
         const defaultSecond = curr.getSeconds();  // Get current second
 
-        if (!scheduleMinuteRef.current  || scheduleMinuteRef.current === 0 || scheduleMinuteRef.current < 0 || scheduleMinuteRef.current > 59) {
+        if (!scheduleMinuteRef.current || scheduleMinuteRef.current === 0 || scheduleMinuteRef.current < 0 || scheduleMinuteRef.current > 59) {
             scheduleMinuteRef.current = defaultMinute + 1;
         }
         if (!scheduleHourRef.current || scheduleHourRef.current === 0 || scheduleHourRef.current < 0 || scheduleHourRef.current > 23) {
@@ -436,6 +437,28 @@ const GroupChatPage = ({ }) => {
             setAutomateMessageModule(false);
         }
     }, [text]);
+
+    const openReactionsModal = async (reactions) => {
+        const userIds = reactions.map(r => r.split('-')[0]);
+        const uniqueIds = [...new Set(userIds)];
+
+        const newUsernames = {};
+        await Promise.all(uniqueIds.map(async (id) => {
+            if (!usernamesById[id]) {
+                try {
+                    const user = await getUserFromId(id);
+                    const username = user.data.username;
+                    newUsernames[id] = username;
+                } catch (err) {
+                    newUsernames[id] = "Unknown";
+                }
+            }
+        }));
+
+        setUsernamesById(prev => ({ ...prev, ...newUsernames }));
+        setSelectedReactions(reactions);
+        setShowReactionsModal(true);
+    };
 
     return (
         <KeyboardAvoidingView
@@ -515,85 +538,79 @@ const GroupChatPage = ({ }) => {
                             </View>
 
                             {/* Display reactions */}
-                        {item.reactions && item.reactions.length > 0 && (() => {
-                            const { likes, dislikes } = countReactions(item.reactions);
-                            return (
-                                <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
-                                    {likes > 0 && (
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setSelectedReactions(item.reactions.filter(r => r.endsWith('-like')));
-                                                setShowReactionsModal(true);
-                                            }}
-                                        >
-                                            <Text style={styles.reactionIcon}>👍 {likes}</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    {dislikes > 0 && (
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setSelectedReactions(item.reactions.filter(r => r.endsWith('-dislike')));
-                                                setShowReactionsModal(true);
-                                            }}
-                                        >
-                                            <Text style={styles.reactionIcon}>👎 {dislikes}</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            );
-                        })()}
+                            {item.reactions && item.reactions.length > 0 && (() => {
+                                const { likes, dislikes } = countReactions(item.reactions);
+                                return (
+                                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
+                                        {likes > 0 && (
+                                            <TouchableOpacity
+                                                onPress={() => openReactionsModal(item.reactions.filter(r => r.endsWith('-like')))}
+                                            >
+                                                <Text style={styles.reactionIcon}>👍 {likes}</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                        {dislikes > 0 && (
+                                            <TouchableOpacity
+                                            onPress={() => openReactionsModal(item.reactions.filter(r => r.endsWith('-dislike')))}
+                                            >
+                                                <Text style={styles.reactionIcon}>👎 {dislikes}</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                );
+                            })()}
 
-                        {/* Show action buttons if the message is selected */}
-                        {item._id === selectedMessageId && (
-                            <View style={styles.reactionContainer}>
-                                <TouchableOpacity
-                                    onPress={() => handleToggleReaction(item._id)}
-                                    style={[
-                                        styles.reactionButton,
-                                        item.reactions?.includes(`${user.data._id}-like`) && styles.selectedReactionButton
-                                    ]}
-                                >
-                                    <Text style={[
-                                        styles.reactionIcon,
-                                        item.reactions?.includes(`${user.data._id}-like`) && styles.selectedReactionIcon
-                                    ]}>
-                                        👍
-                                    </Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => handleToggleDislike(item._id)}
-                                    style={[
-                                        styles.reactionButton,
-                                        item.reactions?.includes(`${user.data._id}-dislike`) && styles.selectedReactionButton
-                                    ]}
-                                >
-                                    <Text style={[
-                                        styles.reactionIcon,
-                                        item.reactions?.includes(`${user.data._id}-dislike`) && styles.selectedReactionIcon
-                                    ]}>
-                                        👎
-                                    </Text>
-                                </TouchableOpacity>
-
-                                <View style={styles.messageActions}>
-                                    {/* Only show delete for user's own messages */}
-                                    {item.sender === username && (
-                                        <TouchableOpacity
-                                            style={styles.deleteButton}
-                                            onPress={() => handleDeleteMessage(item._id)}
-                                        >
-                                            <Text style={styles.deleteText}>Delete</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    {/* Show reply for all messages */}
+                            {/* Show action buttons if the message is selected */}
+                            {item._id === selectedMessageId && (
+                                <View style={styles.reactionContainer}>
                                     <TouchableOpacity
-                                        style={styles.replyButton}
-                                        onPress={() => handleReply(item)}
+                                        onPress={() => handleToggleReaction(item._id)}
+                                        style={[
+                                            styles.reactionButton,
+                                            item.reactions?.includes(`${user.data._id}-like`) && styles.selectedReactionButton
+                                        ]}
                                     >
-                                        <Text style={styles.replyText}>Reply</Text>
+                                        <Text style={[
+                                            styles.reactionIcon,
+                                            item.reactions?.includes(`${user.data._id}-like`) && styles.selectedReactionIcon
+                                        ]}>
+                                            👍
+                                        </Text>
                                     </TouchableOpacity>
-                                </View>
+
+                                    <TouchableOpacity
+                                        onPress={() => handleToggleDislike(item._id)}
+                                        style={[
+                                            styles.reactionButton,
+                                            item.reactions?.includes(`${user.data._id}-dislike`) && styles.selectedReactionButton
+                                        ]}
+                                    >
+                                        <Text style={[
+                                            styles.reactionIcon,
+                                            item.reactions?.includes(`${user.data._id}-dislike`) && styles.selectedReactionIcon
+                                        ]}>
+                                            👎
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <View style={styles.messageActions}>
+                                        {/* Only show delete for user's own messages */}
+                                        {item.sender === username && (
+                                            <TouchableOpacity
+                                                style={styles.deleteButton}
+                                                onPress={() => handleDeleteMessage(item._id)}
+                                            >
+                                                <Text style={styles.deleteText}>Delete</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                        {/* Show reply for all messages */}
+                                        <TouchableOpacity
+                                            style={styles.replyButton}
+                                            onPress={() => handleReply(item)}
+                                        >
+                                            <Text style={styles.replyText}>Reply</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -646,7 +663,7 @@ const GroupChatPage = ({ }) => {
                 <TouchableOpacity style={styles.moreOptionsButton} onPress={() => setImageUploadModule(true)}>
                     <Text style={styles.sendText}>{"+"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.automateButton} onPress={() => {setAutomateMessageModule(true)}}>
+                <TouchableOpacity style={styles.automateButton} onPress={() => { setAutomateMessageModule(true) }}>
                     <Text style={styles.sendText}>{"Automate Message"}</Text>
                 </TouchableOpacity>
                 <Text style={styles.modalSubTitle}> Sending in {Math.floor(targetTime / 1000)}s</Text>
@@ -660,7 +677,7 @@ const GroupChatPage = ({ }) => {
                             const emoji = type === 'like' ? '👍' : '👎';
                             return (
                                 <Text key={index} style={styles.reactionListItem}>
-                                    {emoji} {userId}
+                                    {emoji} {usernamesById[userId] || userId}
                                 </Text>
                             );
                         })}
@@ -731,7 +748,7 @@ const GroupChatPage = ({ }) => {
                             value={scheduleMinute}
                             onChangeText={handleMinuteChange}
                         />
-                        <TouchableOpacity style={styles.button} onPress={()=>{
+                        <TouchableOpacity style={styles.button} onPress={() => {
                             if (!text) {
                                 setText("Hey Everyone Lets Schedule a Meeting!!!");
                             } else {
@@ -1031,7 +1048,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     modalSubTitle: {
-    fontSize: 15,
+        fontSize: 15,
         fontWeight: 'bold',
         marginBottom: 20,
     },
