@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import { API_URL } from '@env';
 import { useTheme } from '../components/ThemeContext'; 
+import ical from 'ical.js';
 
 export default function AddClass() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function AddClass() {
   const [errMsg, setErrMsg] = useState('');
   const [classes, setClasses] = useState([]);
   const [credits, setCredits] = useState('');
+  const [calendarUrl, setCalendarUrl] = useState('');
 
   const handleAddClass = () => {
     if (!className.trim()) {
@@ -19,20 +21,22 @@ export default function AddClass() {
       setErrMsg('Class name cannot be empty');
       return;
     }
+    
     const credNum = Number(credits);
-    if (!Number.isInteger(credNum) || credits <= 0) {
+    if (!Number.isInteger(credNum) || credNum <= 0) {
       console.error("Credits must be a valid positive integer.");
       setErrMsg('Credits must be a valid positive integer');
       return;
     }
+
     setClasses([...classes, { 
       id: Date.now().toString(), 
-      name: className, 
-      credits,
+      name: className.trim(), 
+      credits: credNum,
       userId: `test Id + ${credits}`,
       added: false 
     }]);
-
+  
     setClassName('');
     setCredits('');
     setErrMsg('');
@@ -78,10 +82,86 @@ export default function AddClass() {
     }
   };
 
+  const fetchICalendar = async () => {
+    if (!calendarUrl.trim()) {
+      setErrMsg('Please enter a valid iCalendar URL.');
+      return;
+    }
+  
+    try {
+      const response = await fetch(`${API_URL}/classes/cal?url=${encodeURIComponent(calendarUrl)}`);
+      if (!response.ok) throw new Error('Failed to fetch iCalendar file.');
+  
+      const icalData = await response.text();
+      const jcalData = ical.parse(icalData);
+      const comp = new ical.Component(jcalData);
+      const vevents = comp.getAllSubcomponents('vevent');
+  
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+  
+      const newClasses = vevents
+        .map(event => {
+          const summary = event.getFirstPropertyValue('summary') || 'Unknown Class';
+          const dtstart = event.getFirstPropertyValue('dtstart'); // Start date
+  
+          if (!dtstart) return null; // Skip if no start date
+  
+          const eventDate = new Date(dtstart.toJSDate());
+          if (eventDate.getFullYear() !== currentYear) {
+            return null; // Skip if not in the current month
+          }
+  
+          // Extract only the first two words from the summary
+          const className = summary.split(" ").slice(0, 2).join(" ");
+  
+          return { id: className, name: className, credits: 3, userId: "-" };
+        })
+        .filter(Boolean); // Remove null values
+  
+      setClasses(prevClasses => {
+        const existingClassNames = new Set(prevClasses.map(cls => cls.name));
+
+        // Filter out duplicates within newClasses and also against existing classes
+        const uniqueNewClasses = [];
+        const seenClassNames = new Set();
+      
+        for (const cls of newClasses) {
+          if (!existingClassNames.has(cls.name) && !seenClassNames.has(cls.name)) {
+            seenClassNames.add(cls.name);
+            uniqueNewClasses.push(cls);
+          }
+        }
+      
+        return [...prevClasses, ...uniqueNewClasses];
+      });
+  
+      setErrMsg('');
+    } catch (error) {
+      console.error('Error fetching iCalendar:', error);
+      setErrMsg('Error fetching schedule. Please check the URL.');
+    }
+  };
+  
+
   return (
     <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
       <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Add Classes</Text>
       <Text style={[styles.errText, isDarkTheme ? styles.darkText : styles.lightText]}>{errMsg}</Text>
+
+      <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
+        <TextInput
+          style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
+          placeholder="Enter iCalendar URL..."
+          placeholderTextColor={isDarkTheme ? "#AAA" : "#666"}
+          value={calendarUrl}
+          onChangeText={setCalendarUrl}
+        />
+        <TouchableOpacity style={styles.addButton} onPress={fetchICalendar}>
+          <Icon name="cloud-download" size={30} color="white" />
+        </TouchableOpacity>
+      </View>
 
       {/* Input Fields */}
       <View style={[styles.inputContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>

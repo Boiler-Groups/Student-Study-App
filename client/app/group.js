@@ -20,7 +20,10 @@ import {
     getStudyGroupName,
     addAllMembersToUnopenedMessageGroup,
     removeMemberFromUnopenedMessageGroup,
-    removeTaggedOrRepliedUser
+    removeTaggedOrRepliedUser,
+    likeMessage,
+    toggleMessageLike,
+    toggleMessageDislike
 } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
@@ -35,6 +38,9 @@ const GroupChatPage = ({ }) => {
     const [targetTime , setTargetTime ] = useState(0);
     const flatListRef = useRef(null);
     const { isDarkTheme } = useTheme();
+    const [user, setUser] = useState("");
+    const [showReactionsModal, setShowReactionsModal] = useState(false);
+    const [selectedReactions, setSelectedReactions] = useState([]); // list of reaction strings
     const [username, setUsername] = useState("");
     const [userEmail, setUserEmail] = useState("");
     const [groupTitle, setGroupTitle] = useState('');
@@ -55,13 +61,20 @@ const GroupChatPage = ({ }) => {
 
     const router = useRouter();
 
-    const getUsername = async () => {
+    const getUser = async () => {
         const token = await AsyncStorage.getItem('token');
         const user = await getCurrentUser({ token });
-        return user.data.username;
+        return user;
     };
 
     useEffect(() => {
+        const fetchUser = async () => {
+            const user = await getUser();
+            setUser(user);
+        };
+
+        fetchUser();
+
         const fetchUserData = async () => {
             const token = await AsyncStorage.getItem('token');
             const user = await getCurrentUser({ token });
@@ -198,11 +211,80 @@ const GroupChatPage = ({ }) => {
         }
     };
     const handleSelectMessage = (messageId) => {
+        setSelectedMessageId(prevSelected => (prevSelected === messageId ? null : messageId));
+    };
+
+    const handleReactToMessage = async (messageId, reaction) => {
+        const token = await AsyncStorage.getItem('token');
+        if (reaction === 'like') {
+            const response = likeMessage(token, groupId, messageId);
+        } else {
+            const response = likeMessage(token, groupId, messageId);
         const message = messages.find(msg => msg._id === messageId);
 
         if (message) {
             setSelectedMessageId(prevSelected => (prevSelected === messageId ? null : messageId));
         }
+        loadMessages();
+
+        setSelectedMessageId(null);
+    }
+
+    const handleToggleReaction = async (messageId) => {
+        const token = await AsyncStorage.getItem('token');
+
+        setMessages(prevMessages =>
+            prevMessages.map(msg => {
+                if (msg._id === messageId) {
+                    const hasReacted = msg.reactions?.includes(`${user.data._id}-like`);
+                    return {
+                        ...msg,
+                        reactions: hasReacted
+                            ? msg.reactions.filter(curUser => curUser !== `${user.data._id}-like`) // Remove reaction
+                            : [...(msg.reactions || []), user.data._id] // Add reaction
+                    };
+                }
+                return msg;
+            })
+        );
+
+        await toggleMessageLike(token, groupId, messageId);
+        loadMessages();
+    };
+
+    const handleToggleDislike = async (messageId) => {
+        const token = await AsyncStorage.getItem('token');
+
+        setMessages(prevMessages =>
+            prevMessages.map(msg => {
+                if (msg._id === messageId) {
+                    const hasReacted = msg.reactions?.includes(`${user.data._id}-dislike`);
+                    return {
+                        ...msg,
+                        reactions: hasReacted
+                            ? msg.reactions.filter(curUser => curUser !== user.data._id) // Remove reaction
+                            : [...(msg.reactions || []), user.data._id] // Add reaction
+                    };
+                }
+                return msg;
+            })
+        );
+
+        await toggleMessageDislike(token, groupId, messageId);
+        loadMessages();
+        console.log(messages)
+    };
+
+    const countReactions = (reactions) => {
+        let likes = 0;
+        let dislikes = 0;
+
+        (reactions || []).forEach(reaction => {
+            if (reaction.endsWith('-like')) likes++;
+            if (reaction.endsWith('-dislike')) dislikes++;
+        });
+
+        return { likes, dislikes };
     };
     const handleReply = (message) => {
         setReplyingTo(message);
@@ -420,6 +502,68 @@ const GroupChatPage = ({ }) => {
                                 )}
                             </View>
 
+                            {/* Display reactions */}
+                        {item.reactions && item.reactions.length > 0 && (() => {
+                            const { likes, dislikes } = countReactions(item.reactions);
+                            return (
+                                <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
+                                    {likes > 0 && (
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setSelectedReactions(item.reactions.filter(r => r.endsWith('-like')));
+                                                setShowReactionsModal(true);
+                                            }}
+                                        >
+                                            <Text style={styles.reactionIcon}>👍 {likes}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    {dislikes > 0 && (
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setSelectedReactions(item.reactions.filter(r => r.endsWith('-dislike')));
+                                                setShowReactionsModal(true);
+                                            }}
+                                        >
+                                            <Text style={styles.reactionIcon}>👎 {dislikes}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            );
+                        })()}
+
+                        {/* Show reaction options if the message is selected */}
+                        {item._id === selectedMessageId && (
+                            <View style={styles.reactionContainer}>
+                                <TouchableOpacity
+                                    onPress={() => handleToggleReaction(item._id)}
+                                    style={[
+                                        styles.reactionButton,
+                                        item.reactions?.includes(`${user.data._id}-like`) && styles.selectedReactionButton
+                                    ]}
+                                >
+                                    <Text style={[
+                                        styles.reactionIcon,
+                                        item.reactions?.includes(`${user.data._id}-like`) && styles.selectedReactionIcon
+                                    ]}>
+                                        👍
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={() => handleToggleDislike(item._id)}
+                                    style={[
+                                        styles.reactionButton,
+                                        item.reactions?.includes(`${user.data._id}-dislike`) && styles.selectedReactionButton
+                                    ]}
+                                >
+                                    <Text style={[
+                                        styles.reactionIcon,
+                                        item.reactions?.includes(`${user.data._id}-dislike`) && styles.selectedReactionIcon
+                                    ]}>
+                                        👎
+                                    </Text>
+                                </TouchableOpacity>
+
                             {item._id === selectedMessageId && (
                                 <View style={styles.messageActions}>
                                     {/* Only show delete for user's own messages */}
@@ -477,7 +621,9 @@ const GroupChatPage = ({ }) => {
                     style={[styles.input, isDarkTheme ? styles.darkInput : styles.lightInput]}
                     value={text}
                     onChangeText={setText}
+
                     placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
+
                     onSubmitEditing={handleSendMessage}
                     blurOnSubmit={false}
                     returnKeyType="send"
@@ -493,6 +639,25 @@ const GroupChatPage = ({ }) => {
                 </TouchableOpacity>
                 <Text style={styles.modalSubTitle}> Sending in {Math.floor(targetTime / 1000)}s</Text>
             </View>
+            {showReactionsModal && (
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Reactions</Text>
+                        {selectedReactions.map((reaction, index) => {
+                            const [userId, type] = reaction.split('-');
+                            const emoji = type === 'like' ? '👍' : '👎';
+                            return (
+                                <Text key={index} style={styles.reactionListItem}>
+                                    {emoji} {userId}
+                                </Text>
+                            );
+                        })}
+                        <TouchableOpacity onPress={() => setShowReactionsModal(false)} style={styles.modalCloseButton}>
+                            <Text style={styles.modalCloseText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
 
             {/* Modal for Uploading Images*/}
             <Modal visible={imageUploadModule} animationType="slide" transparent={true}>
@@ -834,6 +999,7 @@ const styles = StyleSheet.create({
     darkText: {
         color: "#F1F1F1",
     },
+
     modalContainer: {
         flex: 1,
         justifyContent: 'center',

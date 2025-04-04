@@ -95,6 +95,12 @@ export const getGroupMessages = (token, groupId) =>
         });
     }
 
+export const likeMessage = (token, groupId, message) => StudyGroupClient.post(`/react/${groupId}`, {messageId: message}, authHeader(token));
+
+export const toggleMessageLike = (token, groupId, message) => StudyGroupClient.post(`/toggleLike/${groupId}`, {messageId: message, isLike: true}, authHeader(token));
+
+export const toggleMessageDislike = (token, groupId, message) => StudyGroupClient.post(`/toggleLike/${groupId}`, {messageId: message, isLike: false}, authHeader(token));
+
 export const getGroupMembers = (token, groupId) =>
   StudyGroupClient.get(`/members/${groupId}`, authHeader(token))
     .then(res => res.data)

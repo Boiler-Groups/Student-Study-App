@@ -34,6 +34,7 @@
     "expo-symbols": "~0.2.2",
     "expo-system-ui": "~4.0.8",
     "expo-web-browser": "~14.0.2",
+    "ical.js": "^2.1.0",
     "lodash": "^4.17.21",
     "node-cron": "^3.0.3",
     "react": "18.3.1",
