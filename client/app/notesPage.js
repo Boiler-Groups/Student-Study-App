@@ -99,11 +99,27 @@ export default function NotesPage() {
 
         const data = await res.json();
         if (res.ok) {
-        setNotesName('');
-        setNotesContent('');
-        setObjId('');
-        fetchNotes();
-        openCreateModal(false);
+          setLoadingConcepts(true);
+          try {
+            const response = await fetch(`${API_URL}/concepts`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notes: notesContent, noteId: objId }),
+            });
+            const data = await response.json();
+            // Split by line to get bullet points
+            const conceptsArray = data.concepts.split('\n').filter(line => line.trim() !== '');
+            setKeyConcepts(conceptsArray);
+          } catch (err) {
+            console.error("Failed to get key concepts:", err);
+            setKeyConcepts(["Error fetching concepts."]);
+          }
+          setLoadingConcepts(false);
+          setNotesName('');
+          setNotesContent('');
+          setObjId('');
+          fetchNotes();
+          openCreateModal(false);
         } else {
           console.error("Couldn't find Note")
         }
@@ -261,10 +277,10 @@ export default function NotesPage() {
                     {loadingSummary ? (
                       <ActivityIndicator size="small" color="#0000ff" />
                     ) : (
-                      <ScrollView style={{ maxHeight: 200, width: '100%', }}>
-                      <Markdown style={{ body: { fontSize: 16, borderWidth: 1, width: '100%', padding: 10, borderWidth: 1, borderRadius: 5, marginBottom: 10,} }}>
-                        {summary}
-                      </Markdown>
+                      <ScrollView style={{ maxHeight: 150, width: '100%', }}>
+                        <Markdown style={{ body: { fontSize: 16, borderWidth: 1, width: '100%', padding: 10, borderWidth: 1, borderRadius: 5, marginBottom: 10,} }}>
+                          {summary}
+                        </Markdown>
                       </ScrollView>
                     )}
                   
@@ -473,7 +489,7 @@ modalInput: {
 },
 noteContentInput: {
   width: '100%',
-  height: 250,
+  height: 150,
   borderWidth: 1,
   borderRadius: 8,
   borderColor: '#ccc',
@@ -484,6 +500,7 @@ noteContentInput: {
 },
 summaryBox: {
   width: '100%',
+  maxHeight: 50,
   padding: 10,
   borderRadius: 5,
   backgroundColor: '#eee',
