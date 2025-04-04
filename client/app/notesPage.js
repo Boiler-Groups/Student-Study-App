@@ -13,7 +13,7 @@ import { GoogleGenerativeAI, HarmCategory,
   HarmBlockThreshold } from "@google/generative-ai";
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-
+import { getCurrentUser } from './api/user';
 
 export default function NotesPage() {
   const router = useRouter();
@@ -31,6 +31,7 @@ export default function NotesPage() {
   const [cards, setCards] = useState([]);
   const [cardNum, setCardNum] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [uid, setUserId] = useState('');
   /* AI gemini portion */
   
   const apiKey = process.env.GEMINI_API_KEY;
@@ -63,14 +64,25 @@ export default function NotesPage() {
   /* Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
     try {
-      const response = await fetch(`${API_URL}/notes`, {
+      const token = await AsyncStorage.getItem('token');
+      const userData = await getCurrentUser({ token });
+      const userID = userData.data._id;
+      console.log(userID);
+      setUserId(userID);
+      const response = await fetch(`${API_URL}/notes/user/${userID}`, {
         method: 'GET',
       });
 
+      if (!response.ok) {
+        console.log("Fetch notes failed!")
+        throw new Error('Failed to fetch notes');
+
+    }
       const data = await response.json();
+      
       setNotes(data);
     } catch (error) {
-      console.error("Error fetching notes:", error);
+      console.log("Error fetching notes:", error);
     }
   };
 
@@ -80,7 +92,7 @@ export default function NotesPage() {
   const handleAddNote = async () => {
     if (notesName.trim() && notesContent.trim()) {
       try {
-        const newNote = { name: notesName, content: notesContent };
+        const newNote = { name: notesName, content: notesContent, userId: uid };
 
         const res = await fetch(`${API_URL}/notes/`, {
           method: 'POST',
@@ -121,7 +133,7 @@ export default function NotesPage() {
   const handleEditNote = async () => {
     if (notesName.trim() && notesContent.trim()) {
       try {
-        const newNote = { name: notesName, content: notesContent };
+        const newNote = { name: notesName, content: notesContent, userId: uid };
 
         const res = await fetch(`${API_URL}/notes/${objId}`, {
           method: 'PUT',
@@ -355,8 +367,11 @@ export default function NotesPage() {
                       ))}
                     </ScrollView>
                   )}
-                  <TouchableOpacity style={styles.modalButton} onPress={handleFlashCards}>
-                      <Text style={styles.buttonText}>Make Flash Cards</Text>
+                  <TouchableOpacity style={styles.modalButton} onPress={ () => {
+                    handleFlashCards();
+                    openFlashModal(false);
+                    }}>
+                      <Text style={styles.buttonText}>Download Flash Cards</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.cancelButton} onPress={() => { 
                     openFlashModal(false); 

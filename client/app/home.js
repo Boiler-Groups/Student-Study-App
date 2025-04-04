@@ -15,12 +15,17 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const { user, logout, authLoading} = useContext(AuthContext);
 
+    
     // Simulated API call to fetch groups
     useEffect(() => {
         setLoading(false); // Set loading to false immediately
         const fetchClasses = async () => {
             try {
-                const response = await fetch(`${API_URL}/classes`);
+                const token = await AsyncStorage.getItem('token');
+                const userData = await getCurrentUser({ token });
+                const userID = userData.data._id;
+
+                const response = await fetch(`${API_URL}/classes/${userID}`);
                 if (!response.ok) {
                     console.log("Fetch classes failed!")
                     throw new Error('Failed to fetch classes');
@@ -28,7 +33,6 @@ export default function Home() {
                 }
                 const data = await response.json();
                 setGroups(data);
-                console.log("Data info: ", data[0]);
             } catch (error) {
                 console.error('Error fetching classes:', error);
             } 
@@ -68,11 +72,11 @@ export default function Home() {
                     contentContainerStyle={styles.listContainer}
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                            style={styles.groupItem}
-                            onPress={() => router.push(`/group/${item._id}`)}
+                        style={styles.classItem}
+                        onPress={() => {}}
                         >
-                            <Text style={styles.groupText}>{item.name}</Text>
-                            <Text style={styles.creditsText}>Credits: {item.credits}</Text>
+                        <Text style={styles.groupText}>{item.name}</Text>
+                        <Text style={styles.creditsText}>Credits: {item.credits}</Text>
                         </TouchableOpacity>
                     )}
                 />
@@ -100,7 +104,7 @@ export default function Home() {
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'flex-start', alignItems: 'center', padding: 15, paddingTop: 100 },
     title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15 },
-    groupItem: {
+    classItem: {
         width: '100%',
         padding: 30,
         backgroundColor: '#D3D3D3',
