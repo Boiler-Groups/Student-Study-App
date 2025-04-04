@@ -31,6 +31,7 @@ import { useRouter } from 'expo-router';
 const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
+    const [targetTime , setTargetTime ] = useState(0);
     const flatListRef = useRef(null);
     const { isDarkTheme } = useTheme();
     const [username, setUsername] = useState("");
@@ -39,9 +40,17 @@ const GroupChatPage = ({ }) => {
     const [selectedMessageId, setSelectedMessageId] = useState(null); // State to track selected message
     const [replyingTo, setReplyingTo] = useState(null);
     const [imageUploadModule,setImageUploadModule] = useState(false);
+    const [automateMessageModule,setAutomateMessageModule] = useState(false);
     const [image, setImage] = useState('');
     const { groupId } = useLocalSearchParams();
     const navigation = useNavigation();
+    const intervalRef = useRef(null);  // Store the interval ID
+
+    const scheduleMinuteRef= useRef(0);
+    const scheduleHourRef= useRef(0);
+    const [scheduleMinute, setScheduleMinute] = useState('');
+    const [scheduleHour, setScheduleHour] = useState('');
+
     const router = useRouter();
 
     const getUsername = async () => {
@@ -130,7 +139,12 @@ const GroupChatPage = ({ }) => {
     };
 
     const handleSendMessage = async () => {
-        if (text.trim() === '') return;
+        if (text.trim() === '') {
+            console.log("Returned early text was trim")
+            stopScheduler();
+            return;
+        }
+        stopScheduler();
 
         const token = await AsyncStorage.getItem('token');
 
@@ -169,7 +183,6 @@ const GroupChatPage = ({ }) => {
             Alert.alert('Error', 'Failed to delete the message.');
         }
     };
-
     const handleSelectMessage = (messageId) => {
         const message = messages.find(msg => msg._id === messageId);
 
@@ -177,7 +190,6 @@ const GroupChatPage = ({ }) => {
             setSelectedMessageId(prevSelected => (prevSelected === messageId ? null : messageId));
         }
     };
-
     const handleReply = (message) => {
         setReplyingTo(message);
         setSelectedMessageId(null);
@@ -185,18 +197,14 @@ const GroupChatPage = ({ }) => {
             inputRef.current.focus();
         }
     };
-
     const inputRef = useRef(null);
-
     const cancelReply = () => {
         setReplyingTo(null);
     };
-
     const isReplyToCurrentUser = (message) => {
         if (!message || !message.replyToSender || !username) return false;
         return message.replyToSender === username;
     };
-
     // Navigate to the Members List page
     const handleNavigateToMembers = () => {
         navigation.navigate('membersList', { groupId });
@@ -227,6 +235,99 @@ const GroupChatPage = ({ }) => {
         return base64ImageRegex.test(encodedBase64ImageStr);
     };
 
+    const startMessageScheduler = () => {
+        //calculateDelayUntilTargetTime()
+
+        clearInterval(intervalRef.current);  // Clear existing interval
+        intervalRef.current = null;  // Reset the ref
+
+        const delay = calculateDelayUntilTargetTime();
+        // Wait until the target time
+        intervalRef.current = setTimeout(() => {
+            console.log("Reached target time, sending message...");
+            handleSendMessage();
+        }, delay);
+    };
+
+    const stopScheduler = () => {
+        console.log("Stopping Scheduler");
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);  // Clear existing interval
+            intervalRef.current = null;  // Reset the ref
+            //setText("");
+            setScheduleMinute("");
+            setScheduleHour("");
+            scheduleMinuteRef.current=0;
+            scheduleHourRef.current=0;
+            setTargetTime(0);
+        }
+    };
+
+    const calculateDelayUntilTargetTime = () => {
+        // Target time (24-hour format) → Ex. 15 = 3:00 PM
+        const curr = new Date();
+        const defaultHour =  curr.getHours();   // Get current hour
+        const defaultMinute = curr.getMinutes(); // Get Current minute
+        const defaultSecond = curr.getSeconds();  // Get current second
+
+        if (!scheduleMinuteRef.current  || scheduleMinuteRef.current === 0 || scheduleMinuteRef.current < 0 || scheduleMinuteRef.current > 59) {
+            scheduleMinuteRef.current = defaultMinute + 1;
+        }
+        if (!scheduleHourRef.current || scheduleHourRef.current === 0 || scheduleHourRef.current < 0 || scheduleHourRef.current > 23) {
+            scheduleHourRef.current = defaultHour;
+        }
+
+
+        const now = new Date();
+        const target = new Date();
+
+        // Set target time based on refs
+        target.setHours(scheduleHourRef.current, scheduleMinuteRef.current, 0, 0);
+
+        // Format Time Properly (HH:MM)
+        const formattedTime = `${String(scheduleHourRef.current).padStart(2, "0")}:${String(scheduleMinuteRef.current).padStart(2, "0")}`;
+
+        if (target <= now) {
+            // If target time has passed for today, schedule it for tomorrow
+            console.log("Time passed adding one day")
+            target.setDate(target.getDate() + 1);
+
+        }
+
+        const delay = target.getTime() - now.getTime();
+        setTargetTime(delay);
+        console.log(`Delay until target time: ${delay / 1000} seconds`);
+        return delay;
+    };
+
+    // useEffect(() => {
+    //     console.log("Target time updated:", targetTime / 1000, "seconds"); // Log targetTime in seconds
+    // }, [targetTime]);  // Only runs when targetTime changes
+
+    const handleHourChange = (text) => {
+        setScheduleHour(text);
+        scheduleHourRef.current = text;  // Update the ref
+    };
+
+    const handleMinuteChange = (text) => {
+        setScheduleMinute(text);
+        scheduleMinuteRef.current = text;  // Update the ref
+    };
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTargetTime(prevTime => Math.max(prevTime - 1000, 0)); // Decrease by 1 second, prevent negatives
+        }, 1000);
+
+        return () => clearInterval(interval); // Cleanup on unmount
+    }, []);
+
+    useEffect(() => {
+        if (text === "Hey Everyone Lets Schedule a Meeting!!!") {
+            startMessageScheduler();
+            setAutomateMessageModule(false);
+        }
+    }, [text]);
 
     return (
         <KeyboardAvoidingView
@@ -373,6 +474,10 @@ const GroupChatPage = ({ }) => {
                 <TouchableOpacity style={styles.moreOptionsButton} onPress={()=>setImageUploadModule(true)}>
                     <Text style={styles.sendText}>{"+"}</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.automateButton} onPress={() => {setAutomateMessageModule(true)}}>
+                    <Text style={styles.sendText}>{"Automate Message"}</Text>
+                </TouchableOpacity>
+                <Text style={styles.modalSubTitle}> Sending in {Math.floor(targetTime / 1000)}s</Text>
             </View>
 
             {/* Modal for Uploading Images*/}
@@ -413,6 +518,43 @@ const GroupChatPage = ({ }) => {
                         {/* Close Button */}
                         <TouchableOpacity style={styles.cancelButton} onPress={()=>setImageUploadModule(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal for Automating Message Send Time*/}
+            <Modal visible={automateMessageModule} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Schedule a Send</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter the Hour in Military Time (Ex. 1 PM = 13)"
+                            value={scheduleHour}
+                            onChangeText={handleHourChange}
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter the Minute Of this Hour (Ex. 3)"
+                            value={scheduleMinute}
+                            onChangeText={handleMinuteChange}
+                        />
+                        <TouchableOpacity style={styles.button} onPress={()=>{
+                            if (!text) {
+                                setText("Hey Everyone Lets Schedule a Meeting!!!");
+                            } else {
+                                startMessageScheduler();
+                                setAutomateMessageModule(false);
+                            }
+                        }}>
+                            <Text style={styles.buttonText}>Schedule Send</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => {
+                            stopScheduler()
+                            setAutomateMessageModule(false)
+                        }}>
+                            <Text style={styles.cancelButtonText}>Cancel Send</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -497,6 +639,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 15,
         borderRadius: 5,
+    },
+    automateButton: {
+        backgroundColor: 'red',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 20,
     },
     sendText: {
         color: '#fff',
@@ -687,6 +835,11 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20,
+    },
+    modalSubTitle: {
+    fontSize: 15,
         fontWeight: 'bold',
         marginBottom: 20,
     },
