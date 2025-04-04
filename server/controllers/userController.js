@@ -90,7 +90,6 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-
     const today = new Date();
     let lastLoginDate = null;
     // check if user has logged in today. if not, set lastLogin to today
@@ -98,7 +97,6 @@ export const login = async (req, res) => {
       lastLoginDate = new Date(user.lastLogin);
     }
     const isDifferentDay = (!lastLoginDate || today.toDateString() !== lastLoginDate.toDateString());
-
     // Get data on user's "streak", if they haven't logged in today
     if (isDifferentDay) {
       const yesterday = new Date();
@@ -111,12 +109,12 @@ export const login = async (req, res) => {
       }
 
       if (isStreak) {
-        user.loginStreak += 1;
+        user.streak += 1;
       } else {
-        user.loginStreak = 1;
+        user.streak = 1;
       }
 
-      if (user.loginStreak >= 10) {
+      if (user.streak >= 10) {
         user.points += 200;
       } else {
         user.points += 100;
@@ -124,8 +122,9 @@ export const login = async (req, res) => {
 
       user.lastLogin = today;
       await user.save();
+    } else {
+      console.log("NOT A NEW DAY!!\n");
     }
-
     // Create JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
