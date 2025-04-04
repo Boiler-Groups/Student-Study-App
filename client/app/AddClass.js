@@ -68,9 +68,7 @@ export default function AddClass() {
   const addAllClassesToDatabase = async () => {
     try {
       for (const classObj of classes) {
-        if (!classObj.added) {
-          continue;
-        }
+        
         const newClass = { 
           name: classObj.name,
           credits: classObj.credits,
@@ -119,6 +117,9 @@ export default function AddClass() {
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
+      const token = await AsyncStorage.getItem('token');
+      const user = await getCurrentUser({ token });
+      const userId = user.data._id;
 
       const newClasses = vevents
         .map(event => {
@@ -135,7 +136,7 @@ export default function AddClass() {
           // Extract only the first two words from the summary
           const className = summary.split(" ").slice(0, 2).join(" ");
 
-          return { id: className, name: className, credits: 3, userId: "-" };
+          return { id: className, name: className, credits: 3, userId: userId };
         })
         .filter(Boolean); // Remove null values
 
