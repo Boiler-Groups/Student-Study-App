@@ -15,3 +15,5 @@ export const getCurrentUser = ({ token }) =>
     });
 
 export const searchUser = (query) => UserClient.get('/search', { params: { query } });
+
+export const getUserFromId = (userId) => UserClient.get(`/${userId}`);

@@ -284,29 +284,46 @@ export const likeMessage = async (req, res) => {
 
 export const toggleMessageReaction = async (req, res) => {
     try {
-        const { groupId, messageId } = req.params;
-        const userId = req.user._id;
+        const { groupId } = req.params;
+        const { messageId, isLike } = req.body;
+        const userId = req.user._id.toString();
 
         const group = await StudyGroup.findById(groupId);
         if (!group) {
             return res.status(404).json({ message: 'Study group not found' });
         }
 
-        const message = group.messages.id(messageId);
-        if (!message) {
-            return res.status(404).json({ message: 'Message not found' });
+        const messageIndex = group.messages.findIndex(msg => msg._id.toString() === messageId);
+        if (messageIndex === -1) {
+            return res.status(404).json({ message: 'Message not found in the group' });
         }
 
-        // Check if the user has already reacted
-        const reactionIndex = message.reactions.indexOf(userId);
-        if (reactionIndex !== -1) {
-            // User already reacted, remove reaction
-            message.reactions.splice(reactionIndex, 1);
+        const message = group.messages[messageIndex];
+        const likeKey = `${userId}-like`;
+        const dislikeKey = `${userId}-dislike`;
+
+        if (isLike) {
+            // Toggle like
+            if (message.reactions.includes(likeKey)) {
+                message.reactions = message.reactions.filter(
+                    r => r !== likeKey
+                );
+            } else {
+                message.reactions.push(likeKey);
+            }
+            
         } else {
-            // User has not reacted, add reaction
-            message.reactions.push(userId);
+            // Toggle dislike
+            if (message.reactions.includes(dislikeKey)) {
+                message.reactions = message.reactions.filter(
+                    r => r !== dislikeKey
+                );
+            } else {
+                message.reactions.push(dislikeKey);
+            }
         }
 
+        group.markModified('messages');
         await group.save();
 
         res.status(200).json({ message: 'Reaction updated', updatedMessage: message });
@@ -314,7 +331,7 @@ export const toggleMessageReaction = async (req, res) => {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
 
 export const removeMember = async (req, res) => {
     const { groupId } = req.params;
