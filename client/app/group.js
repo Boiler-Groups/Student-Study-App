@@ -220,6 +220,7 @@ const GroupChatPage = ({ }) => {
             const response = likeMessage(token, groupId, messageId);
         } else {
             const response = likeMessage(token, groupId, messageId);
+        }
         const message = messages.find(msg => msg._id === messageId);
 
         if (message) {
@@ -531,7 +532,7 @@ const GroupChatPage = ({ }) => {
                             );
                         })()}
 
-                        {/* Show reaction options if the message is selected */}
+                        {/* Show action buttons if the message is selected */}
                         {item._id === selectedMessageId && (
                             <View style={styles.reactionContainer}>
                                 <TouchableOpacity
@@ -564,7 +565,6 @@ const GroupChatPage = ({ }) => {
                                     </Text>
                                 </TouchableOpacity>
 
-                            {item._id === selectedMessageId && (
                                 <View style={styles.messageActions}>
                                     {/* Only show delete for user's own messages */}
                                     {item.sender === username && (
@@ -582,6 +582,7 @@ const GroupChatPage = ({ }) => {
                                     >
                                         <Text style={styles.replyText}>Reply</Text>
                                     </TouchableOpacity>
+                                </View>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -640,9 +641,9 @@ const GroupChatPage = ({ }) => {
                 <Text style={styles.modalSubTitle}> Sending in {Math.floor(targetTime / 1000)}s</Text>
             </View>
             {showReactionsModal && (
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Reactions</Text>
+                <View style={styles.reactModalOverlay}>
+                    <View style={styles.reactModalContent}>
+                        <Text style={styles.reactModalTitle}>Reactions</Text>
                         {selectedReactions.map((reaction, index) => {
                             const [userId, type] = reaction.split('-');
                             const emoji = type === 'like' ? '👍' : '👎';
@@ -652,8 +653,8 @@ const GroupChatPage = ({ }) => {
                                 </Text>
                             );
                         })}
-                        <TouchableOpacity onPress={() => setShowReactionsModal(false)} style={styles.modalCloseButton}>
-                            <Text style={styles.modalCloseText}>Close</Text>
+                        <TouchableOpacity onPress={() => setShowReactionsModal(false)} style={styles.reactModalCloseButton}>
+                            <Text style={styles.reactModalCloseText}>Close</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -1067,6 +1068,61 @@ const styles = StyleSheet.create({
         height: 350,      // Set the height of the image
         borderRadius: 8,  // Optional: to give rounded corners to the image
         marginBottom: 10, // Optional: adds space below the image
+    },
+    reactionListItem: {
+        fontSize: 16,
+        marginVertical: 4,
+    },
+    reactionIcon: {
+        fontSize: 16,
+        marginRight: 10,
+    },
+    reactionButton: {
+        marginTop: 5,
+        alignSelf: 'flex-start',
+    },
+    selectedReactionButton: {
+        backgroundColor: '#d0eaff',  // light blue highlight
+        borderRadius: 8,
+        padding: 4,
+    },
+    selectedReactionIcon: {
+        color: '#007bff',
+        fontWeight: 'bold',
+    },
+    reactModalOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 999,
+    },
+    reactModalContent: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+        maxHeight: '60%',
+    },
+    reactModalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    reactModalCloseButton: {
+        marginTop: 15,
+        backgroundColor: '#007bff',
+        paddingVertical: 8,
+        borderRadius: 5,
+    },
+    reactModalCloseText: {
+        color: '#fff',
+        textAlign: 'center',
+        fontWeight: 'bold',
     },
 });
 
