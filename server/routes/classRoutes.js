@@ -3,12 +3,15 @@ import {
     getClasses,
     createClass,
     deleteClass,
+    getUserClasses,
     getICalendar,
 } from '../controllers/classController.js';
 
 const router = express.Router();
 
 router.get('/', getClasses);
+router.get('/', getClasses);
+router.get('/:userID', getUserClasses);
 router.post('/', createClass);
 router.delete('/:id', deleteClass);
 router.get('/cal', getICalendar);

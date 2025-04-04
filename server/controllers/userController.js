@@ -90,7 +90,41 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
+    const today = new Date();
+    let lastLoginDate = null;
+    // check if user has logged in today. if not, set lastLogin to today
+    if (user.lastLogin) {
+      lastLoginDate = new Date(user.lastLogin);
+    }
+    const isDifferentDay = (!lastLoginDate || today.toDateString() !== lastLoginDate.toDateString());
+    // Get data on user's "streak", if they haven't logged in today
+    if (isDifferentDay) {
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
 
+      let isStreak = false;
+
+      if (lastLoginDate && lastLoginDate.toDateString() === yesterday.toDateString()) {
+        isStreak = true;
+      }
+
+      if (isStreak) {
+        user.streak += 1;
+      } else {
+        user.streak = 1;
+      }
+
+      if (user.streak >= 10) {
+        user.points += 200;
+      } else {
+        user.points += 100;
+      }
+
+      user.lastLogin = today;
+      await user.save();
+    } else {
+      console.log("NOT A NEW DAY!!\n");
+    }
     // Create JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
@@ -218,3 +252,58 @@ export const updateProfileImage = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const updatePoints = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { points } = req.body;
+
+    // Find user by Id
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    // Update User's Points if provided
+    if (points) {
+      user.points = points;
+    }
+
+    await user.save();
+    res.json({ message: "User updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// Get user's points
+export const getPoints = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find user by Id
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    upoints = user.select("points");
+
+    // return number of user's points
+    res.status(200).json(upoints);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//DO NOT return password field with the users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    if (!users) {
+      return res.status(400).json({ message: "Users not found" });
+    }
+
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+}

@@ -12,6 +12,19 @@ export const getClasses = async (req, res) => {
   }
 };
 
+export const getUserClasses = async (req, res) => {
+  try {
+    const { userID } = req.params;
+    const classes = await Class.find({ userId: userID });
+
+    res.status(200).json(classes);
+  } catch (error) {
+    console.error('Error fetching user classes:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 export const createClass = async (req, res) => {
     const { name, credits, userId } = req.body;
   

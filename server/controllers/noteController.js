@@ -13,18 +13,29 @@ export const getNotes = async (req, res) => {
   }
 };
 
+export const getUserNotes = async (req, res) => {
+  try {
+    const userId = req.params.userId; 
+    const notes = await Note.find({ userId });
+    res.status(200).json(notes);
+  } catch (e) {
+    res.status(500).json({ message: "Server error", error: e.message });
+  }
+};
+
 export const createNote = async (req, res) => {
-    const { userId, name, content, date } = req.body;
+    const { name, content, userId } = req.body;
   
     // Validate input before creating note
-    if (!name || !content) {
-      return res.status(400).json({ message: 'Error: You are missing a name, or text content' });
+    if (!name || !content || !userId) {
+      return res.status(400).json({ message: 'Error: You are missing a name, userId, or text content' });
     }
   
     try {
       const newNote = new Note({
         name,
         content,
+        userId,
       });
   
       const savedNote = await newNote.save();

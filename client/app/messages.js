@@ -29,6 +29,7 @@ import {
 import group from "@/app/group"; // Server function calls, Ensure correct path
 
 
+
 export default function Messages() {
 
     const router = useRouter();
@@ -44,6 +45,7 @@ export default function Messages() {
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [groupToEdit, setGroupToEdit] = useState(null);
+
     const [newMessage, setNewMessage] = useState(false);
     const [dmModalVisible, setDmModalVisible] = useState(false);
     const navigation = useNavigation();
@@ -72,8 +74,10 @@ export default function Messages() {
     // Fetch groups function
     const fetchGroups = async () => {
         try {
+
             const token = await AsyncStorage.getItem('token');
             const user = await getCurrentUser({ token });
+
             const email = user.data.email;
 
             const response = await getStudyGroups({ email });
@@ -248,6 +252,7 @@ export default function Messages() {
             // Show error message if deletion fails
             Alert.alert('Error', error.response?.data?.message || 'Failed to delete group');
             setErrorModalVisible(true);
+
         }
     };
 
@@ -607,7 +612,9 @@ export default function Messages() {
             <Modal visible={successModalVisible} animationType="slide" transparent={true}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
+
                         <Text style={styles.modalTitle}>Task Completed Successfully!</Text>
+
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setSuccessModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
