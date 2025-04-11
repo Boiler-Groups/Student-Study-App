@@ -32,7 +32,6 @@ jobs:
           nohup npm start &  # Start the server in the background
           sleep 20           # Wait for 20 seconds to ensure it's running
         env:
-          API_URL: ${{ secrets.MONGO_URI }}  # Pass API_URL as a secret
           DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
           MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
           PORT: ${{ secrets.PORT }}  # Set PORT 
