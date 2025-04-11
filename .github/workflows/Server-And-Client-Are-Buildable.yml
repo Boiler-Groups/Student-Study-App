@@ -32,8 +32,12 @@ jobs:
           nohup npm start &  # Start the server in the background
           sleep 20           # Wait for 20 seconds to ensure it's running
         env:
-          API_URL: ${{ secrets.API_URL }}  # Pass API_URL as a secret
-          DATABASE_URL: ${{ secrets.API_URL }}  # Set DATABASE_URL to the same value
+          API_URL: ${{ secrets.MONGO_URI }}  # Pass API_URL as a secret
+          DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
+          MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
+          PORT: ${{ secrets.PORT }}  # Set PORT 
+          NODE_ENV: ${{ secrets.NODE_ENV }}  # Set NODE_ENV
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}  # Set JWT_SECRET
 
      #Verify Server is running on default 8080
       - name: Verify Server is Running
