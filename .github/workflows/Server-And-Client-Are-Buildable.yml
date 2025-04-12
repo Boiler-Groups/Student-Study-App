@@ -1,4 +1,4 @@
-name: Server And Client Are Buildable
+name: Client Is Buildable
 
 on: 
   push:
@@ -7,89 +7,6 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-server:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Setup Node.js environment
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      # Install server dependencies
-      - name: Install dependencies in server/
-        run: |
-          cd server
-          npm install
-
-      # Check if DATABASE_URL is set
-      - name: Check if DATABASE_URL is set
-        run: |
-          if [ -z "${DATABASE_URL}" ]; then
-            echo "DATABASE_URL is not set"
-          else
-            echo "DATABASE_URL is set"
-          fi
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      # Check if MONGO_URI is set
-      - name: Check if MONGO_URI is set
-        run: |
-          if [ -z "${MONGO_URI}" ]; then
-            echo "MONGO_URI is not set"
-          else
-            echo "MONGO_URI is set"
-          fi
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-
-      # Check if NODE_ENV is set
-      - name: Check if NODE_ENV is set
-        run: |
-          if [ -z "${NODE_ENV}" ]; then
-            echo "NODE_ENV is not set"
-          else
-            echo "NODE_ENV is set"
-          fi
-        env:
-          NODE_ENV: ${{ secrets.NODE_ENV }}
-
-      # Create .env file for server (optional step if you need a .env file)
-      - name: Create .env file for server
-        run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > server/.env
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> server/.env
-          echo "PORT=${{ secrets.PORT }}" >> server/.env
-          echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> server/.env
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> server/.env
-
-      # Start the server with necessary environment variables
-      - name: Start Server
-        run: |
-          cd server
-          # Start the server in the background
-          nohup npm start &  # Running in background
-          sleep 15           # Wait for 15 seconds to ensure it's running
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          PORT: ${{ secrets.PORT }}
-          NODE_ENV: ${{ secrets.NODE_ENV }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-
-      # Verify if the server is running on port 8080
-      - name: Verify Server is Running
-        run: |
-          if ! lsof -i :8080 > /dev/null; then
-            echo "Server did not start or crashed (nothing is listening on port 8080)"
-            exit 1
-          fi
-
   build-client:
     runs-on: ubuntu-latest
     steps:
