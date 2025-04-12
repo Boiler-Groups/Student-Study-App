@@ -30,8 +30,7 @@ jobs:
       - name: Start Server
         run: |
           cd server
-          # Set DATABASE_URL and start the server in the background
-          DATABASE_URL=${{ secrets.API_URL }} nohup npm start &  # Start the server in the background
+          nohup npm start &  # Start the server in the background
           sleep 15           # Wait for 15 seconds to ensure it's running
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}  # Pass MONGO_URI as a secret
