@@ -59,6 +59,15 @@ jobs:
         env:
           NODE_ENV: ${{ secrets.NODE_ENV }}
 
+      # Create .env file for server (optional step if you need a .env file)
+      - name: Create .env file for server
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > server/.env
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> server/.env
+          echo "PORT=${{ secrets.PORT }}" >> server/.env
+          echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> server/.env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> server/.env
+
       # Start the server with necessary environment variables
       - name: Start Server
         run: |
@@ -67,8 +76,8 @@ jobs:
           nohup npm start &  # Running in background
           sleep 15           # Wait for 15 seconds to ensure it's running
         env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
           PORT: ${{ secrets.PORT }}
           NODE_ENV: ${{ secrets.NODE_ENV }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
