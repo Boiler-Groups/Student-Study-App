@@ -122,9 +122,7 @@ export const login = async (req, res) => {
 
       user.lastLogin = today;
       await user.save();
-    } else {
-      console.log("NOT A NEW DAY!!\n");
-    }
+    } 
     // Create JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",

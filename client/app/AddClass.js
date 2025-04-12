@@ -33,18 +33,17 @@ export default function AddClass() {
   
     try {
       const token = await AsyncStorage.getItem('token');
-      const user = await getCurrentUser({ token });
+      const user = await getCurrentUser({ token }); 
       const response = user.data;
+      
       setClasses(classes => [
         ...classes,
         {
-          id: Date.now().toString(),
           name: className,
           credits: credNum,
           userId: response._id,
         },
       ]);
-  
       setClassName('');
       setCredits('');
       setErrMsg('');

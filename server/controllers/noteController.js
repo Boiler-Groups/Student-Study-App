@@ -24,7 +24,7 @@ export const getUserNotes = async (req, res) => {
 };
 
 export const createNote = async (req, res) => {
-    const { name, content, userId } = req.body;
+    const { userId, name, content } = req.body;
   
     // Validate input before creating note
     if (!name || !content || !userId) {

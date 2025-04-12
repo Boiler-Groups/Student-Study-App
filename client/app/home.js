@@ -24,7 +24,7 @@ export default function Home() {
                 const token = await AsyncStorage.getItem('token');
                 const userData = await getCurrentUser({ token });
                 const userID = userData.data._id;
-                const response = await fetch(`${API_URL}/notes/user/${userID}`, {
+                const response = await fetch(`${API_URL}/classes/user/${userID}`, {
                         method: 'GET',
                 });
                 if (!response.ok) {
