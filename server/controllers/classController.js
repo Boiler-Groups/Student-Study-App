@@ -16,7 +16,7 @@ export const getUserClasses = async (req, res) => {
   console.log("get user classes is running\n");
   try {
     const userId = req.params.userId;
-    const classes = await Class.find({ userId });
+    const classes = await Class.find({ userId: userId });
 
     res.status(200).json(classes);
   } catch (error) {

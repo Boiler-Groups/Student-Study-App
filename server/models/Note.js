@@ -17,7 +17,11 @@ const NoteSchema = new mongoose.Schema({
   keyConcepts: {
     type: [String],
     default: []
-  }
+  },
+  sharedWith: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    email: { type: String }
+  }]
 });
 
 const Note = mongoose.model('Note', NoteSchema);
