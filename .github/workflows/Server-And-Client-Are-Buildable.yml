@@ -26,6 +26,33 @@ jobs:
           cd server
           npm install
 
+      #Check if Data Base URL is set
+      - name: Check if DATABASE_URL is set
+        run: |
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "DATABASE_URL is not set"
+          else
+            echo "DATABASE_URL is set"
+          fi
+
+      #Check if MONGO_URI is set
+      - name: Check if MONGO_URI is set
+        run: |
+          if [ -z "${{ secrets.MONGO_URI }}" ]; then
+            echo "MONGO_URI is not set"
+          else
+            echo "MONGO_URI is set"
+          fi
+
+      #Check if NODE_ENV is set
+      - name: Check if NODE_ENV is set
+        run: |
+          if [ -z "${{ secrets.NODE_ENV }}" ]; then
+            echo "NODE_ENV is not set"
+          else
+            echo "NODE_ENV is set"
+          fi
+
       # Start the server with the API_URL from GitHub Secrets and set DATABASE_URL
       - name: Start Server
         run: |
