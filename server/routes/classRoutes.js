@@ -10,8 +10,7 @@ import {
 const router = express.Router();
 
 router.get('/', getClasses);
-router.get('/', getClasses);
-router.get('/:userID', getUserClasses);
+router.get('/user/:userID', getUserClasses);
 router.post('/', createClass);
 router.delete('/:id', deleteClass);
 router.get('/cal', getICalendar);

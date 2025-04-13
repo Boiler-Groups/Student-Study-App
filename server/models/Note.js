@@ -22,6 +22,10 @@ const NoteSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  sharedWith: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    email: { type: String }
+  }]
 });
 
 const Note = mongoose.model('Note', NoteSchema);
