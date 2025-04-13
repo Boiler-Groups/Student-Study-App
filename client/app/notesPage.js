@@ -41,6 +41,8 @@ export default function NotesPage() {
   const [cardNum, setCardNum] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [uid, setUserId] = useState('');
+  const [sortMethod, setSortMethod] = useState('alphabetical');
+
   /* AI gemini portion */
   
   const apiKey = process.env.GEMINI_API_KEY;
@@ -112,7 +114,7 @@ export default function NotesPage() {
         });
 
         const data = await res.json();
-        setNotes([...notes, data]); // Update state with new note
+        setNotes(prev => getSortedNotes([...prev, data]));
         setNotesName('');
         setNotesContent('');
         openCreateModal(false);
@@ -183,6 +185,22 @@ export default function NotesPage() {
       }
     }
   };
+
+  /* Select Sorting Method */
+
+  const getSortedNotes = (noteList = notes) => {
+    const sorted = [...noteList];
+    if (sortMethod === 'recent') {
+      sorted.sort((a, b) => new Date(b.lastEdited) - new Date(a.lastEdited));
+    } else if (sortMethod === 'oldest') {
+      sorted.sort((a, b) => new Date(a.lastEdited) - new Date(b.lastEdited));
+    } else if (sortMethod === 'alphabetical') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  };
+  
+  
   const handleFlashCards = async () => {
     if (!notesContent || !cardNum) {
       alert('Please enter notes and select number of flashcards');
@@ -246,10 +264,48 @@ export default function NotesPage() {
         </TouchableOpacity>
       </View>
 
+      <View style={{
+        width: '60%',
+        marginBottom: 10,
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 8,
+        backgroundColor: isDarkTheme ? '#1E1E1E' : '#F5F5F5',
+      }}>
+        <Text style={{
+          fontSize: 16,
+          fontWeight: 'bold',
+          marginBottom: 5,
+          color: isDarkTheme ? '#FFF' : '#000',
+        }}>Sort Notes</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {['ai', 'recent', 'oldest', 'alphabetical'].map(option => (
+            <TouchableOpacity
+              key={option}
+              onPress={() => setSortMethod(option)}
+              style={{
+                backgroundColor: sortMethod === option ? '#007AFF' : '#ccc',
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                borderRadius: 16,
+                marginRight: 8,
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                {option === 'ai' ? 'AI Grouping' :
+                option === 'recent' ? 'Most Recent' :
+                option === 'oldest' ? 'Oldest' :
+                'Alphabetical'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {/* List of Notes */}
       <FlatList
         style={styles.listContainer}
-        data={notes}
+        data={getSortedNotes()}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <View key={item._id} style={[styles.notesItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
