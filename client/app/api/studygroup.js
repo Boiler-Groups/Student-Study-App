@@ -118,3 +118,5 @@ export const removeMember = (token, groupId, userEmail) =>
       console.error("Error remove user from group:", err);
       return null;
     });
+
+export const edbotResponse = (token, groupId, text) => StudyGroupClient.post(`/edbot/${groupId}`,  {text: text}, authHeader(token));

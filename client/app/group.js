@@ -24,7 +24,8 @@ import {
     likeMessage,
     toggleMessageLike,
     toggleMessageDislike,
-    checkIsDM
+    checkIsDM,
+    edbotResponse
 } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
@@ -175,6 +176,27 @@ const GroupChatPage = ({ }) => {
         return messageText.includes(userTag);
     };
 
+    const handleEdbotResponse = async (text) => {
+        const token = await AsyncStorage.getItem('token');
+        const response = await edbotResponse(token, groupId, text);
+        // try {
+        //     const response = await fetch(`${API_URL}/summarize`, {
+        //         method: 'POST',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({ notes: notesContent, noteId: objId }),
+        //     });
+        //     const data = await response.json();
+        //     setSummary(data.summary);
+        // } catch (err) {
+        //     console.error("Failed to fetch summary:", err);
+        //     setSummary("Error fetching summary.");
+        // }
+
+        if (response) {
+            loadMessages();
+        }
+    }
+
     const handleSendMessage = async () => {
         if (text.trim() === '') {
             console.log("Returned early text was trim")
@@ -182,6 +204,10 @@ const GroupChatPage = ({ }) => {
             return;
         }
         stopScheduler();
+
+        if (text.includes('@Edbot')) {
+            handleEdbotResponse(text);
+        }
 
         const token = await AsyncStorage.getItem('token');
 
@@ -490,6 +516,10 @@ const GroupChatPage = ({ }) => {
                                     borderWidth: 2,
                                     borderColor: '#FFD700',
                                     backgroundColor: isDarkTheme ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 224, 0.5)'
+                                },
+                                item.sender === 'Edbot' && {
+                                    borderWidth: 3,
+                                    borderColor: '#rgb(0, 60, 255)'
                                 }
                             ]}
                             onPress={() => handleSelectMessage(item._id)}
@@ -551,7 +581,7 @@ const GroupChatPage = ({ }) => {
                                         )}
                                         {dislikes > 0 && (
                                             <TouchableOpacity
-                                            onPress={() => openReactionsModal(item.reactions.filter(r => r.endsWith('-dislike')))}
+                                                onPress={() => openReactionsModal(item.reactions.filter(r => r.endsWith('-dislike')))}
                                             >
                                                 <Text style={styles.reactionIcon}>👎 {dislikes}</Text>
                                             </TouchableOpacity>
