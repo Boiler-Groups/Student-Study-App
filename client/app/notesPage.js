@@ -22,7 +22,7 @@ import { getCurrentUser } from './api/user';
 
 export default function NotesPage() {
   const router = useRouter();
-  const { isDarkTheme } = useTheme(); // Get dark mode state
+  const isDarkTheme = useTheme();
   const [notesName, setNotesName] = useState('');
   const [notesContent, setNotesContent] = useState('');
   const [currentNote, setCurrentNote] = useState(null);
@@ -44,7 +44,7 @@ export default function NotesPage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [uid, setUserId] = useState('');
   const [sortMethod, setSortMethod] = useState('alphabetical');
-
+  const [searchTerm, setSearchTerm] = useState('');
   const [shareModal, setShareModal] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [sharedUsers, setSharedUsers] = useState([]);
@@ -67,6 +67,7 @@ export default function NotesPage() {
     responseMimeType: "text/plain",
   };
 
+  /* boilerplate run code */
   async function run() {
     const chatSession = model.startChat({
       generationConfig,
@@ -212,7 +213,11 @@ export default function NotesPage() {
   /* Select Sorting Method */
 
   const getSortedNotes = (noteList = notes) => {
-    const sorted = [...noteList];
+    const filtered = noteList.filter(note =>
+      note.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  
+    const sorted = [...filtered];
     if (sortMethod === 'recent') {
       sorted.sort((a, b) => new Date(b.lastEdited) - new Date(a.lastEdited));
     } else if (sortMethod === 'oldest') {
@@ -222,6 +227,7 @@ export default function NotesPage() {
     }
     return sorted;
   };
+  
   
   
   const fetchSharedUsers = async (noteId) => {
@@ -400,6 +406,24 @@ export default function NotesPage() {
         </ScrollView>
       </View>
 
+      {/* Search Bar! */}
+      <TextInput
+        placeholder="Search notes..."
+        value={searchTerm}
+        onChangeText={setSearchTerm}
+        style={{
+          borderWidth: 1,
+          borderColor: '#ccc',
+          borderRadius: 8,
+          padding: 10,
+          marginBottom: 10,
+          width: '60%',
+          backgroundColor: isDarkTheme ? '#1E1E1E' : '#FFF',
+          color: isDarkTheme ? '#FFF' : '#000',
+        }}
+        placeholderTextColor={isDarkTheme ? '#aaa' : '#666'}
+      />
+
       {/* List of Notes */}
       <FlatList
         style={styles.listContainer}
@@ -416,6 +440,10 @@ export default function NotesPage() {
               <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
                 {item.name}
               </Text>
+              <Text style={{ fontSize: 12, color: isDarkTheme ? '#ccc' : '#555' }}>
+                Last Modified: {new Date(item.lastEdited).toLocaleString()}
+              </Text>
+
             </View>
 
             <TouchableOpacity onPress={() => {
