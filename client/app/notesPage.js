@@ -41,6 +41,7 @@ export default function NotesPage() {
   const [card, setCard] = useState('');
   const [cards, setCards] = useState([]);
   const [cardNum, setCardNum] = useState(null);
+  const [generationMode, setGenerationMode] = useState('flashcards');
   const [showDropdown, setShowDropdown] = useState(false);
   const [uid, setUserId] = useState('');
   const [sortMethod, setSortMethod] = useState('alphabetical');
@@ -222,8 +223,8 @@ export default function NotesPage() {
     }
     return sorted;
   };
-  
-  
+
+
   const fetchSharedUsers = async (noteId) => {
     try {
       const response = await fetch(`${API_URL}/notes/${noteId}`, {
@@ -349,6 +350,58 @@ export default function NotesPage() {
       alert('Failed to generate or share flashcards.');
     }
   };
+
+  const handlePracticeQuestions = async () => {
+    if (!notesContent || !cardNum) {
+      alert('Please enter notes and select number of practice questions');
+      return;
+    }
+
+    try {
+      const prompt = `Generate ${cardNum} practice questions from the following notes. Format:
+  Question 1:
+  Q: [question]
+  A: [answer]
+  
+  Notes:
+  ${notesContent}`;
+
+      const result = await model.generateContent(prompt);
+      const text = await result.response.text();
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `practice_questions_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const fileUri = FileSystem.documentDirectory + `practice_questions_${Date.now()}.txt`;
+        await FileSystem.writeAsStringAsync(fileUri, text, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(fileUri);
+        } else {
+          alert("Sharing is not available on this device.");
+        }
+      }
+
+      openFlashModal(false);
+      setNotesContent('');
+      setNotesName('');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate or share practice questions.');
+    }
+  };
+
   return (
     <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
       <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Your Notes</Text>
@@ -391,9 +444,9 @@ export default function NotesPage() {
             >
               <Text style={{ color: '#fff', fontWeight: 'bold' }}>
                 {option === 'ai' ? 'AI Grouping' :
-                option === 'recent' ? 'Most Recent' :
-                option === 'oldest' ? 'Oldest' :
-                'Alphabetical'}
+                  option === 'recent' ? 'Most Recent' :
+                    option === 'oldest' ? 'Oldest' :
+                      'Alphabetical'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -702,46 +755,106 @@ export default function NotesPage() {
       <Modal visible={flashModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Number of Flashcards</Text>
-            {/* Toggle Button for Dropdown */}
-            <TouchableOpacity
-              style={styles.dropdownToggle}
-              onPress={() => setShowDropdown(!showDropdown)}
-            >
-              <Text style={styles.cardItem}>
-                {cardNum ? `Cards: ${cardNum}` : 'Select number'}
-              </Text>
-            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Generate Study Materials</Text>
 
-            {/* Dropdown List */}
+            {/* Mode Selection */}
+            <View style={styles.generationTypeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.generationButton,
+                  generationMode === 'flashcards' ? styles.activeGenerationButton : {}
+                ]}
+                onPress={() => setGenerationMode('flashcards')}
+              >
+                <Icon name="style" size={24} color={generationMode === 'flashcards' ? '#fff' : '#555'} />
+                <Text style={[
+                  styles.generationButtonText,
+                  generationMode === 'flashcards' ? styles.activeGenerationText : {}
+                ]}>Flashcards</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.generationButton,
+                  generationMode === 'practice' ? styles.activeGenerationButton : {}
+                ]}
+                onPress={() => setGenerationMode('practice')}
+              >
+                <Icon name="help" size={24} color={generationMode === 'practice' ? '#fff' : '#555'} />
+                <Text style={[
+                  styles.generationButtonText,
+                  generationMode === 'practice' ? styles.activeGenerationText : {}
+                ]}>Practice Questions</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Number Selection */}
+            <View style={styles.countSelectorContainer}>
+              <Text style={styles.countLabel}>
+                Number of {generationMode === 'flashcards' ? 'Flashcards' : 'Questions'}:
+              </Text>
+
+              <TouchableOpacity
+                style={styles.countSelector}
+                onPress={() => setShowDropdown(!showDropdown)}
+              >
+                <Text style={styles.countSelectorText}>
+                  {cardNum || 'Select'}
+                </Text>
+                <Icon name={showDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Dropdown */}
             {showDropdown && (
-              <ScrollView style={[styles.dropdownList, { maxHeight: screenHeight * 0.3 }]}>
+              <ScrollView style={styles.dropdownContainer}>
                 {Array.from({ length: 50 }, (_, i) => (
                   <TouchableOpacity
                     key={i}
+                    style={styles.dropdownItem}
                     onPress={() => {
                       setCardNum(i + 1);
-                      setShowDropdown(false); // close dropdown after selection
+                      setShowDropdown(false);
                     }}
                   >
-                    <Text style={styles.cardItem}>Cards: {i + 1}</Text>
+                    <Text style={[
+                      styles.dropdownText,
+                      cardNum === (i + 1) ? styles.selectedDropdownText : {}
+                    ]}>{i + 1}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             )}
-            <TouchableOpacity style={styles.modalButton} onPress={() => {
-              handleFlashCards();
-              openFlashModal(false);
-            }}>
-              <Text style={styles.buttonText}>Download Flash Cards</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={() => {
-              openFlashModal(false);
-              setNotesContent('');
-              setNotesName('');
-            }}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+
+            {/* Action Buttons */}
+            <View style={styles.modalActionContainer}>
+              <TouchableOpacity
+                style={styles.generateButton}
+                onPress={() => {
+                  if (generationMode === 'flashcards') {
+                    handleFlashCards();
+                  } else {
+                    handlePracticeQuestions();
+                  }
+                }}
+              >
+                <Icon name="download" size={20} color="#fff" style={styles.buttonIcon} />
+                <Text style={styles.generateButtonText}>
+                  Generate {generationMode === 'flashcards' ? 'Flashcards' : 'Practice Questions'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelModalButton}
+                onPress={() => {
+                  openFlashModal(false);
+                  setNotesContent('');
+                  setNotesName('');
+                }}
+              >
+                <Text style={styles.cancelModalText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1100,5 +1213,147 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     alignSelf: 'flex-start',
     fontWeight: '500',
+  },
+  typeSelectionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 15,
+  },
+  typeButton: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+    marginHorizontal: 5,
+    borderRadius: 5,
+  },
+  selectedType: {
+    backgroundColor: '#007AFF',
+  },
+  typeButtonText: {
+    fontWeight: '500',
+  },
+  selectionText: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+    fontSize: 16,
+  },
+  generationTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 25,
+    marginTop: 10,
+  },
+  generationButton: {
+    flex: 1,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    marginHorizontal: 8,
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  activeGenerationButton: {
+    backgroundColor: '#007AFF',
+  },
+  generationButtonText: {
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+    color: '#555',
+  },
+  activeGenerationText: {
+    color: '#fff',
+  },
+  countSelectorContainer: {
+    flexDirection: 'column',
+    width: '100%',
+    marginBottom: 20,
+  },
+  countLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#333',
+  },
+  countSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#f8f8f8',
+  },
+  countSelectorText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownContainer: {
+    maxHeight: 200,
+    width: '100%',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    alignItems: 'center',
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedDropdownText: {
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  modalActionContainer: {
+    width: '100%',
+    marginTop: 10,
+  },
+  generateButton: {
+    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  generateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  cancelModalButton: {
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  cancelModalText: {
+    color: '#555',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
