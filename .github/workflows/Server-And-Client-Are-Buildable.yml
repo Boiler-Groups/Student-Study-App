@@ -45,7 +45,14 @@ jobs:
             echo "Server did not start or crashed (nothing is listening on port 8080)"
             exit 1
           fi
-          
+
+      # Run Existing Server Tests
+      - name: Run Server Tests
+        run: npm test
+        env:
+          DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
+          MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
+
 
   build-client:
     runs-on: ubuntu-latest
