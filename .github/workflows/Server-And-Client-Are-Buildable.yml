@@ -42,8 +42,10 @@ jobs:
       - name: Verify Server is Running
         run: |
           if ! lsof -i :8080 > /dev/null; then
-           echo "Server did not start or crashed (nothing is listening on port 8080)"
-           exit 1
+            echo "Server did not start or crashed (nothing is listening on port 8080)"
+            exit 1
+          fi
+          
 
   build-client:
     runs-on: ubuntu-latest
@@ -75,5 +77,6 @@ jobs:
       - name: Verify Client is Running
         run: |
           if ! lsof -i :8081 > /dev/null; then
-           echo "Client did not start or crashed (nothing is listening on port 8081)"
-           exit 1
+            echo "Client did not start or crashed (nothing is listening on port 8081)"
+            exit 1
+          fi
