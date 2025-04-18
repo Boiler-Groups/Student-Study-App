@@ -71,7 +71,7 @@ export default function Messages() {
         setNotificationsEnabled(!notificationsEnabled);
     };
 
-    // Fetch groups function
+    // A function to fetch groups
     const fetchGroups = async () => {
         try {
 
