@@ -48,7 +48,9 @@ jobs:
 
       # Run Existing Server Tests
       - name: Run Server Tests
-        run: npm test
+        run: |
+          cd server
+          npm test
         env:
           DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
           MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
