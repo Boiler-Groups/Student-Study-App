@@ -25,6 +25,18 @@ jobs:
           cd server
           npm install
 
+      # Run Existing Server Tests
+      - name: Run Server Tests
+        run: |
+          cd server
+          npm test
+        env:
+          DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
+          MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
+          PORT: ${{ secrets.PORT }}  # Set PORT
+          NODE_ENV: ${{ secrets.NODE_ENV }}  # Set NODE_ENV
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}  # Set JWT_SECRET
+
       # Start the server
       - name: Start Server
         run: |
@@ -46,15 +58,7 @@ jobs:
             exit 1
           fi
 
-      # Run Existing Server Tests
-      - name: Run Server Tests
-        run: |
-          cd server
-          npm test
-        env:
-          DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
-          MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
-
+    
 
   build-client:
     runs-on: ubuntu-latest
