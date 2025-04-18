@@ -210,7 +210,8 @@ export default function NotesPage() {
     }
   };
 
-  /* Select Sorting Method */
+  /* Select Sorting Method. 
+  Adding stuff here for commit test */
 
   const getSortedNotes = (noteList = notes) => {
     const filtered = noteList.filter(note =>
