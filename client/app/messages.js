@@ -27,7 +27,7 @@ import {
     removeTaggedOrRepliedUser
 } from './api/studygroup';
 import group from "@/app/group"; // Server function calls, Ensure correct path
-
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 
 export default function Messages() {
@@ -343,7 +343,8 @@ export default function Messages() {
                 <View style={styles.buttonsContainer}>
                     <TouchableOpacity
                         style={styles.joinButton}
-                        onPress={() => {
+                        onPress={async () => {
+                            await buttonPressSound();
                             fetchGroupsAll();
                             setDmModalVisible(true);
                         }}
@@ -352,7 +353,8 @@ export default function Messages() {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.joinButton}
-                        onPress={() => {
+                        onPress={async () => {
+                            await buttonPressSound();
                             fetchGroupsAll();
                             setJoinModalVisible(true);
                         }}
@@ -363,7 +365,10 @@ export default function Messages() {
                     {/* Notification toggle button */}
                     <TouchableOpacity
                         style={styles.toggleButton}
-                        onPress={toggleNotifications}
+                        onPress={async ()=>{
+                            await buttonPressSound();
+                            toggleNotifications();
+                        }}
                     >
                         <MaterialIcons
                             name={notificationsEnabled ? 'notifications-off' : 'notifications'}
@@ -374,7 +379,10 @@ export default function Messages() {
                 </View>
 
                 {newMessage && (
-                    <TouchableOpacity style={styles.notificationIcon} onPress={() => setNewMessageFlag(-1, false)}>
+                    <TouchableOpacity style={styles.notificationIcon} onPress={async () => {
+                        await buttonPressSound();
+                        setNewMessageFlag(-1, false);
+                    }}>
                         <MaterialIcons name="notifications" size={30} color="red" />
                     </TouchableOpacity>
                 )}
@@ -399,7 +407,8 @@ export default function Messages() {
                                                 ? styles.groupItemMessage
                                                 : styles.groupItemNoMessage
                                     }
-                                    onPress={() => {
+                                    onPress={async () => {
+                                        await buttonPressSound();
                                         clearAllNotifications(item._id, currEmail);
                                         navigation.navigate('group', { groupId: item._id });
                                     }}
@@ -428,7 +437,8 @@ export default function Messages() {
                                 </TouchableOpacity>
 
                                 {!item.isDM && (
-                                    <TouchableOpacity onPress={() => {
+                                    <TouchableOpacity onPress={async () => {
+                                        await buttonPressSound();
                                         setGroupToEdit(item);
                                         setEditModalVisible(true);
                                     }}>
@@ -436,7 +446,10 @@ export default function Messages() {
                                     </TouchableOpacity>
                                 )}
 
-                                <TouchableOpacity onPress={() => handleDeleteGroup(item._id)}>
+                                <TouchableOpacity onPress={async () => {
+                                    await buttonPressSound();
+                                    handleDeleteGroup(item._id);
+                                }}>
                                     <Text style={styles.deleteText}>Delete</Text>
                                 </TouchableOpacity>
                             </View>
@@ -446,14 +459,20 @@ export default function Messages() {
             )}
 
             {/* Button to Open Create Modal */}
-            <TouchableOpacity style={styles.button} onPress={() => setCreateModalVisible(true)}>
+            <TouchableOpacity style={styles.button} onPress={async () => {
+                await buttonPressSound();
+                setCreateModalVisible(true)
+            }}>
                 <Text style={styles.buttonText}>Create New Group</Text>
             </TouchableOpacity>
 
             {/* Button to navigate to Landing */}
             <TouchableOpacity
                 style={[styles.button, { marginTop: 10, backgroundColor: '#6c757d' }]}
-                onPress={() => router.push('/landing')}>
+                onPress={async () => {
+                    await buttonPressSound();
+                    router.push('/landing');
+                }}>
                 <Text style={styles.buttonText}>Home</Text>
             </TouchableOpacity>
 
@@ -474,10 +493,16 @@ export default function Messages() {
                             value={members}
                             onChangeText={setMembers}
                         />
-                        <TouchableOpacity style={styles.button} onPress={handleCreateGroup}>
+                        <TouchableOpacity style={styles.button} onPress={async ()=>{
+                            await buttonPressSound();
+                            handleCreateGroup();
+                        }}>
                             <Text style={styles.buttonText}>Create Group</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => setCreateModalVisible(false)}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={async () => {
+                            await buttonPressSound();
+                            setCreateModalVisible(false);
+                        }}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
@@ -497,7 +522,8 @@ export default function Messages() {
                         />
                         <TouchableOpacity
                             style={styles.button}
-                            onPress={() => {
+                            onPress={async () => {
+                                await buttonPressSound();
                                 if (groupToEdit) {
                                     updateStudyGroupName(groupToEdit._id, newGroupName);
                                 }
@@ -505,7 +531,10 @@ export default function Messages() {
                         >
                             <Text style={styles.buttonText}>Save Changes</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={async () => {
+                            await buttonPressSound();
+                            setEditModalVisible(false)
+                        }}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -534,7 +563,8 @@ export default function Messages() {
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
                                         style={styles.searchResultItem}
-                                        onPress={() => {
+                                        onPress={async () => {
+                                            await buttonPressSound();
                                             //setMembers(item.email);
                                             setGroupName(item.email);
                                             handleCreateDm(item.email);
@@ -550,7 +580,10 @@ export default function Messages() {
 
                         <TouchableOpacity
                             style={styles.closeButton}
-                            onPress={() => setDmModalVisible(false)}
+                            onPress={async () => {
+                                await buttonPressSound();
+                                setDmModalVisible(false)
+                            }}
                         >
                             <Text style={styles.closeButtonText}>Close</Text>
                         </TouchableOpacity>
@@ -573,6 +606,7 @@ export default function Messages() {
                                     <TouchableOpacity
                                         style={[{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' }, isDarkTheme ? styles.darkText : styles.lightText]}
                                         onPress={async () => {
+                                            await buttonPressSound();
                                             // Handle group selection
                                             setGroupToEdit(item); // Set the group being edited
                                             console.log('Selected group:', item);
@@ -589,7 +623,10 @@ export default function Messages() {
                                 )}
                             />
                         )}
-                        <TouchableOpacity onPress={() => setJoinModalVisible(false)} style={{ marginTop: 10, padding: 10, backgroundColor: '#ccc', borderRadius: 5 }}>
+                        <TouchableOpacity onPress={async () => {
+                            await buttonPressSound();
+                            setJoinModalVisible(false)
+                        }} style={{ marginTop: 10, padding: 10, backgroundColor: '#ccc', borderRadius: 5 }}>
                             <Text>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -601,7 +638,10 @@ export default function Messages() {
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>There Was An Error Completing the Task</Text>
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => setErrorModalVisible(false)}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={async () => {
+                            await buttonPressSound();
+                            setErrorModalVisible(false)
+                        }}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -615,7 +655,10 @@ export default function Messages() {
 
                         <Text style={styles.modalTitle}>Task Completed Successfully!</Text>
 
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => setSuccessModalVisible(false)}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={async () => {
+                            await buttonPressSound();
+                            setSuccessModalVisible(false)
+                        }}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>

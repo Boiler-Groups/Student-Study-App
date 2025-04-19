@@ -19,6 +19,8 @@ import {
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getCurrentUser } from './api/user';
+import { buttonPressSound } from '../sounds/soundUtils.js';
+
 
 export default function NotesPage() {
   const router = useRouter();
@@ -410,7 +412,10 @@ export default function NotesPage() {
 
       <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
         <Text style={[styles.addNoteText, isDarkTheme ? styles.darkInput : styles.lightInput]}>Add Note</Text>
-        <TouchableOpacity style={styles.addButton} testID='add-btn' onPress={() => { openCreateModal(true) }}>
+        <TouchableOpacity style={styles.addButton} testID='add-btn' onPress={async() => {
+          await buttonPressSound();
+          openCreateModal(true)
+        }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
       </View>
@@ -433,7 +438,10 @@ export default function NotesPage() {
           {['ai', 'recent', 'oldest', 'alphabetical'].map(option => (
             <TouchableOpacity
               key={option}
-              onPress={() => setSortMethod(option)}
+              onPress={async() => {
+                await buttonPressSound
+                setSortMethod(option)
+              }}
               style={{
                 backgroundColor: sortMethod === option ? '#007AFF' : '#ccc',
                 paddingVertical: 6,
@@ -471,7 +479,8 @@ export default function NotesPage() {
               </Text>
             </View>
 
-            <TouchableOpacity onPress={() => {
+            <TouchableOpacity onPress={async() => {
+              await buttonPressSound();
               setNotesName(item.name);
               setNotesContent(item.content);
               setObjId(item._id);
@@ -482,10 +491,14 @@ export default function NotesPage() {
             }}>
               <Icon name="edit" size={24} color="black" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => removeNote(item._id)}>
+            <TouchableOpacity onPress={async() => {
+              await buttonPressSound();
+              removeNote(item._id)
+            }}>
               <Icon name="delete" size={24} color="red" />
             </TouchableOpacity>
-            <TouchableOpacity testID={`test-btn-${item.name}`} onPress={() => {
+            <TouchableOpacity testID={`test-btn-${item.name}`} onPress={async () => {
+              await buttonPressSound();
               setNotesName(item.name);
               setNotesContent(item.content);
               setObjId(item._id);
@@ -495,7 +508,8 @@ export default function NotesPage() {
             </TouchableOpacity>
             <TouchableOpacity
               testID={`share-btn-${item.name}`}
-              onPress={() => {
+              onPress={async() => {
+                await buttonPressSound();
                 setSelectedNoteForShare(item._id);
                 fetchSharedUsers(item._id);
                 setShareModal(true);
@@ -508,7 +522,10 @@ export default function NotesPage() {
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.button} onPress={async() => {
+          await buttonPressSound();
+          router.push('/home')
+        }}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
@@ -537,7 +554,10 @@ export default function NotesPage() {
 
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={handleShareNote}
+              onPress={async ()=>{
+                await buttonPressSound();
+                handleShareNote()
+              }}
             >
               <Text style={styles.buttonText}>Share</Text>
             </TouchableOpacity>
@@ -550,7 +570,10 @@ export default function NotesPage() {
                   <View key={idx} style={styles.sharedUserItem}>
                     <Text style={styles.sharedUserEmail}>{user.email}</Text>
                     <TouchableOpacity
-                      onPress={() => handleUnshareNote(user.userId)}
+                      onPress={async() => {
+                        await buttonPressSound();
+                        handleUnshareNote(user.userId)
+                      }}
                       style={styles.unshareButton}
                     >
                       <Icon name="close" size={20} color="white" />
@@ -564,7 +587,8 @@ export default function NotesPage() {
 
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => {
+              onPress={async() => {
+                await buttonPressSound();
                 setShareModal(false);
                 setShareEmail('');
                 setShareError('');
@@ -603,10 +627,14 @@ export default function NotesPage() {
             />
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={handleAddNote}>
+              onPress={async()=>{
+                await buttonPressSound();
+                handleAddNote()
+              }}>
               <Text style={styles.buttonText}>Create Note</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={() => {
+            <TouchableOpacity style={styles.cancelButton} onPress={async () => {
+              await buttonPressSound();
               openCreateModal(false);
               setNotesContent('');
               setNotesName('');
@@ -625,7 +653,8 @@ export default function NotesPage() {
               <Text style={styles.modalTitle}>Edit a Note</Text>
               <TouchableOpacity
                 style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
-                onPress={() => {
+                onPress={async () => {
+                  await buttonPressSound();
                   if (speakingNoteId === objId) {
                     Speech.stop();
                     setSpeakingNoteId(null);
@@ -665,6 +694,7 @@ export default function NotesPage() {
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: '#444' }]}
               onPress={async () => {
+                await buttonPressSound();
                 setLoadingSummary(true);
                 try {
                   const response = await fetch(`${API_URL}/summarize`, {
@@ -697,6 +727,7 @@ export default function NotesPage() {
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: '#444' }]}
               onPress={async () => {
+                await buttonPressSound();
                 setLoadingConcepts(true);
                 try {
                   const response = await fetch(`${API_URL}/concepts`, {
@@ -732,12 +763,16 @@ export default function NotesPage() {
               </ScrollView>
             )}
 
-            <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
+            <TouchableOpacity style={styles.modalButton} onPress={async()=>{
+              await buttonPressSound();
+              handleEditNote()
+            }}>
               <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => {
+              onPress={async() => {
+                await buttonPressSound();
                 openEditModal(false);
                 setNotesContent('');
                 setNotesName('');
@@ -764,7 +799,10 @@ export default function NotesPage() {
                   styles.generationButton,
                   generationMode === 'flashcards' ? styles.activeGenerationButton : {}
                 ]}
-                onPress={() => setGenerationMode('flashcards')}
+                onPress={async() => {
+                  await buttonPressSound();
+                  setGenerationMode('flashcards')
+                }}
               >
                 <Icon name="style" size={24} color={generationMode === 'flashcards' ? '#fff' : '#555'} />
                 <Text style={[
@@ -778,7 +816,10 @@ export default function NotesPage() {
                   styles.generationButton,
                   generationMode === 'practice' ? styles.activeGenerationButton : {}
                 ]}
-                onPress={() => setGenerationMode('practice')}
+                onPress={async () => {
+                  await buttonPressSound();
+                  setGenerationMode('practice')
+                }}
               >
                 <Icon name="help" size={24} color={generationMode === 'practice' ? '#fff' : '#555'} />
                 <Text style={[
@@ -796,7 +837,10 @@ export default function NotesPage() {
 
               <TouchableOpacity
                 style={styles.countSelector}
-                onPress={() => setShowDropdown(!showDropdown)}
+                onPress={async() => {
+                  await buttonPressSound();
+                  setShowDropdown(!showDropdown)
+                }}
               >
                 <Text style={styles.countSelectorText}>
                   {cardNum || 'Select'}
@@ -812,7 +856,8 @@ export default function NotesPage() {
                   <TouchableOpacity
                     key={i}
                     style={styles.dropdownItem}
-                    onPress={() => {
+                    onPress={async() => {
+                      await buttonPressSound();
                       setCardNum(i + 1);
                       setShowDropdown(false);
                     }}
@@ -830,7 +875,8 @@ export default function NotesPage() {
             <View style={styles.modalActionContainer}>
               <TouchableOpacity
                 style={styles.generateButton}
-                onPress={() => {
+                onPress={async() => {
+                  await buttonPressSound();
                   if (generationMode === 'flashcards') {
                     handleFlashCards();
                   } else {
@@ -846,7 +892,8 @@ export default function NotesPage() {
 
               <TouchableOpacity
                 style={styles.cancelModalButton}
-                onPress={() => {
+                onPress={async() => {
+                  await buttonPressSound();
                   openFlashModal(false);
                   setNotesContent('');
                   setNotesName('');
