@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter, useNavigation, useFocusEffect } from '
 import { getGroupMembers, removeMember, addStudyGroupMembers, getStudyGroupName } from './api/studygroup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser, searchUser } from './api/user';
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 const DmInfo = () => {
     const { groupId } = useLocalSearchParams();
@@ -89,7 +90,10 @@ const DmInfo = () => {
             {/* Action buttons */}
             <View style={styles.actionsContainer}>
 
-                <TouchableOpacity onPress={handleLeaveGroup} style={styles.leaveButton}>
+                <TouchableOpacity onPress={async()=>{
+                    await buttonPressSound();
+                    handleLeaveGroup();
+                }} style={styles.leaveButton}>
                     <Text style={styles.buttonText}>Leave Group</Text>
                 </TouchableOpacity>
             </View>

@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter, useNavigation, useFocusEffect } from '
 import { getGroupMembers, removeMember, addStudyGroupMembers, getStudyGroupName } from './api/studygroup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser, searchUser } from './api/user';
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 const MembersList = () => {
     const { groupId } = useLocalSearchParams();
@@ -132,15 +133,24 @@ const MembersList = () => {
 
             {/* Action buttons */}
             <View style={styles.actionsContainer}>
-                <TouchableOpacity onPress={() => setEditMode(!editMode)} style={styles.editButton}>
+                <TouchableOpacity onPress={async () => {
+                    await buttonPressSound()
+                    setEditMode(!editMode)
+                }} style={styles.editButton}>
                     <Text style={styles.buttonText}>{editMode ? 'Done Editing' : 'Edit Members'}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.inviteButton}>
+                <TouchableOpacity onPress={async() => {
+                    await buttonPressSound()
+                    setModalVisible(true)
+                }} style={styles.inviteButton}>
                     <Text style={styles.buttonText}>Invite New Member</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={handleLeaveGroup} style={styles.leaveButton}>
+                <TouchableOpacity onPress={async()=>{
+                    await buttonPressSound()
+                    handleLeaveGroup()
+                }}style={styles.leaveButton}>
                     <Text style={styles.buttonText}>Leave Group</Text>
                 </TouchableOpacity>
             </View>
@@ -156,7 +166,10 @@ const MembersList = () => {
                         {editMode && (
                             <TouchableOpacity
                                 style={styles.removeButton}
-                                onPress={() => handleRemoveMember(item)}
+                                onPress={async() => {
+                                    await buttonPressSound()
+                                    handleRemoveMember(item)
+                                }}
                             >
                                 <Text style={styles.removeButtonText}>Remove</Text>
                             </TouchableOpacity>
@@ -187,7 +200,10 @@ const MembersList = () => {
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
                                         style={styles.searchResultItem}
-                                        onPress={() => handleInviteMember(item.email)}
+                                        onPress={async() => {
+                                            await buttonPressSound()
+                                            handleInviteMember(item.email)
+                                        }}
                                     >
                                         <Text>{item.email}</Text>
                                     </TouchableOpacity>
@@ -199,7 +215,10 @@ const MembersList = () => {
 
                         <TouchableOpacity
                             style={styles.closeButton}
-                            onPress={() => setModalVisible(false)}
+                            onPress={async() => {
+                                await buttonPressSound()
+                                setModalVisible(false)
+                            }}
                         >
                             <Text style={styles.closeButtonText}>Close</Text>
                         </TouchableOpacity>

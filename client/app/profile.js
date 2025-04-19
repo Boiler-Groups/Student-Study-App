@@ -6,6 +6,7 @@ import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 export default function Profile() {
     const router = useRouter();
@@ -251,7 +252,10 @@ export default function Profile() {
                 )}
                 <TouchableOpacity 
                     style={styles.uploadButton}
-                    onPress={handleImageUpload}
+                    onPress={async ()=>{
+                        await buttonPressSound();
+                        handleImageUpload()
+                    }}
                     disabled={uploadingImage}
                 >
                     <Text style={styles.buttonText}>
@@ -275,21 +279,30 @@ export default function Profile() {
             <View style={styles.actionsContainer}>
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => setUsernameModalVisible(true)}
+                    onPress={async() => {
+                        await buttonPressSound();
+                        setUsernameModalVisible(true)
+                    }}
                 >
                     <Text style={styles.buttonText}>Change Display Name</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => setPasswordModalVisible(true)}
+                    onPress={async() => {
+                        await buttonPressSound();
+                        setPasswordModalVisible(true)
+                    }}
                 >
                     <Text style={styles.buttonText}>Change Password</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, styles.backButton]}
-                    onPress={() => router.push('/landing')}
+                    onPress={async() => {
+                        await buttonPressSound();
+                        router.push('/landing')
+                    }}
                 >
                     <Text style={styles.buttonText}>Back to Dashboard</Text>
                 </TouchableOpacity>
@@ -316,7 +329,8 @@ export default function Profile() {
                         <View style={styles.modalButtonContainer}>
                             <TouchableOpacity
                                 style={[styles.button, styles.cancelButton]}
-                                onPress={() => {
+                                onPress={async() => {
+                                    await buttonPressSound();
                                     setUsernameModalVisible(false);
                                     setNewUsername(user?.username || '');
                                 }}
@@ -326,7 +340,10 @@ export default function Profile() {
 
                             <TouchableOpacity
                                 style={styles.button}
-                                onPress={handleUpdateUsername}
+                                onPress={async()=> {
+                                    await buttonPressSound();
+                                    handleUpdateUsername()
+                                }}
                                 disabled={updating}
                             >
                                 <Text style={styles.buttonText}>
@@ -368,7 +385,8 @@ export default function Profile() {
                         <View style={styles.modalButtonContainer}>
                             <TouchableOpacity
                                 style={[styles.button, styles.cancelButton]}
-                                onPress={() => {
+                                onPress={async() => {
+                                    await buttonPressSound();
                                     setPasswordModalVisible(false);
                                     setNewPassword('');
                                     setConfirmPassword('');
@@ -379,7 +397,10 @@ export default function Profile() {
 
                             <TouchableOpacity
                                 style={styles.button}
-                                onPress={handleUpdatePassword}
+                                onPress={async()=> {
+                                    await buttonPressSound();
+                                    handleUpdatePassword()
+                                }}
                                 disabled={updating}
                             >
                                 <Text style={styles.buttonText}>

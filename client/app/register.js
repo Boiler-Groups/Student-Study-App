@@ -5,6 +5,7 @@ import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import emailjs from '@emailjs/browser'
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 export default function Register() {
     const router = useRouter();
@@ -17,6 +18,7 @@ export default function Register() {
     const [emailConfirmationVisible, setEmailConfirmationVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [generatedPassword, setGeneratedPassword] = useState('');
+
 
     // Email validation function
     const validateEmail = (email) => {
@@ -163,7 +165,10 @@ export default function Register() {
 
             <TouchableOpacity
                 style={[styles.button, isDarkTheme ? styles.darkButton : styles.lightButton]}
-                onPress={sendEmailVerification}
+                onPress={async ()=>{
+                    await buttonPressSound()
+                    sendEmailVerification()
+                }}
                 disabled={loading}
             >
                 <Text style={[styles.buttonText, isDarkTheme ? styles.darkButtonText : null]}>
@@ -171,7 +176,10 @@ export default function Register() {
                 </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.push('/login')}>
+            <TouchableOpacity onPress={async () => {
+                await buttonPressSound()
+                router.push('/login')
+            }}>
                 <Text style={[styles.link, isDarkTheme ? styles.darkLink : null]}>
                     Already have an account? Login
                 </Text>
@@ -201,7 +209,10 @@ export default function Register() {
                             {/* Verify Button */}
                             <TouchableOpacity
                                 style={styles.buttonModal}
-                                onPress={handlePasswordVerification}
+                                onPress={async () => {
+                                    await buttonPressSound()
+                                    handlePasswordVerification()
+                                }}
                             >
                                 <Text style={styles.buttonTextModal}>Verify</Text>
                             </TouchableOpacity>
@@ -209,7 +220,10 @@ export default function Register() {
                             {/* Resend Email Button */}
                             <TouchableOpacity
                                 style={[styles.buttonModal, styles.resendButton]} // Green for Resend button
-                                onPress={sendEmailVerification} // Resend the email verification code
+                                onPress={async ()=> {
+                                    await buttonPressSound()
+                                    sendEmailVerification()
+                                }}// Resend the email verification code
                             >
                                 <Text style={styles.buttonTextModal}>Send Email Again</Text>
                             </TouchableOpacity>
@@ -217,7 +231,8 @@ export default function Register() {
                             {/* Close Button */}
                             <TouchableOpacity
                                 style={[styles.buttonModal, styles.closeButton]} // Red for Close button
-                                onPress={() => {
+                                onPress={async () => {
+                                    await buttonPressSound()
                                     setEmailConfirmationVisible(false)
                                     setLoading(false);
                                 }} // Close the modal
