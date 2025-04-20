@@ -7,6 +7,7 @@ import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 import { getCurrentUser } from './api/user';
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 export default function Home() {
     const router = useRouter();
@@ -57,7 +58,10 @@ export default function Home() {
             {/* Header with its own styles */}
             <Header />
 
-            <TouchableOpacity style={[styles.button, styles.logoutButton]}  onPress={handleLogout}>
+            <TouchableOpacity style={[styles.button, styles.logoutButton]}  onPress={async()=>{
+                await buttonPressSound();
+                handleLogout()
+            }}>
                 <Text style={[styles.darkText, isDarkTheme ? styles.darkText : styles.darkText]}>Logout</Text>
             </TouchableOpacity>
 
@@ -75,7 +79,9 @@ export default function Home() {
                     renderItem={({ item }) => (
                         <TouchableOpacity
                         style={styles.classItem}
-                        onPress={() => {}}
+                        onPress={async() => {
+                            await buttonPressSound();
+                        }}
                         >
                         <Text style={styles.groupText}>{item.name}</Text>
                         <Text style={styles.creditsText}>Credits: {item.credits}</Text>
@@ -86,19 +92,34 @@ export default function Home() {
 
             {/* Bottom buttons container */}
             <View style={styles.bottomButtonsContainer}>
-                <TouchableOpacity style={[styles.bottomButton, { backgroundColor: '#6c757d' }]} onPress={() => router.push('/landing')}>
+                <TouchableOpacity style={[styles.bottomButton, { backgroundColor: '#6c757d' }]} onPress={async() => {
+                    await buttonPressSound();
+                    router.push('/landing')
+                }}>
                     <Text style={styles.buttonText}>Home</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/notesPage')}>
+                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
+                    await buttonPressSound();
+                    router.push('/notesPage')
+                }}>
                     <Text style={styles.buttonText}>Notes</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/AddClass')}>
+                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
+                    await buttonPressSound();
+                    router.push('/AddClass')
+                }}>
                     <Text style={styles.buttonText}>Add Class</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/leaderboard')}>
+                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
+                    await buttonPressSound();
+                    router.push('/leaderboard')
+                }}>
                     <Text style={styles.buttonText}>Leaderboard</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={() => router.push('/messages')}>
+                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
+                    await buttonPressSound();
+                    router.push('/messages')
+                }}>
                     <Text style={styles.buttonText}>Messages</Text>
                 </TouchableOpacity>
             </View>

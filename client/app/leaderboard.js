@@ -16,7 +16,7 @@ export default function leaderboard() {
   const [now, setNow] = useState(new Date());
   const [uname, setUsername] = useState("");
   const [upoints, setUserPoints] = useState(0);
-
+  const [ustreak, setUserStreak] = useState(0);
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/users`, {
@@ -36,6 +36,7 @@ export default function leaderboard() {
       const user = await getCurrentUser({ token });
       setUsername(user.data.username);
       setUserPoints(user.data.points);
+      setUserStreak(user.data.streak);
     } catch (error) {
       console.error("Error getting current user");
     }
@@ -143,6 +144,11 @@ export default function leaderboard() {
               {upoints} pts
             </Text>
           </View>
+          <View style={styles.pointsBox2}>
+            <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+              {ustreak} day streak
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -202,7 +208,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
     padding: 10,
     borderRadius: 8,
-    minWidth: '50%',
+    minWidth: '33%',
     alignItems: 'center',
     borderColor: 'black',
     borderWidth: 2,
@@ -211,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
     padding: 10,
     borderRadius: 8,
-    minWidth: '50%',
+    minWidth: '33%',
     alignItems: 'center',
     borderColor: 'black',
     borderWidth: 2,
