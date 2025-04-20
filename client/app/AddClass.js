@@ -7,6 +7,8 @@ import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from './api/user';
 import ical from 'ical.js';
+import {handleAddPointsToCurrentUser} from "@/app/global/incrementPoints";
+import {buttonPressSound} from "@/sounds/soundUtils";
 
 export default function AddClass() {
   const router = useRouter();
@@ -228,10 +230,18 @@ export default function AddClass() {
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={addAllClassesToDatabase}>
+        <TouchableOpacity style={styles.button} onPress={async()=>{
+          await buttonPressSound();
+          handleAddPointsToCurrentUser(10);
+          addAllClassesToDatabase()
+        }}>
           <Text style={styles.buttonText}>Save Changes</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.button} onPress={async() => {
+          await buttonPressSound();
+          handleAddPointsToCurrentUser(10);
+          router.push('/home')
+        }}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>

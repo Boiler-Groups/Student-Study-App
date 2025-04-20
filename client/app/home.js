@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 import { getCurrentUser } from './api/user';
 import { buttonPressSound } from '../sounds/soundUtils.js';
+import {handleAddPointsToCurrentUser} from "@/app/global/incrementPoints";
 
 export default function Home() {
     const router = useRouter();
@@ -60,6 +61,7 @@ export default function Home() {
 
             <TouchableOpacity style={[styles.button, styles.logoutButton]}  onPress={async()=>{
                 await buttonPressSound();
+                handleAddPointsToCurrentUser(5);
                 handleLogout()
             }}>
                 <Text style={[styles.darkText, isDarkTheme ? styles.darkText : styles.darkText]}>Logout</Text>
@@ -81,6 +83,7 @@ export default function Home() {
                         style={styles.classItem}
                         onPress={async() => {
                             await buttonPressSound();
+                            handleAddPointsToCurrentUser(5);
                         }}
                         >
                         <Text style={styles.groupText}>{item.name}</Text>
@@ -94,30 +97,35 @@ export default function Home() {
             <View style={styles.bottomButtonsContainer}>
                 <TouchableOpacity style={[styles.bottomButton, { backgroundColor: '#6c757d' }]} onPress={async() => {
                     await buttonPressSound();
+                    handleAddPointsToCurrentUser(5);
                     router.push('/landing')
                 }}>
                     <Text style={styles.buttonText}>Home</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomButton} onPress={async() => {
                     await buttonPressSound();
+                    handleAddPointsToCurrentUser(5);
                     router.push('/notesPage')
                 }}>
                     <Text style={styles.buttonText}>Notes</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomButton} onPress={async() => {
                     await buttonPressSound();
+                    handleAddPointsToCurrentUser(5);
                     router.push('/AddClass')
                 }}>
                     <Text style={styles.buttonText}>Add Class</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomButton} onPress={async() => {
                     await buttonPressSound();
+                    handleAddPointsToCurrentUser(5);
                     router.push('/leaderboard')
                 }}>
                     <Text style={styles.buttonText}>Leaderboard</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomButton} onPress={async() => {
                     await buttonPressSound();
+                    handleAddPointsToCurrentUser(5);
                     router.push('/messages')
                 }}>
                     <Text style={styles.buttonText}>Messages</Text>
@@ -128,8 +136,17 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'flex-start', alignItems: 'center', padding: 15, paddingTop: 100 },
-    title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15 },
+    container: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        padding: 15,
+        paddingTop: 100
+    },
+    title: { fontSize: 28,
+        fontWeight: 'bold',
+        marginBottom: 15
+    },
     classItem: {
         width: '100%',
         padding: 30,
@@ -141,9 +158,9 @@ const styles = StyleSheet.create({
     },
     groupText: { fontSize: 18, fontWeight: 'bold' },
     creditsText: { fontSize: 16, color: '#555', marginTop: 5 }, // New style for credits
-    button: { 
+    button: {
         backgroundColor: '#007AFF',
-        padding: 10, 
+        padding: 10,
         borderRadius: 5,
         width: '25%',
         alignItems: 'center',
