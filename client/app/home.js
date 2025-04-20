@@ -17,7 +17,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const { user, logout, authLoading} = useContext(AuthContext);
 
-    
+
     // Simulated API call to fetch groups
     useEffect(() => {
         setLoading(false); // Set loading to false immediately
@@ -39,17 +39,17 @@ export default function Home() {
                 setGroups(data);
             } catch (error) {
                 console.error('Error fetching classes:', error);
-            } 
+            }
         };
-    
+
         fetchClasses();
     }, []);
 
     if (authLoading) {
         return <ActivityIndicator size="large" color="#007AFF" />;
-      }
+    }
 
-      const handleLogout = async () => {
+    const handleLogout = async () => {
         await AsyncStorage.removeItem('token');
         router.replace('/login');
     };
@@ -59,10 +59,10 @@ export default function Home() {
             {/* Header with its own styles */}
             <Header />
 
-            <TouchableOpacity style={[styles.button, styles.logoutButton]}  onPress={async()=>{
+            <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={async () => {
                 await buttonPressSound();
                 handleAddPointsToCurrentUser(5);
-                handleLogout()
+                handleLogout();
             }}>
                 <Text style={[styles.darkText, isDarkTheme ? styles.darkText : styles.darkText]}>Logout</Text>
             </TouchableOpacity>
@@ -70,149 +70,195 @@ export default function Home() {
             {/* Title for the page */}
             <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Classes</Text>
 
-            {/* Display a loading indicator or the FlatList */}
             {loading ? (
                 <ActivityIndicator size="large" color="#007AFF" />
             ) : (
                 <FlatList
                     data={groups}
-                    keyExtractor={(item) => item._id} // MongoDB uses _id
+                    keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.listContainer}
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                        style={styles.classItem}
-                        onPress={async() => {
-                            await buttonPressSound();
-                            handleAddPointsToCurrentUser(5);
-                        }}
+                            style={styles.classItem}
+                            onPress={async () => {
+                                await buttonPressSound();
+                                handleAddPointsToCurrentUser(5);
+                                //Does nothing
+                            }}
                         >
-                        <Text style={styles.groupText}>{item.name}</Text>
-                        <Text style={styles.creditsText}>Credits: {item.credits}</Text>
+                            <Text style={styles.groupText}>{item.name}</Text>
+                            <Text style={styles.creditsText}>Credits: {item.credits}</Text>
                         </TouchableOpacity>
                     )}
                 />
             )}
 
-            {/* Bottom buttons container */}
             <View style={styles.bottomButtonsContainer}>
-                <TouchableOpacity style={[styles.bottomButton, { backgroundColor: '#6c757d' }]} onPress={async() => {
-                    await buttonPressSound();
-                    handleAddPointsToCurrentUser(5);
-                    router.push('/landing')
-                }}>
-                    <Text style={styles.buttonText}>Home</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
-                    await buttonPressSound();
-                    handleAddPointsToCurrentUser(5);
-                    router.push('/notesPage')
-                }}>
-                    <Text style={styles.buttonText}>Notes</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
-                    await buttonPressSound();
-                    handleAddPointsToCurrentUser(5);
-                    router.push('/AddClass')
-                }}>
-                    <Text style={styles.buttonText}>Add Class</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
-                    await buttonPressSound();
-                    handleAddPointsToCurrentUser(5);
-                    router.push('/leaderboard')
-                }}>
-                    <Text style={styles.buttonText}>Leaderboard</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.bottomButton} onPress={async() => {
-                    await buttonPressSound();
-                    handleAddPointsToCurrentUser(5);
-                    router.push('/messages')
-                }}>
-                    <Text style={styles.buttonText}>Messages</Text>
-                </TouchableOpacity>
+                <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                        style={styles.bottomButton}
+                        onPress={async () => {
+                            await buttonPressSound();
+                            handleAddPointsToCurrentUser(5);
+                            router.push('/notesPage');
+                        }}
+                    >
+                        <Text style={styles.buttonText}>Notes</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.homeBottomButton}
+                        onPress={async () => {
+                            await buttonPressSound();
+                            handleAddPointsToCurrentUser(5);
+                            router.push('/landing');
+                        }}
+                    >
+                        <Text style={styles.buttonText}>Home</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.bottomButton}
+                        onPress={async () => {
+                            await buttonPressSound();
+                            handleAddPointsToCurrentUser(5);
+                            router.push('/AddClass');
+                        }}
+                    >
+                        <Text style={styles.buttonText}>Add Class</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                        style={styles.bottomButton}
+                        onPress={async () => {
+                            await buttonPressSound();
+                            handleAddPointsToCurrentUser(5);
+                            router.push('/leaderboard');
+                        }}
+                    >
+                        <Text style={styles.buttonText}>Leaderboard</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.bottomButton}
+                        onPress={async () => {
+                            await buttonPressSound();
+                            handleAddPointsToCurrentUser(5);
+                            router.push('/messages');
+                        }}
+                    >
+                        <Text style={styles.buttonText}>Messages</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        padding: 15,
-        paddingTop: 100
+        paddingHorizontal: 15,
+        paddingTop: 70,
+        paddingBottom: 100, // Space for bottom buttons
     },
-    title: { fontSize: 28,
-        fontWeight: 'bold',
-        marginBottom: 15
+    title: {
+        fontSize: 24,
+        fontWeight: '600',
+        marginVertical: 10,
+        alignSelf: 'center',
     },
     classItem: {
         width: '100%',
-        padding: 30,
-        backgroundColor: '#D3D3D3',
-        borderRadius: 8,
-        marginVertical: 5,
-        alignItems: 'center',
-        borderWidth: 2,
+        padding: 20,
+        backgroundColor: '#F0F0F0',
+        borderRadius: 10,
+        marginVertical: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        alignItems: 'flex-start',
     },
-    groupText: { fontSize: 18, fontWeight: 'bold' },
-    creditsText: { fontSize: 16, color: '#555', marginTop: 5 }, // New style for credits
+    groupText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#333',
+    },
+    creditsText: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 4,
+    },
     button: {
         backgroundColor: '#007AFF',
-        padding: 10,
-        borderRadius: 5,
-        width: '25%',
-        alignItems: 'center',
-        marginBottom: 10
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        alignSelf: 'flex-end',
+        marginBottom: 15,
     },
     logoutButton: {
         backgroundColor: '#FF3B30',
-        marginTop: 10
     },
-    buttonText: { color: '#fff', fontSize: 16 },
     bottomButtonsContainer: {
-        position: 'absolute',
-        bottom: 30,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        backgroundColor: '#fff',
+        borderTopWidth: 1,
+        borderColor: '#ddd',
         width: '100%',
-        paddingHorizontal: 20,
+        position: 'absolute',
+        bottom: 0,
+    },
+    buttonRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        marginBottom: 8,
     },
     bottomButton: {
-        backgroundColor: '#007AFF',
-        padding: 10,
-        borderRadius: 5,
         flex: 1,
-        marginHorizontal: 5,
-        alignItems: 'center',
-    },
-    header: {
-        width: '100%',
-        height: 70,
         backgroundColor: '#007AFF',
-        justifyContent: 'center',
+        paddingVertical: 10,
+        marginHorizontal: 5,
+        borderRadius: 6,
         alignItems: 'center',
-        marginBottom: 20,
     },
-    headerText: {
+    homeBottomButton: {
+        flex: 1,
+        backgroundColor: '#6c757d',
+        paddingVertical: 10,
+        marginHorizontal: 5,
+        borderRadius: 6,
+        alignItems: 'center',
+    },
+    buttonText: {
         color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontWeight: '600',
     },
     listContainer: {
-        paddingLeft: 20,
-        marginBottom: 80,
+        paddingBottom: 120, // Extra space for bottom buttons
     },
-    /* Dark Mode */
-    darkBackground: { backgroundColor: "#121212" },
-    darkText: { color: "#F1F1F1" },
+    darkBackground: {
+        backgroundColor: "#121212",
+    },
+    lightBackground: {
+        backgroundColor: "#FFFFFF",
+    },
+    darkText: {
+        color: "#F1F1F1",
+    },
+    lightText: {
+        color: "#333",
+    },
+    // /* Dark Mode */
     darkModal: { backgroundColor: "#1E1E1E" },
     darkInput: { backgroundColor: "#333", borderColor: "#555", color: "#F1F1F1" },
 
-    /* Light Mode */
-    lightBackground: { backgroundColor: "#FFFFFF" },
-    lightText: { color: "#333" },
+    // /* Light Mode */
     lightModal: { backgroundColor: "white" },
     lightInput: { backgroundColor: "#FFF", borderColor: "#CCC", color: "#333" },
 });
