@@ -17,3 +17,8 @@ export const getCurrentUser = ({ token }) =>
 export const searchUser = (query) => UserClient.get('/search', { params: { query } });
 
 export const getUserFromId = (userId) => UserClient.get(`/${userId}`);
+
+export const updateUserPoints =  (userId, newPoints) => UserClient.put(`/points/${userId}`, {points: newPoints});
+export const getUserPoints =  (userId) => UserClient.get(`/points/${userId}`);
+
+

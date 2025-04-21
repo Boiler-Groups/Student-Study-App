@@ -7,6 +7,8 @@ import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { buttonPressSound } from '../sounds/soundUtils.js';
+import {handleAddPointsToCurrentUser} from './global/incrementPoints';
+
 
 export default function Profile() {
     const router = useRouter();
@@ -254,6 +256,7 @@ export default function Profile() {
                     style={styles.uploadButton}
                     onPress={async ()=>{
                         await buttonPressSound();
+                        handleAddPointsToCurrentUser(5);
                         handleImageUpload()
                     }}
                     disabled={uploadingImage}
@@ -281,6 +284,7 @@ export default function Profile() {
                     style={styles.button}
                     onPress={async() => {
                         await buttonPressSound();
+                        handleAddPointsToCurrentUser(5);
                         setUsernameModalVisible(true)
                     }}
                 >

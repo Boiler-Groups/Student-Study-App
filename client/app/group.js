@@ -33,7 +33,7 @@ import { getCurrentUser, getUserFromId } from './api/user.js';
 import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { buttonPressSound } from '../sounds/soundUtils.js';
-
+import {handleAddPointsToCurrentUser} from './global/incrementPoints';
 const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
@@ -206,8 +206,8 @@ const GroupChatPage = ({ }) => {
             loadMessages();
             setText('');
             flatListRef.current?.scrollToEnd({ animated: true });
+            await handleAddPointsToCurrentUser(50)
         }
-
     };
 
     const handleDeleteMessage = async (messageId) => {
