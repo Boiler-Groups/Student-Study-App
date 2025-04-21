@@ -10,7 +10,9 @@ import {
   getPoints,
   getAllUsers,
   updatePoints,
-  upload
+  upload,
+  verifyMFA,
+  updateMfaOn,
 } from '../controllers/userController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -26,5 +28,7 @@ router.get('/:userId', getPoints)
 router.put('/:userId', updatePoints)
 router.get('/', getAllUsers)
 router.post('/:userId/profile-image', userMiddleware, upload.single('profileImage'), updateProfileImage);
+router.post('/mfa', verifyMFA);
+router.put('/mfa/:userId', updateMfaOn);
 
 export default router;

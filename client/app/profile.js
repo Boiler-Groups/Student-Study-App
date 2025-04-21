@@ -46,6 +46,7 @@ export default function Profile() {
                 console.log("User data received:", userData);
                 setUser(userData);
                 setNewUsername(userData.username);
+                setMFA(userData.mfaOn);
             } else {
                 console.log("Failed to get user data:", await response.text());
                 await AsyncStorage.removeItem('token');
@@ -143,9 +144,42 @@ export default function Profile() {
         }
     };
 
-    const toggleMFA = async() => {
-        setMFA(!mfa);
-    }
+    const toggleMFA = async () => {
+        try {
+          const newValue = !mfa;
+          const token = await AsyncStorage.getItem('token');
+
+            if (!token) {
+                throw new Error('Authentication token missing');
+            }
+
+            if (!user?._id) {
+                throw new Error('User ID not available');
+            }
+            
+          const res = await fetch(`${API_URL}/mfa/${user._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ mfaOn: newValue }),
+          });
+      
+          const data = await res.json();
+      
+          if (!res.ok) {
+            console.error('Failed to update MFA setting:', data.message);
+            return;
+          }
+      
+          setMFA(newValue);
+          console.log('MFA setting updated:', data.message);
+        } catch (error) {
+          console.error('Error toggling MFA:', error);
+        }
+      };
+      
     const handleImageUpload = async () => {
         try {
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -281,6 +315,10 @@ export default function Profile() {
             </View>
 
             <View style={styles.actionsContainer}>
+                <View style={styles.settingItem}>
+                    <Text style={[styles.settingText, isDarkTheme ? styles.darkText : styles.lightText]}>Multi-factor Authentication</Text>
+                    <Switch value={mfa} onValueChange={toggleMFA} />
+                </View>
                 <TouchableOpacity
                     style={styles.button}
                     onPress={async() => {
@@ -291,10 +329,6 @@ export default function Profile() {
                     <Text style={styles.buttonText}>Change Display Name</Text>
                 </TouchableOpacity>
 
-                <View style={styles.settingItem}>
-                <Text style={[styles.settingText, isDarkTheme ? styles.darkText : styles.lightText]}>Multi-factor Authentication</Text>
-                <Switch value={mfa} onValueChange={toggleMFA} />
-                </View>
 
                 <TouchableOpacity
                     style={styles.button}
