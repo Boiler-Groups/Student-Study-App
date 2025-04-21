@@ -11,7 +11,8 @@ import {
     Alert,
     Modal,
     ScrollView,
-    Image
+    Image,
+    Switch
 } from 'react-native'; // Import react Native
 import {
     getGroupMessages,
@@ -33,6 +34,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { getCurrentUser, getUserFromId } from './api/user.js';
 import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
 
 const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
@@ -62,6 +64,13 @@ const GroupChatPage = ({ }) => {
     const scheduleHourRef = useRef(0);
     const [scheduleMinute, setScheduleMinute] = useState('');
     const [scheduleHour, setScheduleHour] = useState('');
+
+    const [edbotSettingsVisible, setEdbotSettingsVisible] = useState(false);
+
+    const [edbotName, setEdbotName] = useState('Edbot');  // Default name
+    const [enableEdbot, setEnableEdbot] = useState(false);
+    const [highlightMessages, setHighlightMessages] = useState(true);
+    const [edbotBehavior, setEdbotBehavior] = useState('friendly');
 
     const router = useRouter();
 
@@ -93,13 +102,21 @@ const GroupChatPage = ({ }) => {
         navigation.setOptions({
             title: groupTitle || "Group Chat",
             headerRight: () => (
-                <TouchableOpacity
-                    onPress={isDM ? handleNavigateToDmInfo : handleNavigateToMembers}
-                >
-                    <Text style={{ marginRight: 20, color: '#007bff', fontWeight: 'bold' }}>
-                        {isDM ? "Info" : "Members"}
-                    </Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 15, marginRight: 10 }}>
+                    <TouchableOpacity onPress={() => setEdbotSettingsVisible(true)}>
+                        <Text style={{ color: '#007bff', fontWeight: 'bold' }}>
+                            Edbot Settings
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={isDM ? handleNavigateToDmInfo : handleNavigateToMembers}
+                    >
+                        <Text style={{ color: '#007bff', fontWeight: 'bold' }}>
+                            {isDM ? "Info" : "Members"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             ),
         });
     }, [groupTitle, navigation, isDM]);
@@ -797,6 +814,63 @@ const GroupChatPage = ({ }) => {
                     </View>
                 </View>
             </Modal>
+
+            <Modal visible={edbotSettingsVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Edbot Settings</Text>
+
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={styles.modalSubTitle}>Edbot Name</Text>
+                            <TextInput
+                                style={[styles.input, { marginTop: 10 }]}
+                                value={edbotName}
+                                onChangeText={setEdbotName}
+                                placeholder="Enter a name for Edbot"
+                            />
+                        </View>
+
+                        <View style={{ marginBottom: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={styles.modalSubTitle}>Enable Edbot</Text>
+                            <Switch
+                                value={enableEdbot}
+                                onValueChange={setEnableEdbot}
+                            />
+                        </View>
+
+                        <View style={{ marginBottom: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={styles.modalSubTitle}>Highlight Edbot Messages</Text>
+                            <Switch
+                                value={highlightMessages}
+                                onValueChange={setHighlightMessages}
+                            />
+                        </View>
+
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={styles.modalSubTitle}>Edbot Behavior Mode</Text>
+                            <View style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 5, marginTop: 10 }}>
+                                <Picker
+                                    selectedValue={edbotBehavior}
+                                    onValueChange={(itemValue, itemIndex) => setEdbotBehavior(itemValue)}
+                                >
+                                    <Picker.Item label="Friendly" value="friendly" />
+                                    <Picker.Item label="Professional" value="professional" />
+                                    <Picker.Item label="Funny" value="funny" />
+                                    <Picker.Item label="Serious" value="serious" />
+                                </Picker>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity style={styles.saveButton} onPress={() => setEdbotSettingsVisible(false)}>
+                            <Text style={styles.cancelButtonText}>Save Changes</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setEdbotSettingsVisible(false)}>
+                            <Text style={styles.cancelButtonText}>Exit</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 };
@@ -1105,6 +1179,13 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 5,
         alignItems: 'center',
+    },
+    saveButton: {
+        backgroundColor: '#007BFF',
+        padding: 12,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginBottom: 10,
     },
     cancelButtonText: {
         color: 'white',
