@@ -22,6 +22,7 @@ import {
     removeTaggedOrRepliedUser,
     getTaggedOrRepliedUsers,
     isDM,
+    edbotResponse,
 } from '../controllers/studyGroupController.js';
 import { userMiddleware } from '../middleware/userMiddleware.js';
 
@@ -49,5 +50,6 @@ router.post('/addTaggedUser/:groupId', addTaggedOrRepliedUser);
 router.patch('/removeTaggedUser/:groupId/:email', removeTaggedOrRepliedUser);
 router.get('/getTaggedUsers/:groupId', getTaggedOrRepliedUsers);
 router.get('/dm/:groupId', isDM);
+router.post('/edbot/:groupId', userMiddleware, edbotResponse);
 
 export default router;

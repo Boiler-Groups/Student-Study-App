@@ -5,7 +5,7 @@ const SERVER_URL = process.env.API_URL;
 
 const StudyGroupClient = axios.create({
   baseURL: `${SERVER_URL}/studygroups`,
-  timeout: 5000,
+  timeout: 15000,
 });
 
 const authHeader = (token) => ({
@@ -118,3 +118,5 @@ export const removeMember = (token, groupId, userEmail) =>
       console.error("Error remove user from group:", err);
       return null;
     });
+
+export const edbotResponse = (token, groupId, text) => StudyGroupClient.post(`/edbot/${groupId}`,  {text: text}, authHeader(token));

@@ -376,10 +376,10 @@ export const getPoints = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
-    upoints = user.select("points");
+    const userPoints = user.points;
 
     // return number of user's points
-    res.status(200).json(upoints);
+    res.status(200).json({points: userPoints});
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
