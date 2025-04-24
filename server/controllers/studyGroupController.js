@@ -2,6 +2,10 @@ import StudyGroup from "../models/StudyGroup.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from 'mongoose';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Find and return all study groups that the given user is a member of
 export const getGroups = async (req, res) => {
@@ -383,17 +387,17 @@ export const sendMessage = async (req, res) => {
             newMessage.replyToId = replyToId;
             newMessage.replyToSender = replyToSender;
             newMessage.replyToText = replyToText;
-            
-            const originalMessage = group.messages.find(msg => 
+
+            const originalMessage = group.messages.find(msg =>
                 msg._id.toString() === replyToId
             );
-            
+
             if (originalMessage && originalMessage.sender === replyToSender) {
                 const repliedToUser = group.members.find(member => {
                     const memberUsername = member.split('@')[0];
                     return memberUsername.toLowerCase() === replyToSender.toLowerCase();
                 });
-                
+
                 if (repliedToUser && repliedToUser !== userEmail) {
                     if (!group.membersTaggedOrReplied) {
                         group.membersTaggedOrReplied = [];
@@ -408,19 +412,19 @@ export const sendMessage = async (req, res) => {
         const emailRegex = /@([\w.-]+@[\w.-]+\.\w+)/g;
         const taggedEmails = [];
         let match;
-        
+
         while ((match = emailRegex.exec(text)) !== null) {
             const taggedEmail = match[1];
             if (group.members.includes(taggedEmail) && taggedEmail !== userEmail) {
                 taggedEmails.push(taggedEmail);
             }
         }
-        
+
         if (taggedEmails.length > 0) {
             if (!group.membersTaggedOrReplied) {
                 group.membersTaggedOrReplied = [];
             }
-            
+
             taggedEmails.forEach(email => {
                 if (!group.membersTaggedOrReplied.includes(email)) {
                     group.membersTaggedOrReplied.push(email);
@@ -470,7 +474,7 @@ export const likeMessage = async (req, res) => {
 
             await group.save();
         }
-        
+
 
         res.status(200).json({ message: "Message liked", updatedGroup: group });
     } catch (e) {
@@ -507,7 +511,7 @@ export const toggleMessageReaction = async (req, res) => {
             } else {
                 message.reactions.push(likeKey);
             }
-            
+
         } else {
             // Toggle dislike
             if (message.reactions.includes(dislikeKey)) {
@@ -710,7 +714,7 @@ export const getTaggedOrRepliedUsers = async (req, res) => {
 };
 
 export const isDM = async (req, res) => {
-    const {groupId} = req.params;
+    const { groupId } = req.params;
 
     try {
         const group = await StudyGroup.findById(groupId);
@@ -730,5 +734,44 @@ export const isDM = async (req, res) => {
             message: 'Server error occurred while checking DM status',
             errorDetails: e.message
         });
+    }
+}
+
+export const edbotResponse = async (req, res) => {
+    const { text } = req.body;
+    const { groupId } = req.params;
+
+    if (!text) return res.status(400).json({ error: "No message provided" });
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const prompt = `You are an education assisstant named Edbot, respond to this student's message:\n\n${text}.`;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const summary = response.text().replace(/`(.*?)`/g, "'$1'");
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
+
+        const newMessage = {
+            _id: new mongoose.Types.ObjectId(),
+            sender: 'Edbot',
+            text: summary,
+            reactions: [],
+            timestamp: new Date(),
+        };
+
+
+        group.messages.push(newMessage);
+        group.newMessage = true;
+        await group.save();
+
+        res.status(201).json({ message: "Message sent", newMessage });
+
+    } catch (error) {
+        console.error("Summarization error:", error);
+        res.status(500).json({ error: "Failed to summarize notes" });
     }
 }
