@@ -122,9 +122,7 @@ export const login = async (req, res) => {
 
       user.lastLogin = today;
       await user.save();
-    } else {
-      console.log("NOT A NEW DAY!!\n");
-    }
+    } 
     // Create JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
@@ -285,10 +283,10 @@ export const getPoints = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
-    upoints = user.select("points");
+    const userPoints = user.points;
 
     // return number of user's points
-    res.status(200).json(upoints);
+    res.status(200).json({points: userPoints});
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

@@ -5,7 +5,7 @@ Study app for CS 307 using MongoDB, Express.js, React Native, and Node.js
 
 1. Clone the repository
 ```
-git clone https://github.com/GavinMcCormack912/Student-Study-App.git
+git clone https://github.com/Boiler-Groups/Student-Study-App.git
 ```
 
 2. Get server dependencies

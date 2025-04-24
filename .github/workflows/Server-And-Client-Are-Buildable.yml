@@ -1,0 +1,95 @@
+name: Client and Server Are Buildable
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      # Setup a nodejs envirnment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Install server dependencies
+      - name: Install dependencies in server/
+        run: |
+          cd server
+          npm install
+
+      # Run Existing Server Tests
+      - name: Run Server Tests
+        run: |
+          cd server
+          npm test
+        env:
+          DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
+          MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
+          PORT: ${{ secrets.PORT }}  # Set PORT
+          NODE_ENV: ${{ secrets.NODE_ENV }}  # Set NODE_ENV
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}  # Set JWT_SECRET
+
+      # Start the server
+      - name: Start Server
+        run: |
+          cd server
+          nohup npm start &  # Start the server in the background
+          sleep 15           # Wait for 10 seconds to ensure it's running
+        env:
+          DATABASE_URL: ${{ secrets.MONGO_URI }}  # Set DATABASE_URL to the same value
+          MONGO_URI: ${{ secrets.MONGO_URI }}  # Set MONGO_URI to the same value
+          PORT: ${{ secrets.PORT }}  # Set PORT
+          NODE_ENV: ${{ secrets.NODE_ENV }}  # Set NODE_ENV
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}  # Set JWT_SECRET
+
+      # Verify if the server is running on port 8080
+      - name: Verify Server is Running
+        run: |
+          if ! lsof -i :8080 > /dev/null; then
+            echo "Server did not start or crashed (nothing is listening on port 8080)"
+            exit 1
+          fi
+
+    
+
+  build-client:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Install client dependencies
+      - name: Install dependencies in client/
+        run: |
+          cd client
+          npm install
+
+      # Start the client
+      - name: Start Client
+        run: |
+          cd client
+          nohup npm start &  # Start the client in the background
+          sleep 15           # Wait for 10 seconds to ensure it's running
+
+      # Verify if the client is running on port 8081
+      - name: Verify Client is Running
+        run: |
+          if ! lsof -i :8081 > /dev/null; then
+            echo "Client did not start or crashed (nothing is listening on port 8081)"
+            exit 1
+          fi

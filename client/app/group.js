@@ -36,6 +36,9 @@ import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 
+import { buttonPressSound } from '../sounds/soundUtils.js';
+import {handleAddPointsToCurrentUser} from './global/incrementPoints';
+
 const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
@@ -248,8 +251,8 @@ const GroupChatPage = ({ }) => {
             loadMessages();
             setText('');
             flatListRef.current?.scrollToEnd({ animated: true });
+            await handleAddPointsToCurrentUser(50)
         }
-
     };
 
     const handleDeleteMessage = async (messageId) => {
@@ -539,7 +542,10 @@ const GroupChatPage = ({ }) => {
                                     borderColor: '#rgb(0, 60, 255)'
                                 }
                             ]}
-                            onPress={() => handleSelectMessage(item._id)}
+                            onPress={async() => {
+                                await buttonPressSound();
+                                handleSelectMessage(item._id)
+                            }}
                         >
                             <Text style={styles.sender}>{item.sender}</Text>
 
@@ -591,14 +597,22 @@ const GroupChatPage = ({ }) => {
                                     <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
                                         {likes > 0 && (
                                             <TouchableOpacity
-                                                onPress={() => openReactionsModal(item.reactions.filter(r => r.endsWith('-like')))}
+                                                onPress={async() => {
+                                                    await buttonPressSound();
+                                                    openReactionsModal(item.reactions.filter(r => r.endsWith('-like')))
+                                                }}
                                             >
                                                 <Text style={styles.reactionIcon}>👍 {likes}</Text>
                                             </TouchableOpacity>
                                         )}
                                         {dislikes > 0 && (
                                             <TouchableOpacity
-                                                onPress={() => openReactionsModal(item.reactions.filter(r => r.endsWith('-dislike')))}
+
+                                            onPress={async() => {
+                                                await buttonPressSound();
+                                                openReactionsModal(item.reactions.filter(r => r.endsWith('-dislike')))
+                                            }}
+
                                             >
                                                 <Text style={styles.reactionIcon}>👎 {dislikes}</Text>
                                             </TouchableOpacity>
@@ -611,7 +625,10 @@ const GroupChatPage = ({ }) => {
                             {item._id === selectedMessageId && (
                                 <View style={styles.reactionContainer}>
                                     <TouchableOpacity
-                                        onPress={() => handleToggleReaction(item._id)}
+                                        onPress={async() => {
+                                            await buttonPressSound();
+                                            handleToggleReaction(item._id)
+                                        }}
                                         style={[
                                             styles.reactionButton,
                                             item.reactions?.includes(`${user.data._id}-like`) && styles.selectedReactionButton
@@ -626,7 +643,10 @@ const GroupChatPage = ({ }) => {
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
-                                        onPress={() => handleToggleDislike(item._id)}
+                                        onPress={async() => {
+                                            await buttonPressSound();
+                                            handleToggleDislike(item._id)
+                                        }}
                                         style={[
                                             styles.reactionButton,
                                             item.reactions?.includes(`${user.data._id}-dislike`) && styles.selectedReactionButton
@@ -645,7 +665,10 @@ const GroupChatPage = ({ }) => {
                                         {item.sender === username && (
                                             <TouchableOpacity
                                                 style={styles.deleteButton}
-                                                onPress={() => handleDeleteMessage(item._id)}
+                                                onPress={async() => {
+                                                    await buttonPressSound();
+                                                    handleDeleteMessage(item._id)
+                                                }}
                                             >
                                                 <Text style={styles.deleteText}>Delete</Text>
                                             </TouchableOpacity>
@@ -653,7 +676,10 @@ const GroupChatPage = ({ }) => {
                                         {/* Show reply for all messages */}
                                         <TouchableOpacity
                                             style={styles.replyButton}
-                                            onPress={() => handleReply(item)}
+                                            onPress={async() => {
+                                                await buttonPressSound();
+                                                handleReply(item)
+                                            }}
                                         >
                                             <Text style={styles.replyText}>Reply</Text>
                                         </TouchableOpacity>
@@ -685,7 +711,10 @@ const GroupChatPage = ({ }) => {
                             </Text>
                         )}
                     </View>
-                    <TouchableOpacity style={styles.cancelReplyButton} onPress={cancelReply}>
+                    <TouchableOpacity style={styles.cancelReplyButton} onPress={async()=>{
+                        await buttonPressSound();
+                        cancelReply();
+                    }}>
                         <Text style={styles.cancelReplyText}>✕</Text>
                     </TouchableOpacity>
                 </View>
@@ -704,13 +733,22 @@ const GroupChatPage = ({ }) => {
                     blurOnSubmit={false}
                     returnKeyType="send"
                 />
-                <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
+                <TouchableOpacity style={styles.sendButton} onPress={async()=>{
+                    await buttonPressSound();
+                    handleSendMessage()
+                }}>
                     <Text style={styles.sendText}>{replyingTo ? "Reply" : "Send"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.moreOptionsButton} onPress={() => setImageUploadModule(true)}>
+                <TouchableOpacity style={styles.moreOptionsButton} onPress={async() => {
+                    await buttonPressSound();
+                    setImageUploadModule(true)
+                }}>
                     <Text style={styles.sendText}>{"+"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.automateButton} onPress={() => { setAutomateMessageModule(true) }}>
+                <TouchableOpacity style={styles.automateButton} onPress={async() => {
+                    await buttonPressSound();
+                    setAutomateMessageModule(true)
+                }}>
                     <Text style={styles.sendText}>{"Automate Message"}</Text>
                 </TouchableOpacity>
                 <Text style={styles.modalSubTitle}> Sending in {Math.floor(targetTime / 1000)}s</Text>
@@ -728,7 +766,10 @@ const GroupChatPage = ({ }) => {
                                 </Text>
                             );
                         })}
-                        <TouchableOpacity onPress={() => setShowReactionsModal(false)} style={styles.reactModalCloseButton}>
+                        <TouchableOpacity onPress={async() => {
+                            await buttonPressSound();
+                            setShowReactionsModal(false)
+                        }} style={styles.reactModalCloseButton}>
                             <Text style={styles.reactModalCloseText}>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -751,7 +792,8 @@ const GroupChatPage = ({ }) => {
                         {/* Image Selection Button */}
                         <TouchableOpacity
                             style={styles.button}
-                            onPress={() => {
+                            onPress={async() => {
+                                await buttonPressSound();
                                 const input = document.createElement('input');
                                 input.type = 'file';
                                 input.accept = 'image/*';
@@ -763,7 +805,8 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
 
                         {/* Upload Button */}
-                        <TouchableOpacity style={styles.button} onPress={() => {
+                        <TouchableOpacity style={styles.button} onPress={async() => {
+                            await buttonPressSound();
                             handleImageUpload()
                             setImageUploadModule(false)
                         }}>
@@ -771,7 +814,10 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
 
                         {/* Close Button */}
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => setImageUploadModule(false)}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={async() => {
+                            await buttonPressSound();
+                            setImageUploadModule(false)
+                        }}>
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -795,7 +841,8 @@ const GroupChatPage = ({ }) => {
                             value={scheduleMinute}
                             onChangeText={handleMinuteChange}
                         />
-                        <TouchableOpacity style={styles.button} onPress={() => {
+                        <TouchableOpacity style={styles.button} onPress={async() => {
+                            await buttonPressSound();
                             if (!text) {
                                 setText("Hey Everyone Lets Schedule a Meeting!!!");
                             } else {
@@ -805,7 +852,8 @@ const GroupChatPage = ({ }) => {
                         }}>
                             <Text style={styles.buttonText}>Schedule Send</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => {
+                        <TouchableOpacity style={styles.cancelButton} onPress={async() => {
+                            await buttonPressSound();
                             stopScheduler()
                             setAutomateMessageModule(false)
                         }}>

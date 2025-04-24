@@ -19,6 +19,8 @@ import {
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getCurrentUser } from './api/user';
+import { buttonPressSound } from '../sounds/soundUtils.js';
+
 
 export default function NotesPage() {
   const router = useRouter();
@@ -41,13 +43,19 @@ export default function NotesPage() {
   const [card, setCard] = useState('');
   const [cards, setCards] = useState([]);
   const [cardNum, setCardNum] = useState(null);
+  const [generationMode, setGenerationMode] = useState('flashcards');
   const [showDropdown, setShowDropdown] = useState(false);
   const [uid, setUserId] = useState('');
+  const [sortMethod, setSortMethod] = useState('alphabetical');
+
   const [shareModal, setShareModal] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [sharedUsers, setSharedUsers] = useState([]);
   const [selectedNoteForShare, setSelectedNoteForShare] = useState(null);
   const [shareError, setShareError] = useState('');
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [selectedVoice, setSelectedVoice] = useState(null);
+  const [voiceSelectionModal, setVoiceSelectionModal] = useState(false);
   /* AI gemini portion */
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -118,7 +126,40 @@ export default function NotesPage() {
     }
   };
 
-  useEffect(() => { fetchNotes() }, []);
+  const loadAvailableVoices = async () => {
+    try {
+      const voices = await Speech.getAvailableVoicesAsync();
+      setAvailableVoices(voices);
+
+      const savedVoice = await AsyncStorage.getItem('selectedVoice');
+      if (savedVoice && voices.some(voice => voice.identifier === savedVoice)) {
+        setSelectedVoice(savedVoice);
+      } else if (voices.length > 0) {
+        setSelectedVoice(voices[0].identifier);
+      }
+    } catch (error) {
+      console.error("Error loading available voices:", error);
+    }
+  };
+
+  const speakNoteContent = async (content, noteId) => {
+    await buttonPressSound();
+    if (speakingNoteId === noteId) {
+      Speech.stop();
+      setSpeakingNoteId(null);
+    } else {
+      Speech.speak(content, {
+        voice: selectedVoice,
+        onDone: () => setSpeakingNoteId(null),
+      });
+      setSpeakingNoteId(noteId);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotes();
+    loadAvailableVoices();
+  }, []);
 
   /* Add a new note */
   const handleAddNote = async () => {
@@ -135,7 +176,7 @@ export default function NotesPage() {
         });
 
         const data = await res.json();
-        setNotes([...notes, data]); // Update state with new note
+        setNotes(prev => getSortedNotes([...prev, data]));
         setNotesName('');
         setNotesContent('');
         openCreateModal(false);
@@ -206,6 +247,21 @@ export default function NotesPage() {
       }
     }
   };
+
+  /* Select Sorting Method */
+
+  const getSortedNotes = (noteList = notes) => {
+    const sorted = [...noteList];
+    if (sortMethod === 'recent') {
+      sorted.sort((a, b) => new Date(b.lastEdited) - new Date(a.lastEdited));
+    } else if (sortMethod === 'oldest') {
+      sorted.sort((a, b) => new Date(a.lastEdited) - new Date(b.lastEdited));
+    } else if (sortMethod === 'alphabetical') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  };
+
 
   const fetchSharedUsers = async (noteId) => {
     try {
@@ -332,6 +388,58 @@ export default function NotesPage() {
       alert('Failed to generate or share flashcards.');
     }
   };
+
+  const handlePracticeQuestions = async () => {
+    if (!notesContent || !cardNum) {
+      alert('Please enter notes and select number of practice questions');
+      return;
+    }
+
+    try {
+      const prompt = `Generate ${cardNum} practice questions from the following notes. Format:
+  Question 1:
+  Q: [question]
+  A: [answer]
+  
+  Notes:
+  ${notesContent}`;
+
+      const result = await model.generateContent(prompt);
+      const text = await result.response.text();
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `practice_questions_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const fileUri = FileSystem.documentDirectory + `practice_questions_${Date.now()}.txt`;
+        await FileSystem.writeAsStringAsync(fileUri, text, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(fileUri);
+        } else {
+          alert("Sharing is not available on this device.");
+        }
+      }
+
+      openFlashModal(false);
+      setNotesContent('');
+      setNotesName('');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate or share practice questions.');
+    }
+  };
+
   return (
     <View style={[styles.container, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
       <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Your Notes</Text>
@@ -340,15 +448,59 @@ export default function NotesPage() {
 
       <View style={[styles.addNoteContainer, isDarkTheme ? styles.darkInputContainer : styles.lightInputContainer]}>
         <Text style={[styles.addNoteText, isDarkTheme ? styles.darkInput : styles.lightInput]}>Add Note</Text>
-        <TouchableOpacity style={styles.addButton} testID='add-btn' onPress={() => { openCreateModal(true) }}>
+        <TouchableOpacity style={styles.addButton} testID='add-btn' onPress={async () => {
+          await buttonPressSound();
+          openCreateModal(true)
+        }}>
           <Icon name="add-circle" size={30} color="white" />
         </TouchableOpacity>
+      </View>
+
+      <View style={{
+        width: '60%',
+        marginBottom: 10,
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 8,
+        backgroundColor: isDarkTheme ? '#1E1E1E' : '#F5F5F5',
+      }}>
+        <Text style={{
+          fontSize: 16,
+          fontWeight: 'bold',
+          marginBottom: 5,
+          color: isDarkTheme ? '#FFF' : '#000',
+        }}>Sort Notes</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {['ai', 'recent', 'oldest', 'alphabetical'].map(option => (
+            <TouchableOpacity
+              key={option}
+              onPress={async () => {
+                await buttonPressSound
+                setSortMethod(option)
+              }}
+              style={{
+                backgroundColor: sortMethod === option ? '#007AFF' : '#ccc',
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                borderRadius: 16,
+                marginRight: 8,
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                {option === 'ai' ? 'AI Grouping' :
+                  option === 'recent' ? 'Most Recent' :
+                    option === 'oldest' ? 'Oldest' :
+                      'Alphabetical'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* List of Notes */}
       <FlatList
         style={styles.listContainer}
-        data={notes}
+        data={getSortedNotes()}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <View key={item._id} style={[
@@ -363,7 +515,8 @@ export default function NotesPage() {
               </Text>
             </View>
 
-            <TouchableOpacity onPress={() => {
+            <TouchableOpacity onPress={async () => {
+              await buttonPressSound();
               setNotesName(item.name);
               setNotesContent(item.content);
               setObjId(item._id);
@@ -374,10 +527,14 @@ export default function NotesPage() {
             }}>
               <Icon name="edit" size={24} color="black" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => removeNote(item._id)}>
+            <TouchableOpacity onPress={async () => {
+              await buttonPressSound();
+              removeNote(item._id)
+            }}>
               <Icon name="delete" size={24} color="red" />
             </TouchableOpacity>
-            <TouchableOpacity testID={`test-btn-${item.name}`} onPress={() => {
+            <TouchableOpacity testID={`test-btn-${item.name}`} onPress={async () => {
+              await buttonPressSound();
               setNotesName(item.name);
               setNotesContent(item.content);
               setObjId(item._id);
@@ -387,7 +544,8 @@ export default function NotesPage() {
             </TouchableOpacity>
             <TouchableOpacity
               testID={`share-btn-${item.name}`}
-              onPress={() => {
+              onPress={async () => {
+                await buttonPressSound();
                 setSelectedNoteForShare(item._id);
                 fetchSharedUsers(item._id);
                 setShareModal(true);
@@ -400,7 +558,10 @@ export default function NotesPage() {
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.button} onPress={async () => {
+          await buttonPressSound();
+          router.push('/home')
+        }}>
           <Text style={styles.buttonText}>Return to Classes</Text>
         </TouchableOpacity>
       </View>
@@ -429,7 +590,10 @@ export default function NotesPage() {
 
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={handleShareNote}
+              onPress={async () => {
+                await buttonPressSound();
+                handleShareNote()
+              }}
             >
               <Text style={styles.buttonText}>Share</Text>
             </TouchableOpacity>
@@ -442,7 +606,10 @@ export default function NotesPage() {
                   <View key={idx} style={styles.sharedUserItem}>
                     <Text style={styles.sharedUserEmail}>{user.email}</Text>
                     <TouchableOpacity
-                      onPress={() => handleUnshareNote(user.userId)}
+                      onPress={async () => {
+                        await buttonPressSound();
+                        handleUnshareNote(user.userId)
+                      }}
                       style={styles.unshareButton}
                     >
                       <Icon name="close" size={20} color="white" />
@@ -456,7 +623,8 @@ export default function NotesPage() {
 
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => {
+              onPress={async () => {
+                await buttonPressSound();
                 setShareModal(false);
                 setShareEmail('');
                 setShareError('');
@@ -495,10 +663,14 @@ export default function NotesPage() {
             />
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={handleAddNote}>
+              onPress={async () => {
+                await buttonPressSound();
+                handleAddNote()
+              }}>
               <Text style={styles.buttonText}>Create Note</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={() => {
+            <TouchableOpacity style={styles.cancelButton} onPress={async () => {
+              await buttonPressSound();
               openCreateModal(false);
               setNotesContent('');
               setNotesName('');
@@ -515,28 +687,32 @@ export default function NotesPage() {
           <View style={styles.modalContent}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
               <Text style={styles.modalTitle}>Edit a Note</Text>
-              <TouchableOpacity
-                style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
-                onPress={() => {
-                  if (speakingNoteId === objId) {
-                    Speech.stop();
-                    setSpeakingNoteId(null);
-                  } else {
-                    Speech.speak(notesContent, {
-                      voice: "Microsoft Zira - English (United States)", //Microsoft David - English (United States)
-                      //Microsoft Mark - English (United States)
-                      onDone: () => setSpeakingNoteId(null),
-                    });
-                    setSpeakingNoteId(objId);
-                  }
-                }}
-              >
-                <MaterialIcons
-                  name={speakingNoteId === objId ? 'pause-circle-filled' : 'volume-up'}
-                  size={28}
-                  color="#007AFF"
-                />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', marginLeft: 8 }}>
+                <TouchableOpacity
+                  style={{ padding: 0, marginTop: -5 }}
+                  onPress={() => speakNoteContent(notesContent, objId)}
+                >
+                  <MaterialIcons
+                    name={speakingNoteId === objId ? 'pause-circle-filled' : 'volume-up'}
+                    size={28}
+                    color="#007AFF"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
+                  onPress={async () => {
+                    await buttonPressSound();
+                    setVoiceSelectionModal(true);
+                  }}
+                >
+                  <MaterialIcons
+                    name="settings-voice"
+                    size={24}
+                    color="#007AFF"
+                  />
+                </TouchableOpacity>
+              </View>
+
             </View>
             <TextInput
               style={styles.modalInput}
@@ -557,6 +733,7 @@ export default function NotesPage() {
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: '#444' }]}
               onPress={async () => {
+                await buttonPressSound();
                 setLoadingSummary(true);
                 try {
                   const response = await fetch(`${API_URL}/summarize`, {
@@ -589,6 +766,7 @@ export default function NotesPage() {
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: '#444' }]}
               onPress={async () => {
+                await buttonPressSound();
                 setLoadingConcepts(true);
                 try {
                   const response = await fetch(`${API_URL}/concepts`, {
@@ -624,12 +802,16 @@ export default function NotesPage() {
               </ScrollView>
             )}
 
-            <TouchableOpacity style={styles.modalButton} onPress={handleEditNote}>
+            <TouchableOpacity style={styles.modalButton} onPress={async () => {
+              await buttonPressSound();
+              handleEditNote()
+            }}>
               <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => {
+              onPress={async () => {
+                await buttonPressSound();
                 openEditModal(false);
                 setNotesContent('');
                 setNotesName('');
@@ -647,50 +829,172 @@ export default function NotesPage() {
       <Modal visible={flashModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Number of Flashcards</Text>
-            {/* Toggle Button for Dropdown */}
-            <TouchableOpacity
-              style={styles.dropdownToggle}
-              onPress={() => setShowDropdown(!showDropdown)}
-            >
-              <Text style={styles.cardItem}>
-                {cardNum ? `Cards: ${cardNum}` : 'Select number'}
-              </Text>
-            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Generate Study Materials</Text>
 
-            {/* Dropdown List */}
+            {/* Mode Selection */}
+            <View style={styles.generationTypeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.generationButton,
+                  generationMode === 'flashcards' ? styles.activeGenerationButton : {}
+                ]}
+                onPress={async () => {
+                  await buttonPressSound();
+                  setGenerationMode('flashcards')
+                }}
+              >
+                <Icon name="style" size={24} color={generationMode === 'flashcards' ? '#fff' : '#555'} />
+                <Text style={[
+                  styles.generationButtonText,
+                  generationMode === 'flashcards' ? styles.activeGenerationText : {}
+                ]}>Flashcards</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.generationButton,
+                  generationMode === 'practice' ? styles.activeGenerationButton : {}
+                ]}
+                onPress={async () => {
+                  await buttonPressSound();
+                  setGenerationMode('practice')
+                }}
+              >
+                <Icon name="help" size={24} color={generationMode === 'practice' ? '#fff' : '#555'} />
+                <Text style={[
+                  styles.generationButtonText,
+                  generationMode === 'practice' ? styles.activeGenerationText : {}
+                ]}>Practice Questions</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Number Selection */}
+            <View style={styles.countSelectorContainer}>
+              <Text style={styles.countLabel}>
+                Number of {generationMode === 'flashcards' ? 'Flashcards' : 'Questions'}:
+              </Text>
+
+              <TouchableOpacity
+                style={styles.countSelector}
+                onPress={async () => {
+                  await buttonPressSound();
+                  setShowDropdown(!showDropdown)
+                }}
+              >
+                <Text style={styles.countSelectorText}>
+                  {cardNum || 'Select'}
+                </Text>
+                <Icon name={showDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Dropdown */}
             {showDropdown && (
-              <ScrollView style={[styles.dropdownList, { maxHeight: screenHeight * 0.3 }]}>
+              <ScrollView style={styles.dropdownContainer}>
                 {Array.from({ length: 50 }, (_, i) => (
                   <TouchableOpacity
                     key={i}
-                    onPress={() => {
+                    style={styles.dropdownItem}
+                    onPress={async () => {
+                      await buttonPressSound();
                       setCardNum(i + 1);
-                      setShowDropdown(false); // close dropdown after selection
+                      setShowDropdown(false);
                     }}
                   >
-                    <Text style={styles.cardItem}>Cards: {i + 1}</Text>
+                    <Text style={[
+                      styles.dropdownText,
+                      cardNum === (i + 1) ? styles.selectedDropdownText : {}
+                    ]}>{i + 1}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             )}
-            <TouchableOpacity style={styles.modalButton} onPress={() => {
-              handleFlashCards();
-              openFlashModal(false);
-            }}>
-              <Text style={styles.buttonText}>Download Flash Cards</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={() => {
-              openFlashModal(false);
-              setNotesContent('');
-              setNotesName('');
-            }}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+
+            {/* Action Buttons */}
+            <View style={styles.modalActionContainer}>
+              <TouchableOpacity
+                style={styles.generateButton}
+                onPress={async () => {
+                  await buttonPressSound();
+                  if (generationMode === 'flashcards') {
+                    handleFlashCards();
+                  } else {
+                    handlePracticeQuestions();
+                  }
+                }}
+              >
+                <Icon name="download" size={20} color="#fff" style={styles.buttonIcon} />
+                <Text style={styles.generateButtonText}>
+                  Generate {generationMode === 'flashcards' ? 'Flashcards' : 'Practice Questions'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelModalButton}
+                onPress={async () => {
+                  await buttonPressSound();
+                  openFlashModal(false);
+                  setNotesContent('');
+                  setNotesName('');
+                }}
+              >
+                <Text style={styles.cancelModalText}>Cancel</Text>
+              </TouchableOpacity>
+
+
+            </View>
+
+          </View>
+
+        </View>
+      </Modal>
+      {/* Voice Selection Modal */}
+      <Modal visible={voiceSelectionModal} animationType="slide" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Voice</Text>
+
+            <ScrollView style={styles.voiceListContainer}>
+              {availableVoices.map((voice) => (
+                <TouchableOpacity
+                  key={voice.identifier}
+                  style={[
+                    styles.voiceItem,
+                    selectedVoice === voice.identifier && styles.selectedVoiceItem
+                  ]}
+                  onPress={async () => {
+                    await buttonPressSound();
+                    setSelectedVoice(voice.identifier);
+                    await AsyncStorage.setItem('selectedVoice', voice.identifier);
+                  }}
+                >
+                  <MaterialIcons
+                    name={selectedVoice === voice.identifier ? "radio-button-checked" : "radio-button-unchecked"}
+                    size={24}
+                    color={selectedVoice === voice.identifier ? "#007AFF" : "#666"}
+                    style={{ marginRight: 10 }}
+                  />
+                  <View>
+                    <Text style={styles.voiceName}>{voice.name}</Text>
+                    <Text style={styles.voiceLanguage}>{voice.language}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={async () => {
+                await buttonPressSound();
+                setVoiceSelectionModal(false);
+              }}
+            >
+              <Text style={styles.buttonText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
+      v
     </View>
   );
 }
@@ -1045,5 +1349,172 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     alignSelf: 'flex-start',
     fontWeight: '500',
+  },
+  typeSelectionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 15,
+  },
+  typeButton: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+    marginHorizontal: 5,
+    borderRadius: 5,
+  },
+  selectedType: {
+    backgroundColor: '#007AFF',
+  },
+  typeButtonText: {
+    fontWeight: '500',
+  },
+  selectionText: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+    fontSize: 16,
+  },
+  generationTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 25,
+    marginTop: 10,
+  },
+  generationButton: {
+    flex: 1,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    marginHorizontal: 8,
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  activeGenerationButton: {
+    backgroundColor: '#007AFF',
+  },
+  generationButtonText: {
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+    color: '#555',
+  },
+  activeGenerationText: {
+    color: '#fff',
+  },
+  countSelectorContainer: {
+    flexDirection: 'column',
+    width: '100%',
+    marginBottom: 20,
+  },
+  countLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#333',
+  },
+  countSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#f8f8f8',
+  },
+  countSelectorText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownContainer: {
+    maxHeight: 200,
+    width: '100%',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    alignItems: 'center',
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedDropdownText: {
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  modalActionContainer: {
+    width: '100%',
+    marginTop: 10,
+  },
+  generateButton: {
+    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  generateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  cancelModalButton: {
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  cancelModalText: {
+    color: '#555',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  voiceListContainer: {
+    width: '100%',
+    maxHeight: 300,
+    marginVertical: 10,
+  },
+  voiceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  selectedVoiceItem: {
+    backgroundColor: '#f0f7ff',
+  },
+  voiceName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  voiceLanguage: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
   },
 });

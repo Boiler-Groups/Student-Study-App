@@ -18,6 +18,10 @@ const NoteSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  lastEdited: {
+    type: Date,
+    default: Date.now,
+  },
   sharedWith: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     email: { type: String }

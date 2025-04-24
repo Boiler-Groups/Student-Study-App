@@ -5,6 +5,7 @@ import { AuthContext } from "./AuthContext";
 import Header from "../components/Header";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from "../components/ThemeContext";
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 export default function Login() {
     const router = useRouter();
@@ -78,7 +79,10 @@ export default function Login() {
 
             <TouchableOpacity
                 style={[styles.button, isDarkTheme ? styles.darkButton : styles.lightButton]}
-                onPress={handleLogin}
+                onPress={async ()=>{
+                    await buttonPressSound();
+                    handleLogin()
+                }}
                 disabled={loading}
             >
                 <Text style={[styles.buttonText, isDarkTheme ? styles.darkButtonText : styles.lightButtonText]}>
@@ -86,7 +90,10 @@ export default function Login() {
                 </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.push("/register")}>
+            <TouchableOpacity onPress={async() => {
+                await buttonPressSound();
+                router.push("/register")
+            }}>
                 <Text style={[styles.link, isDarkTheme ? styles.darkLink : null]}>
                     Don't have an account? Register
                 </Text>

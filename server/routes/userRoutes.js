@@ -22,8 +22,8 @@ router.post('/login', login);
 router.put('/:userId', userMiddleware, updateUser);
 router.get('/me', userMiddleware, getCurrentUser);
 router.get('/:userId', getUser);
-router.get('/:userId', getPoints)
-router.put('/:userId', updatePoints)
+router.get('/points/:userId', getPoints)
+router.put('/points/:userId', updatePoints)
 router.get('/', getAllUsers)
 router.post('/:userId/profile-image', userMiddleware, upload.single('profileImage'), updateProfileImage);
 
