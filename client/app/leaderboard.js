@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     borderColor: 'black',
     borderWidth: 2,
   },
-  pointsBox2: {
+  pointsBox2: { 
     backgroundColor: '#eee',
     padding: 10,
     borderRadius: 8,

@@ -79,15 +79,15 @@ export const register = async (req, res) => {
 /* MFA SECTION START*/
 
 export const sendEmail = async (to, subject, text) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
+  const transporter = nodemailer.createTransport({ //create nodemailer transport to send the email
+    service: 'gmail', 
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
   });
 
-  await transporter.sendMail({
+  await transporter.sendMail({ //send from @env email acc, create email content
     from: process.env.EMAIL_USER,
     to,
     subject,
@@ -100,13 +100,16 @@ export const verifyMFA = async (req, res) => {
     const { email, code } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user || user.mfaCode !== code || user.mfaExpiresAt < Date.now()) {
-      return res.status(400).json({ message: 'Invalid or expired MFA code' });
+    if (!user || user.mfaCode !== code) {
+      return res.status(400).json({ message: 'Invalid MFA code' });
+    }
+    else if (user.mfaExpiration < Date.now()) {
+      return res.status(400).json({ message: 'Expired MFA code' });
     }
 
     // Reset mfa
     user.mfaCode = null;
-    user.mfaExpiresAt = null;
+    user.mfaExpiration = null;
 
     // streaks and points
     const today = new Date();
@@ -151,10 +154,10 @@ export const login = async (req, res) => {
     if (user.mfaOn) {
       // mfa code enabled
       const mfaCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 60 * 1000); // 1 minute
+      const expiresTime = new Date(Date.now() + 60 * 1000); // 1 minute
 
       user.mfaCode = mfaCode;
-      user.mfaExpiresAt = expiresAt;
+      user.mfaExpiration = expiresTime;
       await user.save();
 
       await sendEmail(user.email, 'Your MFA Code', `Your code is: ${mfaCode}`);

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import { AuthContext } from "./AuthContext";
 import Header from "../components/Header";
@@ -15,6 +15,11 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [modalVisible, setModalVisible] = useState(false);
+    const [enteredPassword, setEnteredPassword] = useState('');
+    const [requiresMFA, setRequiresMFA] = useState(false);
+    const [tempEmail, setTempEmail] = useState('');
+    const [modalErrorMessage, setModalErrorMessage] = useState("");
 
     const handleLogin = async () => {
         setErrorMessage("");
@@ -28,9 +33,13 @@ export default function Login() {
             });
 
             const data = await response.json();
-            if (response.ok) {
+            if (response.ok && data.token) { 
                 await AsyncStorage.setItem('token', data.token);
                 router.replace('/landing');
+            } else if(data.message === "MFA code sent to email") {
+                setTempEmail(email);
+                setModalVisible(true);
+                setRequiresMFA(true);
             } else {
                 setErrorMessage("Invalid credentials");
             }
@@ -39,6 +48,61 @@ export default function Login() {
             setErrorMessage("Login failed. Please try again.");
         }
     };
+
+    const handlePasswordVerification = async () => {
+        setErrorMessage('');
+        try {
+          const res = await fetch(`${process.env.API_URL}/users/mfa`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: tempEmail, code: enteredPassword }),
+          });
+      
+          const data = await res.json();
+      
+          if (res.ok) {
+            await AsyncStorage.setItem('token', data.token);
+            setModalVisible(false);
+            router.push('/landing');
+          } else {
+            if (data.message === "Expired MFA code") {
+                setModalErrorMessage('Your MFA code has expired. Please request a new one.');
+              } else {
+                setModalErrorMessage('Invalid MFA code. Please try again.');
+              }
+          }
+        } catch (err) {
+          console.error(err);
+          setModalErrorMessage('Failed to verify code');
+        }
+      };
+
+      resendMFAVerification  = async () => {
+        setErrorMessage('');
+        setLoading(true);
+
+        try {
+            const response = await fetch(`${process.env.API_URL}/users/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: tempEmail, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.message === "MFA code sent to email") {
+                setModalErrorMessage("MFA code resent to email.");
+            } else {
+                setModalErrorMessage("Failed to resend MFA code.");
+            }
+        } catch (error) {
+            console.error(error);
+            setModalErrorMessage("Error resending MFA code.");
+        } finally {
+            setLoading(false);
+        }
+      };
+      
 
     return (
         <View
@@ -98,6 +162,73 @@ export default function Login() {
                     Don't have an account? Register
                 </Text>
             </TouchableOpacity>
+
+            {/* Modal for MFA Confirmation */}
+            <Modal visible={modalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Multi-Factor Verification</Text>
+                        <Text style={styles.modalMessage}>
+                            Enter the password sent to your email.
+                        </Text>
+
+                        {modalErrorMessage ? (
+                            <Text style={[styles.errorText, isDarkTheme ? styles.darkError : null]}>
+                                {modalErrorMessage}
+                            </Text>
+                        ) : null}
+
+
+                        {/* Input Field for Password */}
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter password"
+                            placeholderTextColor="#888"
+                            secureTextEntry
+                            value={enteredPassword}
+                            onChangeText={setEnteredPassword}
+                        />
+
+                        {/* Button Container */}
+                        <View style={styles.buttonContainer}>
+                            {/* Verify Button */}
+                            <TouchableOpacity
+                                style={styles.buttonModal}
+                                onPress={async () => {
+                                    await buttonPressSound()
+                                    handlePasswordVerification()
+                                }}
+                            >
+                                <Text style={styles.buttonTextModal}>Verify</Text>
+                            </TouchableOpacity>
+
+                            {/* Resend MFA Button */}
+                            <TouchableOpacity
+                                style={[styles.buttonModal, styles.resendButton]} // Green for Resend button
+                                onPress={async ()=> {
+                                    await buttonPressSound()
+                                    resendMFAVerification()
+                                }}
+                            >
+                                <Text style={styles.buttonTextModal}>Send Email Again</Text>
+                            </TouchableOpacity>
+
+                            {/* Close Button */}
+                            <TouchableOpacity
+                                style={[styles.buttonModal, styles.closeButton]} // Red for Close button
+                                onPress={async () => {
+                                    await buttonPressSound()
+                                    setModalVisible(false)
+                                    setModalErrorMessage("");
+                                    setLoading(false);
+                                }} // Close the modal
+                            >
+                                <Text style={styles.buttonTextModal}>Close</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -183,6 +314,86 @@ const styles = StyleSheet.create({
     },
     darkError: {
         color: "#FF7F7F",
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)', // Darker semi-transparent overlay
+    },
+    modalContent: {
+        backgroundColor: '#ffffff',
+        padding: 25,
+        borderRadius: 15,
+        width: '80%',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 6, // Android shadow
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 12,
+    },
+    modalMessage: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#555',
+        marginBottom: 20,
+    },
+    buttonContainer: {
+        width: '100%',
+        flexDirection: 'column', // Stack buttons vertically
+        justifyContent: 'space-between', // Distribute buttons with space
+        alignItems: 'center', // Center the buttons horizontally
+        marginTop: 20, // Add space between modal content and buttons
+    },
+    buttonModal: {
+        backgroundColor: '#007AFF', // A fresh blue for the confirmation button
+        padding: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 25, // Rounded button for a smoother UI
+        alignItems: 'center',
+        width: '80%',
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.4,
+        shadowRadius: 4,
+        elevation: 5, // Android shadow
+        marginBottom: 10, // Add space between buttons
+    },
+    buttonTextModal: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        letterSpacing: 0.5, // Subtle spacing for elegance
+    },
+
+    closeButton: {
+        backgroundColor: '#dc3545', // Red for close button
+    },
+    button: {
+        width: "25%",
+        padding: 10,
+        borderRadius: 5,
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    buttonText: {
+        fontSize: 16,
+    },
+    link: {
+        marginTop: 5,
+        color: "#007AFF",
+    },
+    errorText: {
+        marginBottom: 10,
+        color: "red",
     },
 });
 

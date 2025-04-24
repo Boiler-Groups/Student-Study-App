@@ -21,7 +21,7 @@ export default function Profile() {
     const [message, setMessage] = useState({ text: '', isError: false });
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
     const [usernameModalVisible, setUsernameModalVisible] = useState(false);
-    const [mfa, setMFA] = useState(true);
+    const [mfa, setMFA] = useState(false);
 
     useEffect(() => {
         fetchUserData();
@@ -145,8 +145,11 @@ export default function Profile() {
     };
 
     const toggleMFA = async () => {
+       
         try {
           const newValue = !mfa;
+          setMFA(newValue);
+          console.log("new Mfa value is: " + newValue);
           const token = await AsyncStorage.getItem('token');
 
             if (!token) {
@@ -157,7 +160,7 @@ export default function Profile() {
                 throw new Error('User ID not available');
             }
             
-          const res = await fetch(`${API_URL}/mfa/${user._id}`, {
+          const res = await fetch(`${API_URL}/users/mfa/${user._id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -173,7 +176,7 @@ export default function Profile() {
             return;
           }
       
-          setMFA(newValue);
+          
           console.log('MFA setting updated:', data.message);
         } catch (error) {
           console.error('Error toggling MFA:', error);
