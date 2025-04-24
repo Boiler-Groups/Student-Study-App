@@ -46,7 +46,7 @@ export default function NotesPage() {
   const [generationMode, setGenerationMode] = useState('flashcards');
   const [showDropdown, setShowDropdown] = useState(false);
   const [uid, setUserId] = useState('');
-  const [sortMethod, setSortMethod] = useState('alphabetical');
+  const [sortMethod, setSortMethod] = useState('recent');
   const [searchTerm, setSearchTerm] = useState('');
   const [shareModal, setShareModal] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
@@ -56,6 +56,16 @@ export default function NotesPage() {
   const [availableVoices, setAvailableVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [voiceSelectionModal, setVoiceSelectionModal] = useState(false);
+  const [sortedAINotes, setSortedAINotes] = useState(null);
+
+
+  useEffect(() => { // for resetting AI notes when a new sort is called while the method is ai
+    if (sortMethod === 'ai' && notes.length > 1) {
+      setSortedAINotes(null);
+    }
+  }, [notes, sortMethod]);
+
+
   /* AI gemini portion */
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -85,6 +95,42 @@ export default function NotesPage() {
     console.log(result.response.text());
   }
 
+  /* AI SORTING !!! */
+  const sortNotesByAISimilarity = async () => {
+    try { //make prompt
+      const prompt = `
+  I have the following notes. Please sort them from most similar to most different, based on topic and content. Return only a numbered list of note titles in the desired order.
+  
+  ${notes.map((note, idx) => `
+  Note ${idx + 1}:
+  Title: ${note.name}
+  Content: ${note.content}`).join('\n')}
+  
+  Respond with the list like:
+  1. Note Title A
+  2. Note Title B
+  ...`;
+      // get results of newly ordered notes
+      const result = await model.generateContent(prompt);
+      const text = await result.response.text();
+
+      // turn text response into an ordered list of notes, use setSortedAiNotes function
+      const titleOrder = text
+        .split('\n')
+        .map(line => line.replace(/^\d+\.\s*/, '').trim())
+        .filter(title => title.length > 0);
+  
+      const reordered = titleOrder
+        .map(title => notes.find(n => n.name === title))
+        .filter(Boolean);
+  
+      setSortedAINotes(reordered);
+    } catch (error) {
+      console.error("AI sorting failed:", error);
+      setSortedAINotes(null);
+    }
+  };
+  
   //run();
   /* Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
@@ -264,6 +310,11 @@ export default function NotesPage() {
       sorted.sort((a, b) => new Date(a.lastEdited) - new Date(b.lastEdited));
     } else if (sortMethod === 'alphabetical') {
       sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortMethod === 'ai') { //this is ai sort
+      if (!sortedAINotes && notes.length > 1) {
+        sortNotesByAISimilarity();
+      }
+      return sortedAINotes || sorted; // fallback to default if AI hasn’t responded yet
     }
     return sorted;
   };
@@ -477,7 +528,7 @@ export default function NotesPage() {
           color: isDarkTheme ? '#FFF' : '#000',
         }}>Sort Notes</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {['ai', 'recent', 'oldest', 'alphabetical'].map(option => (
+          {['recent', 'oldest', 'alphabetical', 'ai'].map(option => (
             <TouchableOpacity
               key={option}
               onPress={async () => {
@@ -532,55 +583,70 @@ export default function NotesPage() {
             isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem,
             item.isShared && styles.sharedNoteItem
           ]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {item.isShared && <Icon name="people" size={16} color="green" style={{ marginRight: 5 }} />}
-              <Text style={[styles.notesText, isDarkTheme ? styles.darkText : styles.lightText]}>
-                {item.name}
-              </Text>
+              <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+                {item.isShared && (
+                  <Icon name="people" size={16} color="green" style={{ marginRight: 5 }} />
+                )}
+                <Text style={[
+                  styles.notesText,
+                  { flexShrink: 1, overflow: 'hidden' },
+                  isDarkTheme ? styles.darkText : styles.lightText
+                ]}>
+                  {item.name}
+                </Text>
+              </View>
+
+              <View style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                flexWrap: 'wrap',
+                gap: 6
+              }}>
               <Text style={{ fontSize: 12, color: isDarkTheme ? '#ccc' : '#555' }}>
                 Last Modified: {new Date(item.lastEdited).toLocaleString()}
               </Text>
 
-            </View>
-
-            <TouchableOpacity onPress={async () => {
-              await buttonPressSound();
-              setNotesName(item.name);
-              setNotesContent(item.content);
-              setObjId(item._id);
-              setSummary(item.summary || '');
-              setKeyConcepts(item.keyConcepts || []);
-              setCurrentNote(item);
-              openEditModal(true);
-            }}>
-              <Icon name="edit" size={24} color="black" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={async () => {
-              await buttonPressSound();
-              removeNote(item._id)
-            }}>
-              <Icon name="delete" size={24} color="red" />
-            </TouchableOpacity>
-            <TouchableOpacity testID={`test-btn-${item.name}`} onPress={async () => {
-              await buttonPressSound();
-              setNotesName(item.name);
-              setNotesContent(item.content);
-              setObjId(item._id);
-              openFlashModal(true);
-            }}>
-              <Icon name="style" size={24} color="blue" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID={`share-btn-${item.name}`}
-              onPress={async () => {
-                await buttonPressSound();
-                setSelectedNoteForShare(item._id);
-                fetchSharedUsers(item._id);
-                setShareModal(true);
-              }}
-            >
-              <Icon name="share" size={24} color="green" />
-            </TouchableOpacity>
+                <TouchableOpacity onPress={async () => {
+                  await buttonPressSound();
+                  setNotesName(item.name);
+                  setNotesContent(item.content);
+                  setObjId(item._id);
+                  setSummary(item.summary || '');
+                  setKeyConcepts(item.keyConcepts || []);
+                  setCurrentNote(item);
+                  openEditModal(true);
+                }}>
+                  <Icon name="edit" size={24} color="yellow" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={async () => {
+                  await buttonPressSound();
+                  removeNote(item._id)
+                }}>
+                  <Icon name="delete" size={24} color="red" />
+                </TouchableOpacity>
+                <TouchableOpacity testID={`test-btn-${item.name}`} onPress={async () => {
+                  await buttonPressSound();
+                  setNotesName(item.name);
+                  setNotesContent(item.content);
+                  setObjId(item._id);
+                  openFlashModal(true);
+                }}>
+                  <Icon name="style" size={24} color="blue" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID={`share-btn-${item.name}`}
+                  onPress={async () => {
+                    await buttonPressSound();
+                    setSelectedNoteForShare(item._id);
+                    fetchSharedUsers(item._id);
+                    setShareModal(true);
+                  }}
+                >
+                  <Icon name="share" size={24} color="green" />
+                </TouchableOpacity>
+                </View>
           </View>
         )}
       />
@@ -1022,7 +1088,6 @@ export default function NotesPage() {
           </View>
         </View>
       </Modal>
-      v
     </View>
   );
 }
