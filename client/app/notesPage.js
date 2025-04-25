@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Modal, TextInput, ScrollView, Dimensions,
-  Platform, Alert
+  Platform, Alert, Image
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
@@ -20,6 +20,8 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getCurrentUser } from './api/user';
 import { buttonPressSound } from '../sounds/soundUtils.js';
+import * as ImagePicker from 'expo-image-picker';
+
 
 
 export default function NotesPage() {
@@ -58,12 +60,56 @@ export default function NotesPage() {
   const [voiceSelectionModal, setVoiceSelectionModal] = useState(false);
   const [sortedAINotes, setSortedAINotes] = useState(null);
 
+  const [noteImages, setNoteImages] = useState([]);
+  const [isPreviewing, setIsPreviewing] = useState(true);
+
 
   useEffect(() => { // for resetting AI notes when a new sort is called while the method is ai
     if (sortMethod === 'ai' && notes.length > 1) {
       setSortedAINotes(null);
     }
   }, [notes, sortMethod]);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['image'],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const selectedAsset = result.assets[0];
+
+      let base64Image;
+
+      if (Platform.OS === 'web') {
+        // Web-safe base64 conversion
+        base64Image = await getWebBase64(selectedAsset.uri);
+      } else {
+        const base64 = await FileSystem.readAsStringAsync(selectedAsset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        base64Image = `data:image/jpeg;base64,${base64}`;
+      }
+
+      const nextIndex = noteImages.length;
+      setNoteImages(prev => [...prev, base64Image]);
+      setNotesContent(prev => `${prev}\n\n![img${nextIndex}](img${nextIndex})`);
+    }
+  };
+
+  const getWebBase64 = async (uri) => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
 
 
   /* AI gemini portion */
@@ -119,18 +165,18 @@ export default function NotesPage() {
         .split('\n')
         .map(line => line.replace(/^\d+\.\s*/, '').trim())
         .filter(title => title.length > 0);
-  
+
       const reordered = titleOrder
         .map(title => notes.find(n => n.name === title))
         .filter(Boolean);
-  
+
       setSortedAINotes(reordered);
     } catch (error) {
       console.error("AI sorting failed:", error);
       setSortedAINotes(null);
     }
   };
-  
+
   //run();
   /* Fetch notes from backend when the component mounts */
   const fetchNotes = async () => {
@@ -253,7 +299,7 @@ export default function NotesPage() {
   const handleEditNote = async () => {
     if (notesName.trim() && notesContent.trim()) {
       try {
-        const newNote = { name: notesName, content: notesContent, userId: uid };
+        const newNote = { name: notesName, content: notesContent, userId: uid, images: noteImages };
 
         const res = await fetch(`${API_URL}/notes/${objId}`, {
           method: 'PUT',
@@ -286,6 +332,7 @@ export default function NotesPage() {
           setObjId('');
           fetchNotes();
           openCreateModal(false);
+          openEditModal(false);
         } else {
           console.error("Couldn't find Note")
         }
@@ -302,7 +349,7 @@ export default function NotesPage() {
     const filtered = noteList.filter(note =>
       note.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  
+
     const sorted = [...filtered];
     if (sortMethod === 'recent') {
       sorted.sort((a, b) => new Date(b.lastEdited) - new Date(a.lastEdited));
@@ -583,70 +630,71 @@ export default function NotesPage() {
             isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem,
             item.isShared && styles.sharedNoteItem
           ]}>
-              <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
-                {item.isShared && (
-                  <Icon name="people" size={16} color="green" style={{ marginRight: 5 }} />
-                )}
-                <Text style={[
-                  styles.notesText,
-                  { flexShrink: 1, overflow: 'hidden' },
-                  isDarkTheme ? styles.darkText : styles.lightText
-                ]}>
-                  {item.name}
-                </Text>
-              </View>
+            <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+              {item.isShared && (
+                <Icon name="people" size={16} color="green" style={{ marginRight: 5 }} />
+              )}
+              <Text style={[
+                styles.notesText,
+                { flexShrink: 1, overflow: 'hidden' },
+                isDarkTheme ? styles.darkText : styles.lightText
+              ]}>
+                {item.name}
+              </Text>
+            </View>
 
-              <View style={{
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                flexWrap: 'wrap',
-                gap: 6
-              }}>
+            <View style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              flexWrap: 'wrap',
+              gap: 6
+            }}>
               <Text style={{ fontSize: 12, color: isDarkTheme ? '#ccc' : '#555' }}>
                 Last Modified: {new Date(item.lastEdited).toLocaleString()}
               </Text>
 
-                <TouchableOpacity onPress={async () => {
+              <TouchableOpacity onPress={async () => {
+                await buttonPressSound();
+                setNotesName(item.name);
+                setNotesContent(item.content);
+                setNoteImages(item.images);
+                setObjId(item._id);
+                setSummary(item.summary || '');
+                setKeyConcepts(item.keyConcepts || []);
+                setCurrentNote(item);
+                openEditModal(true);
+              }}>
+                <Icon name="edit" size={24} color="yellow" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={async () => {
+                await buttonPressSound();
+                removeNote(item._id)
+              }}>
+                <Icon name="delete" size={24} color="red" />
+              </TouchableOpacity>
+              <TouchableOpacity testID={`test-btn-${item.name}`} onPress={async () => {
+                await buttonPressSound();
+                setNotesName(item.name);
+                setNotesContent(item.content);
+                setObjId(item._id);
+                openFlashModal(true);
+              }}>
+                <Icon name="style" size={24} color="blue" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID={`share-btn-${item.name}`}
+                onPress={async () => {
                   await buttonPressSound();
-                  setNotesName(item.name);
-                  setNotesContent(item.content);
-                  setObjId(item._id);
-                  setSummary(item.summary || '');
-                  setKeyConcepts(item.keyConcepts || []);
-                  setCurrentNote(item);
-                  openEditModal(true);
-                }}>
-                  <Icon name="edit" size={24} color="yellow" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={async () => {
-                  await buttonPressSound();
-                  removeNote(item._id)
-                }}>
-                  <Icon name="delete" size={24} color="red" />
-                </TouchableOpacity>
-                <TouchableOpacity testID={`test-btn-${item.name}`} onPress={async () => {
-                  await buttonPressSound();
-                  setNotesName(item.name);
-                  setNotesContent(item.content);
-                  setObjId(item._id);
-                  openFlashModal(true);
-                }}>
-                  <Icon name="style" size={24} color="blue" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  testID={`share-btn-${item.name}`}
-                  onPress={async () => {
-                    await buttonPressSound();
-                    setSelectedNoteForShare(item._id);
-                    fetchSharedUsers(item._id);
-                    setShareModal(true);
-                  }}
-                >
-                  <Icon name="share" size={24} color="green" />
-                </TouchableOpacity>
-                </View>
+                  setSelectedNoteForShare(item._id);
+                  fetchSharedUsers(item._id);
+                  setShareModal(true);
+                }}
+              >
+                <Icon name="share" size={24} color="green" />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       />
@@ -779,143 +827,206 @@ export default function NotesPage() {
       <Modal visible={editModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-              <Text style={styles.modalTitle}>Edit a Note</Text>
-              <View style={{ flexDirection: 'row', marginLeft: 8 }}>
-                <TouchableOpacity
-                  style={{ padding: 0, marginTop: -5 }}
-                  onPress={() => speakNoteContent(notesContent, objId)}
-                >
-                  <MaterialIcons
-                    name={speakingNoteId === objId ? 'pause-circle-filled' : 'volume-up'}
-                    size={28}
-                    color="#007AFF"
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                <Text style={styles.modalTitle}>Edit a Note</Text>
+                <View style={{ flexDirection: 'row', marginLeft: 8 }}>
+                  <TouchableOpacity
+                    style={{ padding: 0, marginTop: -5 }}
+                    onPress={() => speakNoteContent(notesContent, objId)}
+                  >
+                    <MaterialIcons
+                      name={speakingNoteId === objId ? 'pause-circle-filled' : 'volume-up'}
+                      size={28}
+                      color="#007AFF"
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
+                    onPress={async () => {
+                      await buttonPressSound();
+                      setVoiceSelectionModal(true);
+                    }}
+                  >
+                    <MaterialIcons
+                      name="settings-voice"
+                      size={24}
+                      color="#007AFF"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+              </View>
+              <TextInput
+                style={styles.modalInput}
+                value={notesName}
+                onChangeText={setNotesName}
+              />
+
+
+              <View style={{ width: '100%' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => setIsPreviewing(prev => !prev)}
+                    style={{ padding: 6, backgroundColor: '#ccc', borderRadius: 6 }}
+                  >
+                    <Text style={{ fontWeight: 'bold' }}>
+                      {isPreviewing ? "Edit" : "Preview"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {isPreviewing ? (
+                  <ScrollView style={{ maxHeight: 300, width: '100%' }}>
+                    <Markdown
+                      style={{
+                        body: {
+                          fontSize: 16,
+                          padding: 10,
+                          borderWidth: 1,
+                          borderRadius: 5,
+                          marginBottom: 10,
+                        },
+                      }}
+                      rules={{
+                        image: (node) => {
+                          const match = node.attributes.src.match(/^img(\d+)$/);
+                          if (match) {
+                            const index = parseInt(match[1], 10);
+                            const uri = noteImages[index];
+                            return uri ? (
+                              <Image
+                                source={{ uri }}
+                                style={{
+                                  width: '100%',
+                                  height: 200,
+                                  borderRadius: 6,
+                                  marginVertical: 10,
+                                }}
+                                resizeMode="cover"
+                              />
+                            ) : null;
+                          }
+                          return null;
+                        },
+                      }}
+                    >
+                      {notesContent}
+                    </Markdown>
+                  </ScrollView>
+                ) : (
+                  <TextInput
+                    style={[styles.noteContentInput, { height: 200 }]}
+                    value={notesContent}
+                    onChangeText={setNotesContent}
+                    multiline
+                    numberOfLines={10}
+                    textAlignVertical='top'
+                    scrollEnabled
+                    placeholder="Write your note here..."
                   />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ padding: 0, marginTop: -5, marginLeft: 8 }}
-                  onPress={async () => {
-                    await buttonPressSound();
-                    setVoiceSelectionModal(true);
-                  }}
-                >
-                  <MaterialIcons
-                    name="settings-voice"
-                    size={24}
-                    color="#007AFF"
-                  />
-                </TouchableOpacity>
+                )}
               </View>
 
-            </View>
-            <TextInput
-              style={styles.modalInput}
-              value={notesName}
-              onChangeText={setNotesName}
-            />
-            <TextInput
-              style={styles.noteContentInput}
-              value={notesContent}
-              onChangeText={setNotesContent}
-              multiline={true}
-              numberOfLines={6}
-              textAlignVertical='top'
-              scrollEnabled={true}
-            />
+              {/* Image picker button */}
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#888' }]}
+                onPress={pickImage}
+              >
+                <Text style={styles.buttonText}>Add Image</Text>
+              </TouchableOpacity>
 
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#444' }]}
+                onPress={async () => {
+                  await buttonPressSound();
+                  setLoadingSummary(true);
+                  try {
+                    const response = await fetch(`${API_URL}/summarize`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ notes: notesContent, noteId: objId }),
+                    });
+                    const data = await response.json();
+                    setSummary(data.summary);
+                  } catch (err) {
+                    console.error("Failed to fetch summary:", err);
+                    setSummary("Error fetching summary.");
+                  }
+                  setLoadingSummary(false);
+                }}
+              >
 
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#444' }]}
-              onPress={async () => {
+                <Text style={styles.buttonText}>Generate AI Summary</Text>
+              </TouchableOpacity>
+              {loadingSummary ? (
+                <ActivityIndicator size="small" color="#0000ff" />
+              ) : (
+                <ScrollView style={{ maxHeight: 150, width: '100%', }}>
+                  <Markdown style={{ body: { fontSize: 16, borderWidth: 1, width: '100%', padding: 10, borderWidth: 1, borderRadius: 5, marginBottom: 10, } }}>
+                    {summary}
+                  </Markdown>
+                </ScrollView>
+              )}
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#444' }]}
+                onPress={async () => {
+                  await buttonPressSound();
+                  setLoadingConcepts(true);
+                  try {
+                    const response = await fetch(`${API_URL}/concepts`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ notes: notesContent, noteId: objId }),
+                    });
+                    const data = await response.json();
+                    // Split by line to get bullet points
+                    const conceptsArray = data.concepts.split('\n').filter(line => line.trim() !== '');
+                    setKeyConcepts(conceptsArray);
+                  } catch (err) {
+                    console.error("Failed to get key concepts:", err);
+                    setKeyConcepts(["Error fetching concepts."]);
+                  }
+                  setLoadingConcepts(false);
+                }}
+              >
+                <Text style={styles.buttonText}>Find Key Concepts</Text>
+              </TouchableOpacity>
+
+              {loadingConcepts ? (
+                <ActivityIndicator size="small" color="#0000ff" />
+              ) : (
+                <ScrollView style={styles.conceptsScroll} nestedScrollEnabled={true}>
+                  <View style={styles.conceptsContainer}>
+                    {keyConcepts.map((concept, idx) => (
+                      <View key={idx} style={styles.conceptPill}>
+                        <Text style={styles.conceptText}>{concept.replace(/^[-*]\s*/, '')}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+              )}
+
+              <TouchableOpacity style={styles.modalButton} onPress={async () => {
                 await buttonPressSound();
-                setLoadingSummary(true);
-                try {
-                  const response = await fetch(`${API_URL}/summarize`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notes: notesContent, noteId: objId }),
-                  });
-                  const data = await response.json();
-                  setSummary(data.summary);
-                } catch (err) {
-                  console.error("Failed to fetch summary:", err);
-                  setSummary("Error fetching summary.");
-                }
-                setLoadingSummary(false);
-              }}
-            >
-
-              <Text style={styles.buttonText}>Generate AI Summary</Text>
-            </TouchableOpacity>
-            {loadingSummary ? (
-              <ActivityIndicator size="small" color="#0000ff" />
-            ) : (
-              <ScrollView style={{ maxHeight: 150, width: '100%', }}>
-                <Markdown style={{ body: { fontSize: 16, borderWidth: 1, width: '100%', padding: 10, borderWidth: 1, borderRadius: 5, marginBottom: 10, } }}>
-                  {summary}
-                </Markdown>
-              </ScrollView>
-            )}
-
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#444' }]}
-              onPress={async () => {
-                await buttonPressSound();
-                setLoadingConcepts(true);
-                try {
-                  const response = await fetch(`${API_URL}/concepts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notes: notesContent, noteId: objId }),
-                  });
-                  const data = await response.json();
-                  // Split by line to get bullet points
-                  const conceptsArray = data.concepts.split('\n').filter(line => line.trim() !== '');
-                  setKeyConcepts(conceptsArray);
-                } catch (err) {
-                  console.error("Failed to get key concepts:", err);
-                  setKeyConcepts(["Error fetching concepts."]);
-                }
-                setLoadingConcepts(false);
-              }}
-            >
-              <Text style={styles.buttonText}>Find Key Concepts</Text>
-            </TouchableOpacity>
-
-            {loadingConcepts ? (
-              <ActivityIndicator size="small" color="#0000ff" />
-            ) : (
-              <ScrollView style={styles.conceptsScroll} nestedScrollEnabled={true}>
-                <View style={styles.conceptsContainer}>
-                  {keyConcepts.map((concept, idx) => (
-                    <View key={idx} style={styles.conceptPill}>
-                      <Text style={styles.conceptText}>{concept.replace(/^[-*]\s*/, '')}</Text>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            )}
-
-            <TouchableOpacity style={styles.modalButton} onPress={async () => {
-              await buttonPressSound();
-              handleEditNote()
-            }}>
-              <Text style={styles.buttonText}>Save</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={async () => {
-                await buttonPressSound();
-                openEditModal(false);
-                setNotesContent('');
-                setNotesName('');
-                setCurrentNote(null);
-                Speech.stop();
-                setSpeakingNoteId(null);
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+                handleEditNote()
+              }}>
+                <Text style={styles.buttonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={async () => {
+                  await buttonPressSound();
+                  openEditModal(false);
+                  setNotesContent('');
+                  setNotesName('');
+                  setCurrentNote(null);
+                  Speech.stop();
+                  setSpeakingNoteId(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -1236,6 +1347,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
+    maxHeight: '90%'
   },
   modalContent: {
     width: '80%',
@@ -1247,6 +1359,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: 'auto',
     paddingBottom: 20,
+    maxHeight: '80%',
   },
   modalTitle: {
     fontSize: 20,

@@ -14,6 +14,8 @@ const authHeader = (token) => ({
 
 export const getStudyGroups = ({ email }) => StudyGroupClient.get(`/${email}`);
 
+export const getGroup = (token, groupId) => StudyGroupClient.get(`/group/${groupId}`, authHeader(token));
+
 export const checkIsDM = (groupId) => StudyGroupClient.get(`/dm/${groupId}`);
 
 export const getStudyGroupsAll = () => StudyGroupClient.get('/groups');
@@ -53,55 +55,55 @@ export const getGroupMessages = (token, groupId) =>
       return [];
     });
 
-    export const sendMessage = (token, groupId, message, replyData = null) => {
-      const payload = { text: message };
-    
-      if (replyData) {
-        payload.replyToId = replyData.replyToId;
-        payload.replyToSender = replyData.replyToSender;
-        payload.replyToText = replyData.replyToText;
-      }
-    
-      return StudyGroupClient.post(`/messages/${groupId}`, payload, authHeader(token))
-        .then(async res => {
-          if (replyData && replyData.replyToSender) {
-            try {
-              const messages = await getGroupMessages(token, groupId);
-              const originalMessage = messages.find(msg => msg._id === replyData.replyToId);
-              
-              if (originalMessage) {
-                const allMembers = await StudyGroupClient.get(`/members/${groupId}`, authHeader(token));
-                
-                const memberEmail = allMembers.data.find(member => {
-                  const emailUsername = member.includes('@') ? member.split('@')[0] : '';
-                  
-                  return emailUsername.toLowerCase() === replyData.replyToSender.toLowerCase();
-                });
-    
-                console.log("Member email found for reply:", memberEmail);
-    
-                if (memberEmail) {
-                  await addTaggedOrRepliedUser(groupId, memberEmail);
-                }
-              }
-            } catch (err) {
-              console.error("Error adding replied user to notifications:", err);
+export const sendMessage = (token, groupId, message, replyData = null) => {
+  const payload = { text: message };
+
+  if (replyData) {
+    payload.replyToId = replyData.replyToId;
+    payload.replyToSender = replyData.replyToSender;
+    payload.replyToText = replyData.replyToText;
+  }
+
+  return StudyGroupClient.post(`/messages/${groupId}`, payload, authHeader(token))
+    .then(async res => {
+      if (replyData && replyData.replyToSender) {
+        try {
+          const messages = await getGroupMessages(token, groupId);
+          const originalMessage = messages.find(msg => msg._id === replyData.replyToId);
+
+          if (originalMessage) {
+            const allMembers = await StudyGroupClient.get(`/members/${groupId}`, authHeader(token));
+
+            const memberEmail = allMembers.data.find(member => {
+              const emailUsername = member.includes('@') ? member.split('@')[0] : '';
+
+              return emailUsername.toLowerCase() === replyData.replyToSender.toLowerCase();
+            });
+
+            console.log("Member email found for reply:", memberEmail);
+
+            if (memberEmail) {
+              await addTaggedOrRepliedUser(groupId, memberEmail);
             }
           }
-    
-          return res.data;
-        })
-        .catch(err => {
-          console.error("Error sending message:", err);
-          return null;
-        });
-    }
+        } catch (err) {
+          console.error("Error adding replied user to notifications:", err);
+        }
+      }
 
-export const likeMessage = (token, groupId, message) => StudyGroupClient.post(`/react/${groupId}`, {messageId: message}, authHeader(token));
+      return res.data;
+    })
+    .catch(err => {
+      console.error("Error sending message:", err);
+      return null;
+    });
+}
 
-export const toggleMessageLike = (token, groupId, message) => StudyGroupClient.post(`/toggleLike/${groupId}`, {messageId: message, isLike: true}, authHeader(token));
+export const likeMessage = (token, groupId, message) => StudyGroupClient.post(`/react/${groupId}`, { messageId: message }, authHeader(token));
 
-export const toggleMessageDislike = (token, groupId, message) => StudyGroupClient.post(`/toggleLike/${groupId}`, {messageId: message, isLike: false}, authHeader(token));
+export const toggleMessageLike = (token, groupId, message) => StudyGroupClient.post(`/toggleLike/${groupId}`, { messageId: message, isLike: true }, authHeader(token));
+
+export const toggleMessageDislike = (token, groupId, message) => StudyGroupClient.post(`/toggleLike/${groupId}`, { messageId: message, isLike: false }, authHeader(token));
 
 export const getGroupMembers = (token, groupId) =>
   StudyGroupClient.get(`/members/${groupId}`, authHeader(token))
@@ -119,4 +121,7 @@ export const removeMember = (token, groupId, userEmail) =>
       return null;
     });
 
-export const edbotResponse = (token, groupId, text) => StudyGroupClient.post(`/edbot/${groupId}`,  {text: text}, authHeader(token));
+export const edbotResponse = (token, groupId, text, edbotName, edbotPersonality) => StudyGroupClient.post(`/edbot/${groupId}`, { text: text, edbotName, edbotPersonality }, authHeader(token));
+
+export const edbotSettings = (token, groupId, edbotPersonality, edbotName, edbotEnabled) =>
+  StudyGroupClient.patch(`/edbotSettings/${groupId}`, { edbotEnabled, edbotName, edbotPersonality }, authHeader(token));

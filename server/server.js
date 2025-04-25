@@ -31,8 +31,8 @@ app.use((req, res, next) => {
 });
 
 //Added to support sending images
-app.use(express.json({ limit: "1mb" }));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+//app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/users', userRoutes);
 app.use('/api/studygroups', studyGroupRoutes);
