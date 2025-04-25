@@ -25,7 +25,10 @@ const NoteSchema = new mongoose.Schema({
   sharedWith: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     email: { type: String }
-  }]
+  }],
+  images: {
+    type: [String]
+  }
 });
 
 const Note = mongoose.model('Note', NoteSchema);
