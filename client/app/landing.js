@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
+import { buttonPressSound } from '../sounds/soundUtils.js';
 
 export default function Landing() {
     const router = useRouter();
@@ -22,19 +23,28 @@ export default function Landing() {
             </Text>
             <TouchableOpacity 
                 style={styles.button} 
-                onPress={() => router.push('/home')}
+                onPress={async() => {
+                    await buttonPressSound();
+                    router.push('/home')
+                }}
             >
                 <Text style={styles.buttonText}>My Classes</Text>
             </TouchableOpacity>
             <TouchableOpacity 
                 style={styles.button} 
-                onPress={() => router.push('/profile')}
+                onPress={async () => {
+                    await buttonPressSound();
+                    router.push('/profile')
+                }}
             >
                 <Text style={styles.buttonText}>Account Settings</Text>
             </TouchableOpacity>
             <TouchableOpacity 
                 style={[styles.button, styles.logoutButton]} 
-                onPress={handleLogout}
+                onPress={async()=>{
+                    await buttonPressSound();
+                    handleLogout()
+                }}
             >
                 <Text style={styles.buttonText}>Logout</Text>
             </TouchableOpacity>

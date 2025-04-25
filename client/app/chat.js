@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
+import { buttonPressSound } from '../sounds/soundUtils.js';
+
 
 export default function Chat() {
     const { isDarkTheme } = useTheme();
@@ -70,7 +72,10 @@ export default function Chat() {
                         value={inputText}
                         onChangeText={setInputText}
                     />
-                    <TouchableOpacity style={[styles.sendButton, isDarkTheme ? styles.darkButton : styles.lightButton]} onPress={handleSend}>
+                    <TouchableOpacity style={[styles.sendButton, isDarkTheme ? styles.darkButton : styles.lightButton]} onPress={async()=>{
+                        await buttonPressSound();
+                        handleSend();
+                    }}>
                         <Text style={[styles.buttonText, isDarkTheme ? styles.darkButtonText : styles.darkButtonText]}>Send</Text>
                     </TouchableOpacity>
                 </View>

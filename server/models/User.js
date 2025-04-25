@@ -33,7 +33,19 @@ const UserSchema = new mongoose.Schema({
   streak: {
     type: Number,
     default: 0,
-  },  
+  },
+  mfaOn: {
+    type: Boolean,
+    default: false,
+  },
+  mfaCode: {
+    type: String,
+    default: null,
+  },
+  mfaExpiration: {
+    type: Date,
+    default: null,
+  } , 
 });
 
 export default mongoose.model('User', UserSchema);

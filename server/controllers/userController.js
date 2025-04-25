@@ -6,6 +6,7 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,64 +76,136 @@ export const register = async (req, res) => {
   }
 };
 
-export const login = async (req, res) => {
+/* MFA SECTION START*/
+
+export const sendEmail = async (to, subject, text) => {
+  const transporter = nodemailer.createTransport({ //create nodemailer transport to send the email
+    service: 'gmail', 
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({ //send from @env email acc, create email content
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    text,
+  });
+};
+
+export const verifyMFA = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, code } = req.body;
 
-    // Check if user exists
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!user || user.mfaCode !== code) {
+      return res.status(400).json({ message: 'Invalid MFA code' });
+    }
+    else if (user.mfaExpiration < Date.now()) {
+      return res.status(400).json({ message: 'Expired MFA code' });
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
+    // Reset mfa
+    user.mfaCode = null;
+    user.mfaExpiration = null;
+
+    // streaks and points
     const today = new Date();
-    let lastLoginDate = null;
-    // check if user has logged in today. if not, set lastLogin to today
-    if (user.lastLogin) {
-      lastLoginDate = new Date(user.lastLogin);
-    }
+    let lastLoginDate = user.lastLogin ? new Date(user.lastLogin) : null;
     const isDifferentDay = (!lastLoginDate || today.toDateString() !== lastLoginDate.toDateString());
-    // Get data on user's "streak", if they haven't logged in today
+
     if (isDifferentDay) {
       const yesterday = new Date();
       yesterday.setDate(today.getDate() - 1);
 
-      let isStreak = false;
+      let isStreak = lastLoginDate && lastLoginDate.toDateString() === yesterday.toDateString();
 
-      if (lastLoginDate && lastLoginDate.toDateString() === yesterday.toDateString()) {
-        isStreak = true;
-      }
-
-      if (isStreak) {
-        user.streak += 1;
-      } else {
-        user.streak = 1;
-      }
-
-      if (user.streak >= 10) {
-        user.points += 200;
-      } else {
-        user.points += 100;
-      }
-
+      user.streak = isStreak ? user.streak + 1 : 1;
+      user.points += user.streak >= 10 ? 200 : 100;
       user.lastLogin = today;
-      await user.save();
-    } 
-    // Create JWT token
+    }
+
+    await user.save();
+
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
 
-    res.json({ userInfo: { email: email }, token });
+    return res.json({ userInfo: { email: user.email }, token });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+/* MFA SECTION END */
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    if (user.mfaOn) {
+      // mfa code enabled
+      const mfaCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresTime = new Date(Date.now() + 60 * 1000); // 1 minute
+
+      user.mfaCode = mfaCode;
+      user.mfaExpiration = expiresTime;
+      await user.save();
+
+      await sendEmail(user.email, 'Your MFA Code', `Your code is: ${mfaCode}`);
+
+      return res.status(200).json({ message: "MFA code sent to email" });
+    } else {
+      // mfa not enabled by user
+      const today = new Date();
+      let lastLoginDate = user.lastLogin ? new Date(user.lastLogin) : null;
+      const isDifferentDay = (!lastLoginDate || today.toDateString() !== lastLoginDate.toDateString());
+
+      if (isDifferentDay) {
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        let isStreak = false;
+
+        if (lastLoginDate && lastLoginDate.toDateString() === yesterday.toDateString()) {
+          isStreak = true;
+        }
+  
+        if (isStreak) {
+          user.streak += 1;
+        } else {
+          user.streak = 1;
+        }
+  
+        if (user.streak >= 10) {
+          user.points += 200;
+        } else {
+          user.points += 100;
+        }
+        user.lastLogin = today;
+      }
+
+      await user.save();
+
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "24h",
+      });
+
+      return res.json({ userInfo: { email: user.email }, token });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 export const updateUser = async (req, res) => {
   try {
@@ -278,6 +351,26 @@ export const updatePoints = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const updateMfaOn = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { mfaOn } = req.body;
+
+    // Find user by Id
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    user.mfaOn = mfaOn;
+
+    await user.save();
+    res.json({ message: "User updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Get user's points
 export const getPoints = async (req, res) => {
   try {
@@ -288,10 +381,10 @@ export const getPoints = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
-    upoints = user.select("points");
+    const userPoints = user.points;
 
     // return number of user's points
-    res.status(200).json(upoints);
+    res.status(200).json({points: userPoints});
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
