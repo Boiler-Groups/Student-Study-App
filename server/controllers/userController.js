@@ -137,7 +137,7 @@ export const login = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { username, password } = req.body;
+    const { username, password, avatarConfig } = req.body;
 
     // Find user by Id
     const user = await User.findById(userId);
@@ -154,6 +154,11 @@ export const updateUser = async (req, res) => {
     if (password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
+    }
+
+    // Update avatarConfig if provided
+    if (avatarConfig !== undefined) {
+      user.avatarConfig = avatarConfig || null;
     }
 
     await user.save();

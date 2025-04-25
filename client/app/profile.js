@@ -6,6 +6,9 @@ import { useTheme } from '../components/ThemeContext';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import AvatarModal from '../components/AvatarModal'
+import { createAvatar } from '@dicebear/core'
+import { micah } from '@dicebear/collection'
 
 export default function Profile() {
     const router = useRouter();
@@ -20,10 +23,75 @@ export default function Profile() {
     const [message, setMessage] = useState({ text: '', isError: false });
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
     const [usernameModalVisible, setUsernameModalVisible] = useState(false);
+    const [avatarConfig, setAvatarConfig] = useState(null)
+    const [avatarModalVisible, setAvatarModalVisible] = useState(false)
 
     useEffect(() => {
         fetchUserData();
+        loadAvatarConfig();
     }, []);
+
+    const handleAvatarSave = async (config) => {
+        setAvatarConfig(config);
+        await AsyncStorage.setItem('avatarConfig', JSON.stringify(config));
+      
+        const token = await AsyncStorage.getItem('token');
+        if (!token || !user?._id) return;
+      
+        const response = await fetch(`${API_URL}/users/${user._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ avatarConfig: config })
+        });
+      
+        const data = await response.json();
+        if (response.ok) {
+          setUser((prev) => ({ ...prev, avatarConfig: config }));
+        } else {
+          console.error('Failed to save avatar config', data);
+        }
+      
+        setAvatarModalVisible(false);
+      };
+
+    const loadAvatarConfig = async () => {
+        const stored = await AsyncStorage.getItem('avatarConfig');
+        if (stored) {
+            setAvatarConfig(JSON.parse(stored));
+        }
+    };
+    
+    const deleteAvatar = async () => {
+        setAvatarConfig(null);
+        await AsyncStorage.removeItem('avatarConfig');
+        
+        const token = await AsyncStorage.getItem('token');
+        if (!token || !user?._id) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/users/${user._id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ avatarConfig: null }),
+            });
+        
+            const data = await response.json();
+        
+            if (response.ok) {
+            setUser(prev => ({ ...prev, avatarConfig: null }));
+            } else {
+            console.error("Failed to delete avatar from server:", data);
+            }
+        } catch (err) {
+            console.error("Error deleting avatar:", err);
+        }
+    };
 
     const fetchUserData = async () => {
         try {
@@ -44,6 +112,7 @@ export default function Profile() {
                 console.log("User data received:", userData);
                 setUser(userData);
                 setNewUsername(userData.username);
+                if (userData.avatarConfig) setAvatarConfig(userData.avatarConfig);
             } else {
                 console.log("Failed to get user data:", await response.text());
                 await AsyncStorage.removeItem('token');
@@ -237,27 +306,74 @@ export default function Profile() {
             ) : null}
 
             <View style={styles.profileImageContainer}>
-                {user?.profileImage ? (
-                    <Image 
-                        source={{ uri: user.profileImage }} 
-                        style={styles.profileImage} 
-                    />
-                ) : (
-                    <View style={[styles.profileImagePlaceholder, isDarkTheme ? styles.darkPlaceholder : styles.lightPlaceholder]}>
-                        <Text style={[styles.profileImagePlaceholderText, isDarkTheme ? styles.darkText : styles.lightText]}>
-                            {user?.username?.charAt(0)?.toUpperCase() || "?"}
+                <View style={{ alignItems: 'center', marginBottom: 20, }}>
+                    {user?.profileImage ? (
+                        <Image 
+                            source={{ uri: user.profileImage }} 
+                            style={styles.profileImage} 
+                        />
+                    ) : (
+                        <View style={[styles.profileImagePlaceholder, isDarkTheme ? styles.darkPlaceholder : styles.lightPlaceholder]}>
+                            <Text style={[styles.profileImagePlaceholderText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                                {user?.username?.charAt(0)?.toUpperCase() || "?"}
+                            </Text>
+                        </View>
+                    )}
+                    <TouchableOpacity 
+                        style={styles.uploadButton}
+                        onPress={handleImageUpload}
+                        disabled={uploadingImage}
+                    >
+                        <Text style={styles.buttonText}>
+                            {uploadingImage ? 'Uploading...' : 'Change Profile Picture'}
                         </Text>
-                    </View>
-                )}
-                <TouchableOpacity 
-                    style={styles.uploadButton}
-                    onPress={handleImageUpload}
-                    disabled={uploadingImage}
-                >
-                    <Text style={styles.buttonText}>
-                        {uploadingImage ? 'Uploading...' : 'Change Profile Picture'}
-                    </Text>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                </View>
+                <View style={{ alignItems: 'center', marginBottom: 20, }}>
+                    {avatarConfig ? (
+                    <>  
+                        
+                        <Image
+                        source={{
+                            uri: `data:image/svg+xml;utf8,${createAvatar(micah, {
+                            ...avatarConfig,
+                            eyes: [avatarConfig.eyes],
+                            mouth: [avatarConfig.mouth],
+                            glasses: [avatarConfig.glasses],
+                            hair: [avatarConfig.hair],
+                            hairColor: [avatarConfig.hairColor],
+                            baseColor: [avatarConfig.skinColor],
+                            shirtColor: [avatarConfig.shirtColor],
+                            backgroundColor: [avatarConfig.backgroundColor]
+                            }).toString()}`
+                        }}
+                        style={[ styles.profileImagePlaceholder ]}
+                        />
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <TouchableOpacity
+                            style={styles.uploadButton}
+                            onPress={() => setAvatarModalVisible(true)}
+                        >
+                            <Text style={styles.buttonText}>Edit Avatar</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.uploadButton, { backgroundColor: '#FF3B30' }]}
+                            onPress={deleteAvatar}
+                            >
+                            <Text style={styles.buttonText}>Delete Avatar</Text>
+                        </TouchableOpacity>
+                        </View>
+                        
+                    </>
+                    ) : (
+                    <TouchableOpacity
+                        style={styles.uploadButton}
+                        onPress={() => setAvatarModalVisible(true)}
+                    >
+                        <Text style={styles.buttonText}>Create Avatar</Text>
+                    </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
             <View style={styles.infoContainer}>
@@ -390,6 +506,13 @@ export default function Profile() {
                     </View>
                 </View>
             </Modal>
+            <AvatarModal
+                visible={avatarModalVisible}
+                onClose={() => setAvatarModalVisible(false)}
+                onSave={handleAvatarSave}
+                initialSeed={avatarConfig?.seed}
+                initialConfig={avatarConfig}
+            />
         </View>
     );
 }
@@ -399,7 +522,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20
+        paddingHorizontal: 20,
     },
     title: {
         fontSize: 28,
@@ -409,6 +532,7 @@ const styles = StyleSheet.create({
     profileImageContainer: {
         alignItems: 'center',
         marginBottom: 20,
+        flexDirection: 'row', alignItems: 'center', gap: 20
     },
     profileImage: {
         width: 120,
