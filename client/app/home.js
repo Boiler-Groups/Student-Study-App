@@ -9,14 +9,17 @@ import { API_URL } from '@env';
 import { getCurrentUser } from './api/user';
 import { buttonPressSound } from '../sounds/soundUtils.js';
 import {handleAddPointsToCurrentUser} from "@/app/global/incrementPoints";
+import { createAvatar } from '@dicebear/core';
+import { micah } from '@dicebear/collection';
+import { Image } from 'react-native';
 
 export default function Home() {
     const router = useRouter();
     const { isDarkTheme } = useTheme();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { user, logout, authLoading} = useContext(AuthContext);
-
+    const { user, logout, authLoading, token, markUserOffline } = useContext(AuthContext);
+    const [onlineUsers, setOnlineUsers] = useState([]);
 
     // Simulated API call to fetch groups
     useEffect(() => {
@@ -43,13 +46,46 @@ export default function Home() {
         };
 
         fetchClasses();
+
+        const fetchCurrentUser = async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              const showOnlineStatus = JSON.parse(await AsyncStorage.getItem('showOnlineStatus'));
+          
+              if (!token || !showOnlineStatus) return;
+          
+              const res = await fetch(`${API_URL}/users/me`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+          
+              if (!res.ok) throw new Error('Failed to fetch current user');
+          
+              const me = await res.json();
+          
+              // Only show if user has avatar and status is enabled
+              if (showOnlineStatus && me.avatarConfig) {
+                setOnlineUsers([me]);
+              } else {
+                setOnlineUsers([]);
+              }
+            } catch (error) {
+              console.error('Error fetching current user:', error);
+              setOnlineUsers([]);
+            }
+          };
+
+        fetchCurrentUser();
     }, []);
 
-    if (authLoading) {
+    if (authLoading) {``
         return <ActivityIndicator size="large" color="#007AFF" />;
     }
 
     const handleLogout = async () => {
+        await markUserOffline(token);
         await AsyncStorage.removeItem('token');
         router.replace('/login');
     };
@@ -66,6 +102,42 @@ export default function Home() {
             }}>
                 <Text style={[styles.darkText, isDarkTheme ? styles.darkText : styles.darkText]}>Logout</Text>
             </TouchableOpacity>
+
+            <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Online Users</Text>
+            <FlatList
+            horizontal
+            data={onlineUsers}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => {
+                let avatarSvg = '';
+                try {
+                avatarSvg = createAvatar(micah, {
+                    seed: item.avatarConfig.seed || item.username,
+                    eyes: [item.avatarConfig.eyes],
+                    mouth: [item.avatarConfig.mouth],
+                    glasses: [item.avatarConfig.glasses],
+                    hair: [item.avatarConfig.hair],
+                    hairColor: [item.avatarConfig.hairColor],
+                    baseColor: [item.avatarConfig.skinColor],
+                    shirtColor: [item.avatarConfig.shirtColor],
+                    backgroundColor: [item.avatarConfig.backgroundColor],
+                }).toString();
+                } catch (e) {
+                console.error('Error rendering avatar:', e);
+                }
+
+                return (
+                    <View style={{ alignItems: 'center', marginHorizontal: 10, paddingBottom: 20 }}>
+                    <Image
+                    source={{ uri: `data:image/svg+xml;utf8,${avatarSvg}` }}
+                    style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#eee' }}
+                    />
+                    <Text style={{ fontSize: 12 }}>{item.username}</Text>
+                </View>
+                );
+            }}
+            style={{ marginVertical: 10 }}
+            />
 
             {/* Title for the page */}
             <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}>Classes</Text>
