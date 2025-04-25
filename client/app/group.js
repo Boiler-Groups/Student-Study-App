@@ -26,7 +26,9 @@ import {
     toggleMessageLike,
     toggleMessageDislike,
     checkIsDM,
-    edbotResponse
+    edbotResponse,
+    getGroup,
+    edbotSettings
 } from './api/studygroup.js'; // Import API functions
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../components/ThemeContext';
@@ -37,7 +39,7 @@ import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 
 import { buttonPressSound } from '../sounds/soundUtils.js';
-import {handleAddPointsToCurrentUser} from './global/incrementPoints';
+import { handleAddPointsToCurrentUser } from './global/incrementPoints';
 
 const GroupChatPage = ({ }) => {
     const [messages, setMessages] = useState([]);
@@ -72,8 +74,8 @@ const GroupChatPage = ({ }) => {
 
     const [edbotName, setEdbotName] = useState('Edbot');  // Default name
     const [enableEdbot, setEnableEdbot] = useState(false);
-    const [highlightMessages, setHighlightMessages] = useState(true);
     const [edbotBehavior, setEdbotBehavior] = useState('friendly');
+
 
     const router = useRouter();
 
@@ -96,9 +98,16 @@ const GroupChatPage = ({ }) => {
             const user = await getCurrentUser({ token });
             setUsername(user.data.username);
             setUserEmail(user.data.email);
+
+            const group = await getGroup(token, groupId);
+            console.log(`Group for settings: `, group);
+            setEdbotName(group.data.edbotName);
+            setEdbotBehavior(group.data.edbotPersonality);
+            setEnableEdbot(group.data.edbotEnabled);
         };
 
         fetchUserData();
+
     }, []);
 
     useEffect(() => {
@@ -123,6 +132,12 @@ const GroupChatPage = ({ }) => {
             ),
         });
     }, [groupTitle, navigation, isDM]);
+
+    useEffect(() => {
+        if (flatListRef.current && messages.length > 0) {
+            flatListRef.current.scrollToEnd({ animated: false });
+        }
+    }, [messages]);
 
     const loadMessages = async () => {
         const token = await AsyncStorage.getItem('token');
@@ -165,6 +180,12 @@ const GroupChatPage = ({ }) => {
         }, [groupId, userEmail])
     );
 
+    const saveSettings = async () => {
+        const token = await AsyncStorage.getItem('token');
+        console.log({ edbotBehavior, edbotName, enableEdbot })
+        const settings = await edbotSettings(token, groupId, edbotBehavior, edbotName, enableEdbot);
+    }
+
     const renderMessageWithTags = (text) => {
         if (!text) return null;
 
@@ -197,8 +218,13 @@ const GroupChatPage = ({ }) => {
     };
 
     const handleEdbotResponse = async (text) => {
+        //console.log("Is edbot enabled? ", enableEdbot);
+        //console.log("Rahhhhhhhhh");
+        if (!enableEdbot) {
+            return;
+        }
         const token = await AsyncStorage.getItem('token');
-        const response = await edbotResponse(token, groupId, text);
+        const response = await edbotResponse(token, groupId, text, edbotName, edbotBehavior);
         // try {
         //     const response = await fetch(`${API_URL}/summarize`, {
         //         method: 'POST',
@@ -225,7 +251,7 @@ const GroupChatPage = ({ }) => {
         }
         stopScheduler();
 
-        if (text.includes('@Edbot')) {
+        if (text.includes(`@${edbotName}`)) {
             handleEdbotResponse(text);
         }
 
@@ -542,12 +568,14 @@ const GroupChatPage = ({ }) => {
                                     borderColor: '#rgb(0, 60, 255)'
                                 }
                             ]}
-                            onPress={async() => {
+                            onPress={async () => {
                                 await buttonPressSound();
                                 handleSelectMessage(item._id)
                             }}
                         >
-                            <Text style={styles.sender}>{item.sender}</Text>
+                            <Text style={styles.sender}>
+                                {item.sender === 'Edbot' ? edbotName : item.sender}
+                            </Text>
 
                             {/* Display reply information if this message is a reply */}
                             {item.replyToId && (
@@ -597,7 +625,7 @@ const GroupChatPage = ({ }) => {
                                     <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
                                         {likes > 0 && (
                                             <TouchableOpacity
-                                                onPress={async() => {
+                                                onPress={async () => {
                                                     await buttonPressSound();
                                                     openReactionsModal(item.reactions.filter(r => r.endsWith('-like')))
                                                 }}
@@ -608,10 +636,10 @@ const GroupChatPage = ({ }) => {
                                         {dislikes > 0 && (
                                             <TouchableOpacity
 
-                                            onPress={async() => {
-                                                await buttonPressSound();
-                                                openReactionsModal(item.reactions.filter(r => r.endsWith('-dislike')))
-                                            }}
+                                                onPress={async () => {
+                                                    await buttonPressSound();
+                                                    openReactionsModal(item.reactions.filter(r => r.endsWith('-dislike')))
+                                                }}
 
                                             >
                                                 <Text style={styles.reactionIcon}>👎 {dislikes}</Text>
@@ -625,7 +653,7 @@ const GroupChatPage = ({ }) => {
                             {item._id === selectedMessageId && (
                                 <View style={styles.reactionContainer}>
                                     <TouchableOpacity
-                                        onPress={async() => {
+                                        onPress={async () => {
                                             await buttonPressSound();
                                             handleToggleReaction(item._id)
                                         }}
@@ -643,7 +671,7 @@ const GroupChatPage = ({ }) => {
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
-                                        onPress={async() => {
+                                        onPress={async () => {
                                             await buttonPressSound();
                                             handleToggleDislike(item._id)
                                         }}
@@ -665,7 +693,7 @@ const GroupChatPage = ({ }) => {
                                         {item.sender === username && (
                                             <TouchableOpacity
                                                 style={styles.deleteButton}
-                                                onPress={async() => {
+                                                onPress={async () => {
                                                     await buttonPressSound();
                                                     handleDeleteMessage(item._id)
                                                 }}
@@ -676,7 +704,7 @@ const GroupChatPage = ({ }) => {
                                         {/* Show reply for all messages */}
                                         <TouchableOpacity
                                             style={styles.replyButton}
-                                            onPress={async() => {
+                                            onPress={async () => {
                                                 await buttonPressSound();
                                                 handleReply(item)
                                             }}
@@ -711,7 +739,7 @@ const GroupChatPage = ({ }) => {
                             </Text>
                         )}
                     </View>
-                    <TouchableOpacity style={styles.cancelReplyButton} onPress={async()=>{
+                    <TouchableOpacity style={styles.cancelReplyButton} onPress={async () => {
                         await buttonPressSound();
                         cancelReply();
                     }}>
@@ -733,19 +761,19 @@ const GroupChatPage = ({ }) => {
                     blurOnSubmit={false}
                     returnKeyType="send"
                 />
-                <TouchableOpacity style={styles.sendButton} onPress={async()=>{
+                <TouchableOpacity style={styles.sendButton} onPress={async () => {
                     await buttonPressSound();
                     handleSendMessage()
                 }}>
                     <Text style={styles.sendText}>{replyingTo ? "Reply" : "Send"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.moreOptionsButton} onPress={async() => {
+                <TouchableOpacity style={styles.moreOptionsButton} onPress={async () => {
                     await buttonPressSound();
                     setImageUploadModule(true)
                 }}>
                     <Text style={styles.sendText}>{"+"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.automateButton} onPress={async() => {
+                <TouchableOpacity style={styles.automateButton} onPress={async () => {
                     await buttonPressSound();
                     setAutomateMessageModule(true)
                 }}>
@@ -766,7 +794,7 @@ const GroupChatPage = ({ }) => {
                                 </Text>
                             );
                         })}
-                        <TouchableOpacity onPress={async() => {
+                        <TouchableOpacity onPress={async () => {
                             await buttonPressSound();
                             setShowReactionsModal(false)
                         }} style={styles.reactModalCloseButton}>
@@ -792,7 +820,7 @@ const GroupChatPage = ({ }) => {
                         {/* Image Selection Button */}
                         <TouchableOpacity
                             style={styles.button}
-                            onPress={async() => {
+                            onPress={async () => {
                                 await buttonPressSound();
                                 const input = document.createElement('input');
                                 input.type = 'file';
@@ -805,7 +833,7 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
 
                         {/* Upload Button */}
-                        <TouchableOpacity style={styles.button} onPress={async() => {
+                        <TouchableOpacity style={styles.button} onPress={async () => {
                             await buttonPressSound();
                             handleImageUpload()
                             setImageUploadModule(false)
@@ -814,7 +842,7 @@ const GroupChatPage = ({ }) => {
                         </TouchableOpacity>
 
                         {/* Close Button */}
-                        <TouchableOpacity style={styles.cancelButton} onPress={async() => {
+                        <TouchableOpacity style={styles.cancelButton} onPress={async () => {
                             await buttonPressSound();
                             setImageUploadModule(false)
                         }}>
@@ -841,7 +869,7 @@ const GroupChatPage = ({ }) => {
                             value={scheduleMinute}
                             onChangeText={handleMinuteChange}
                         />
-                        <TouchableOpacity style={styles.button} onPress={async() => {
+                        <TouchableOpacity style={styles.button} onPress={async () => {
                             await buttonPressSound();
                             if (!text) {
                                 setText("Hey Everyone Lets Schedule a Meeting!!!");
@@ -852,7 +880,7 @@ const GroupChatPage = ({ }) => {
                         }}>
                             <Text style={styles.buttonText}>Schedule Send</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelButton} onPress={async() => {
+                        <TouchableOpacity style={styles.cancelButton} onPress={async () => {
                             await buttonPressSound();
                             stopScheduler()
                             setAutomateMessageModule(false)
@@ -886,14 +914,6 @@ const GroupChatPage = ({ }) => {
                             />
                         </View>
 
-                        <View style={{ marginBottom: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text style={styles.modalSubTitle}>Highlight Edbot Messages</Text>
-                            <Switch
-                                value={highlightMessages}
-                                onValueChange={setHighlightMessages}
-                            />
-                        </View>
-
                         <View style={{ marginBottom: 20 }}>
                             <Text style={styles.modalSubTitle}>Edbot Behavior Mode</Text>
                             <View style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 5, marginTop: 10 }}>
@@ -905,11 +925,18 @@ const GroupChatPage = ({ }) => {
                                     <Picker.Item label="Professional" value="professional" />
                                     <Picker.Item label="Funny" value="funny" />
                                     <Picker.Item label="Serious" value="serious" />
+                                    <Picker.Item label="Evil" value="evil" />
                                 </Picker>
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.saveButton} onPress={() => setEdbotSettingsVisible(false)}>
+                        <TouchableOpacity
+                            style={styles.saveButton}
+                            onPress={() => {
+                                saveSettings();
+                                setEdbotSettingsVisible(false);
+                            }}
+                        >
                             <Text style={styles.cancelButtonText}>Save Changes</Text>
                         </TouchableOpacity>
 

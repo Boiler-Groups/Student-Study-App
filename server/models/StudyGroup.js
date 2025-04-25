@@ -25,6 +25,18 @@ const StudyGroupSchema = new mongoose.Schema({
   membersTaggedOrReplied: {
     type: Array,
     default: []
+  },
+  edbotEnabled: {
+    type: Boolean,
+    default: true,
+  },
+  edbotName: {
+    type: String,
+    default: "Edbot",
+  },
+  edbotPersonality: {
+    type: String,
+    default: "Friendly",
   }
 });
 

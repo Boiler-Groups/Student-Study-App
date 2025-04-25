@@ -25,6 +25,23 @@ export const getGroups = async (req, res) => {
     }
 };
 
+export const getGroup = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ message: "Study group not found" });
+        }
+
+        res.status(200).json(group);
+    } catch (e) {
+        res.status(500).json({ message: "Server error", error: e.message });
+    }
+};
+
+
 //Set the new message flag
 export const setNewMessageFlag = async (req, res) => {
     const { groupId } = req.params;
@@ -737,15 +754,52 @@ export const isDM = async (req, res) => {
     }
 }
 
+export const edbotSettings = async (req, res) => {
+    const { edbotEnabled, edbotName, edbotPersonality } = req.body;
+    const { groupId } = req.params;
+
+    if (!edbotName) {
+        return res.status(400).json({ error: "Invalid Edbot name" });
+    }
+
+    try {
+        const group = await StudyGroup.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Study group not found',
+                errorDetails: `No study group found with the id: ${groupId}.`
+            });
+        }
+
+        group.edbotEnabled = edbotEnabled;
+        group.edbotName = edbotName;
+        group.edbotPersonality = edbotPersonality;
+
+        await group.save();
+
+        res.status(200).json({ message: 'Edbot settings updated', updatedGroup: group });
+
+    } catch (error) {
+        console.error("Summarization error:", error);
+        res.status(500).json({ error: "Failed to summarize notes" });
+    }
+}
+
 export const edbotResponse = async (req, res) => {
-    const { text } = req.body;
+    const { text, edbotName, edbotPersonality } = req.body;
     const { groupId } = req.params;
 
     if (!text) return res.status(400).json({ error: "No message provided" });
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-        const prompt = `You are an education assisstant named Edbot, respond to this student's message:\n\n${text}.`;
+        const prompt = `Context: You are an education assisstant named ${edbotName}, 
+                make your response with a ${edbotPersonality} personality, 
+                and your responses will be viewed as plain text. You will be given a student's message to respond to.
+                If it contains no meaningful information, respond with an explanation of your purpose.
+                 Now respond to this student's message:\n\n${text}.`;
+        console.log(prompt)
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const summary = response.text().replace(/`(.*?)`/g, "'$1'");
@@ -771,7 +825,7 @@ export const edbotResponse = async (req, res) => {
         res.status(201).json({ message: "Message sent", newMessage });
 
     } catch (error) {
-        console.error("Summarization error:", error);
-        res.status(500).json({ error: "Failed to summarize notes" });
+        console.error("Edbot error:", error);
+        res.status(500).json({ error: "Failed to generate response" });
     }
 }

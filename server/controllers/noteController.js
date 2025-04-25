@@ -66,7 +66,7 @@ export const deleteNote = async (req, res) => {
 
 export const editNote = async (req, res) => {
   const { id } = req.params; // Get group ID from request parameters
-  const { name, content } = req.body; // Get the new group name from request body
+  const { name, content, images } = req.body; // Get the new group name from request body
 
   // Check if the name was provided
   if (!name || !content) {
@@ -77,7 +77,7 @@ export const editNote = async (req, res) => {
 
   try {
     // Attempt to find and update the Study Group by id
-    const updatedNote = await Note.findByIdAndUpdate(id, { name, content }, { new: true });
+    const updatedNote = await Note.findByIdAndUpdate(id, { name, content, images }, { new: true });
 
     if (!updatedNote) {
       return res.status(404).json({
