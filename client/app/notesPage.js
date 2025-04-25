@@ -827,11 +827,6 @@ export default function NotesPage() {
       <Modal visible={editModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <ScrollView
-              style={{ flexGrow: 0 }}
-              contentContainerStyle={{ padding: 20 }}
-              showsVerticalScrollIndicator={true}
-            >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                 <Text style={styles.modalTitle}>Edit a Note</Text>
                 <View style={{ flexDirection: 'row', marginLeft: 8 }}>
@@ -1032,7 +1027,6 @@ export default function NotesPage() {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-            </ScrollView>
           </View>
         </View>
       </Modal>
