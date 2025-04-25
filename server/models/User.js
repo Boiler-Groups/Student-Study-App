@@ -18,6 +18,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  avatarConfig: {
+    type: Object,
+    default: null,
+  },
   points: {
     type: Number,
     default: 0,
