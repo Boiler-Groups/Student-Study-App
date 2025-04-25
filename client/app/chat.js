@@ -15,7 +15,7 @@ export default function Chat() {
     const flatListRef = useRef(null);
 
     const handleSend = () => {
-        if (inputText.trim() === '') return;
+        if (inputText.trim() === '')  return;
 
         const newMessage = {
             id: String(messages.length + 1),
