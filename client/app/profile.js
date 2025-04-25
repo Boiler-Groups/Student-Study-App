@@ -28,12 +28,31 @@ export default function Profile() {
     const [avatarConfig, setAvatarConfig] = useState(null)
     const [avatarModalVisible, setAvatarModalVisible] = useState(false)
     const [mfa, setMFA] = useState(false);
+    const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+    const [onlineStatusLoading, setOnlineStatusLoading] = useState(true);
 
     useEffect(() => {
         fetchUserData();
         loadAvatarConfig();
+        loadOnlineStatus();
     }, []);
 
+    const loadOnlineStatus = async () => {
+        try {
+          const stored = await AsyncStorage.getItem('showOnlineStatus');
+          if (stored !== null) {
+            setShowOnlineStatus(JSON.parse(stored));
+          } else {
+            setShowOnlineStatus(true);
+          }
+        } catch (error) {
+          console.error("Error loading online status:", error);
+          setShowOnlineStatus(true);
+        } finally {
+          setOnlineStatusLoading(false);
+        }
+      };
+      
     const handleAvatarSave = async (config) => {
         setAvatarConfig(config);
         await AsyncStorage.setItem('avatarConfig', JSON.stringify(config));
@@ -117,6 +136,7 @@ export default function Profile() {
                 setNewUsername(userData.username);
                 if (userData.avatarConfig) setAvatarConfig(userData.avatarConfig);
                 setMFA(userData.mfaOn);
+                setShowOnlineStatus(userData.showOnlineStatus ?? true);
             } else {
                 console.log("Failed to get user data:", await response.text());
                 await AsyncStorage.removeItem('token');
@@ -127,6 +147,39 @@ export default function Profile() {
             setMessage({ text: 'Failed to load user data', isError: true });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const toggleShowOnlineStatus = async () => {
+        try {
+            const newValue = !showOnlineStatus;
+            setShowOnlineStatus(newValue);
+            console.log("New Show Online Status value:", newValue);
+    
+            const token = await AsyncStorage.getItem('token');
+            if (!token || !user?._id) {
+                throw new Error('Authentication token missing');
+            }
+    
+            const res = await fetch(`${API_URL}/users/${user._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ showOnlineStatus: newValue }),
+            });
+    
+            const data = await res.json();
+    
+            if (!res.ok) {
+                console.error('Failed to update show online status:', data.message);
+                return;
+            }
+    
+            console.log('Show online status updated successfully.');
+        } catch (error) {
+            console.error('Error toggling show online status:', error);
         }
     };
 
@@ -441,6 +494,20 @@ export default function Profile() {
                     <Text style={[styles.settingText, isDarkTheme ? styles.darkText : styles.lightText]}>Multi-factor Authentication</Text>
                     <Switch value={mfa} onValueChange={toggleMFA} />
                 </View>
+
+                <View style={styles.settingItem}>
+                <Text style={[styles.settingText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                    Show Online Status
+                </Text>
+                <Switch
+                value={showOnlineStatus}
+                onValueChange={async (newValue) => {
+                    setShowOnlineStatus(newValue);
+                    await AsyncStorage.setItem('showOnlineStatus', JSON.stringify(newValue))
+                }}
+                />
+                </View>
+
                 <TouchableOpacity
                     style={styles.button}
                     onPress={async() => {

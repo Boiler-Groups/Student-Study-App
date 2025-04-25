@@ -45,7 +45,15 @@ const UserSchema = new mongoose.Schema({
   mfaExpiration: {
     type: Date,
     default: null,
-  } , 
+  },
+  showOnlineStatus: {
+    type: Boolean,
+    default: true,
+  },
+  online: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-export default mongoose.model('User', UserSchema);
+export default mongoose.models.User || mongoose.model('User', UserSchema);
