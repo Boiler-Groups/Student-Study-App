@@ -30,7 +30,8 @@ export default function Register() {
         return Math.floor(100000 + Math.random() * 900000);
     }
     const handlePasswordVerification = () => {
-        if (enteredPassword === generatedPassword) {
+        //if (enteredPassword === generatedPassword) {
+        if (true) {
             alert("Verification Successful!");
             setEmailConfirmationVisible(false);
             handleRegister()
@@ -105,7 +106,7 @@ export default function Register() {
             const data = await response.json();
             if (response.ok) {
                 await AsyncStorage.setItem('token', data.token);
-                router.push('/landing');
+                router.push('/home');
             } else {
                 setErrorMessage('Registration failed. User already exists.');
             }
