@@ -459,6 +459,7 @@ export const updateLastSeen = async (req, res) => {
   try {
     const user = req.user;
     user.lastSeen = new Date();
+    user.online = true;
     await user.save();
     res.status(200).json({ message: 'Heartbeat received' });
   } catch (error) {

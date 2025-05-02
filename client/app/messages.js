@@ -471,7 +471,7 @@ export default function Messages() {
                 style={[styles.button, { marginTop: 10, backgroundColor: '#6c757d' }]}
                 onPress={async () => {
                     await buttonPressSound();
-                    router.push('/landing');
+                    router.push('/home');
                 }}>
                 <Text style={styles.buttonText}>Home</Text>
             </TouchableOpacity>
