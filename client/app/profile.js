@@ -513,7 +513,7 @@ export default function Profile() {
                     style={[styles.button, styles.backButton]}
                     onPress={async() => {
                         await buttonPressSound();
-                        router.push('/landing')
+                        router.push('/home')
                     }}
                 >
                     <Text style={styles.buttonText}>Back to Dashboard</Text>

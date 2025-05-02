@@ -35,7 +35,7 @@ export default function Login() {
             const data = await response.json();
             if (response.ok && data.token) { 
                 await AsyncStorage.setItem('token', data.token);
-                router.replace('/landing');
+                router.replace('/home');
             } else if(data.message === "MFA code sent to email") {
                 setTempEmail(email);
                 setModalVisible(true);
@@ -63,7 +63,7 @@ export default function Login() {
           if (res.ok) {
             await AsyncStorage.setItem('token', data.token);
             setModalVisible(false);
-            router.push('/landing');
+            router.push('/home');
           } else {
             if (data.message === "Expired MFA code") {
                 setModalErrorMessage('Your MFA code has expired. Please request a new one.');

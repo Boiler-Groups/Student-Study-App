@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import Header from '../components/Header';
 import { AuthContext } from './AuthContext';
 import { useTheme } from '../components/ThemeContext';
@@ -21,6 +21,8 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const { user, logout, authLoading, token, markUserOnline, markUserOffline } = useContext(AuthContext);
     const [onlineUsers, setOnlineUsers] = useState([]);
+
+    const navigation = useNavigation();
 
     // Simulated API call to fetch groups
     useEffect(() => {
@@ -165,6 +167,11 @@ export default function Home() {
                             onPress={async () => {
                                 await buttonPressSound();
                                 handleAddPointsToCurrentUser(5);
+                                //console.log("ID: ", item._id)
+                                //navigation.navigate('group', { groupId: '67ef5a6330893347ba1b9c0c' });
+                                
+                                console.log("Navigating to group with ID:", item._id);
+                                navigation.navigate('group', { groupId: item._id });
                                 //Does nothing
                             }}
                         >
@@ -193,10 +200,10 @@ export default function Home() {
                         onPress={async () => {
                             await buttonPressSound();
                             handleAddPointsToCurrentUser(5);
-                            router.push('/landing');
+                            router.push('/profile');
                         }}
                     >
-                        <Text style={styles.buttonText}>Home</Text>
+                        <Text style={styles.buttonText}>Profile</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
