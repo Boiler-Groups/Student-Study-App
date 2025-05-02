@@ -21,4 +21,19 @@ export const getUserFromId = (userId) => UserClient.get(`/${userId}`);
 export const updateUserPoints =  (userId, newPoints) => UserClient.put(`/points/${userId}`, {points: newPoints});
 export const getUserPoints =  (userId) => UserClient.get(`/points/${userId}`);
 
-
+export const setOnlineStatus = async (userId, online, token) => {
+    return UserClient.patch(`/${userId}/online`, { online }, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
+  
+export const updateShowOnlineStatus = async (userId, showOnlineStatus, token) => {
+    return UserClient.patch(`/${userId}/settings`, { showOnlineStatus }, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
+  
+export const fetchOnlineAvatars = async () => {
+    const res = await fetch(`${SERVER_URL}/users/online-avatars`);
+    return res.json();
+};

@@ -12,72 +12,82 @@ import {handleAddPointsToCurrentUser} from "@/app/global/incrementPoints";
 import { createAvatar } from '@dicebear/core';
 import { micah } from '@dicebear/collection';
 import { Image } from 'react-native';
+import { fetchOnlineAvatars } from './api/user';
 
 export default function Home() {
     const router = useRouter();
     const { isDarkTheme } = useTheme();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { user, logout, authLoading, token, markUserOffline } = useContext(AuthContext);
+    const { user, logout, authLoading, token, markUserOnline, markUserOffline } = useContext(AuthContext);
     const [onlineUsers, setOnlineUsers] = useState([]);
 
     // Simulated API call to fetch groups
     useEffect(() => {
-        setLoading(false); // Set loading to false immediately
-        const fetchClasses = async () => {
-            try {
-                const token = await AsyncStorage.getItem('token');
-                const userData = await getCurrentUser({ token });
-                const userID = userData.data._id;
-                const response = await fetch(`${API_URL}/classes/`)
-                //const response = await fetch(`${API_URL}/classes/user/${userID}`, {
-                //        method: 'GET',
-                //});
-                if (!response.ok) {
-                    console.log("Fetch classes failed!")
-                    throw new Error('Failed to fetch classes');
-
-                }
-                const data = await response.json();
-                setGroups(data);
-            } catch (error) {
-                console.error('Error fetching classes:', error);
-            }
+        let cleanupCalled = false;
+      
+        const initOnline = async () => {
+          if (token) await markUserOnline();
         };
-
-        fetchClasses();
-
-        const fetchCurrentUser = async () => {
-            try {
-              const token = await AsyncStorage.getItem('token');
-              const showOnlineStatus = JSON.parse(await AsyncStorage.getItem('showOnlineStatus'));
-          
-              if (!token || !showOnlineStatus) return;
-          
-              const res = await fetch(`${API_URL}/users/me`, {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-          
-              if (!res.ok) throw new Error('Failed to fetch current user');
-          
-              const me = await res.json();
-          
-              // Only show if user has avatar and status is enabled
-              if (showOnlineStatus && me.avatarConfig) {
-                setOnlineUsers([me]);
-              } else {
-                setOnlineUsers([]);
+      
+        const handleUnload = async () => {
+          if (!cleanupCalled) {
+            cleanupCalled = true;
+            const token = await AsyncStorage.getItem("token");
+            if (token) await markUserOffline(token);
+          }
+        };
+      
+        const sendHeartbeat = async () => {
+          const token = await AsyncStorage.getItem("token");
+          if (token) {
+            await fetch(`${API_URL}/users/heartbeat`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
               }
-            } catch (error) {
-              console.error('Error fetching current user:', error);
-              setOnlineUsers([]);
-            }
-          };
-
-        fetchCurrentUser();
+            });
+          }
+        };
+      
+        initOnline();
+        setLoading(false);
+      
+        const fetchClasses = async () => {
+          try {
+            const token = await AsyncStorage.getItem('token');
+            const userData = await getCurrentUser({ token });
+            const response = await fetch(`${API_URL}/classes/`);
+            if (!response.ok) throw new Error('Failed to fetch classes');
+            const data = await response.json();
+            setGroups(data);
+          } catch (error) {
+            console.error('Error fetching classes:', error);
+          }
+        };
+        fetchClasses();
+      
+        const fetchOnlineUsers = async () => {
+          try {
+            const avatars = await fetchOnlineAvatars();
+            setOnlineUsers(avatars);
+          } catch (err) {
+            console.error("Error fetching online avatars:", err);
+          }
+        };
+        fetchOnlineUsers();
+      
+        const heartbeatInterval = setInterval(sendHeartbeat, 60000); // every 60s
+        const onlineUsersInterval = setInterval(fetchOnlineUsers, 30000); // every 30s
+        window.addEventListener("beforeunload", handleUnload);
+      
+        return () => {
+          handleUnload();
+          clearInterval(heartbeatInterval);
+          clearInterval(onlineUsersInterval);
+          window.removeEventListener("beforeunload", handleUnload);
+        };
     }, []);
 
     if (authLoading) {``

@@ -111,6 +111,9 @@ export const verifyMFA = async (req, res) => {
     user.mfaCode = null;
     user.mfaExpiration = null;
 
+    user.online = true;
+    user.lastSeen = new Date();
+
     // streaks and points
     const today = new Date();
     let lastLoginDate = user.lastLogin ? new Date(user.lastLogin) : null;
@@ -192,6 +195,9 @@ export const login = async (req, res) => {
         }
         user.lastLogin = today;
       }
+
+      user.online = true;
+      user.lastSeen = new Date();
 
       await user.save();
 
@@ -371,7 +377,6 @@ export const updateMfaOn = async (req, res) => {
   }
 };
 
-// Get user's points
 export const getPoints = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -387,6 +392,78 @@ export const getPoints = async (req, res) => {
     res.status(200).json({points: userPoints});
   } catch (error) {
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const setUserOnlineStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { online } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.online = online;
+    await user.save();
+
+    res.status(200).json({ message: `User ${online ? 'online' : 'offline'}` });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateShowOnlineStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { showOnlineStatus } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.showOnlineStatus = showOnlineStatus;
+    await user.save();
+
+    res.status(200).json({ message: 'Show online status updated' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getOnlineUsersWithAvatars = async (req, res) => {
+  try {
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+
+    await User.updateMany(
+      {
+        online: true,
+        lastSeen: { $lt: twoMinutesAgo },
+      },
+      { $set: { online: false } }
+    );
+
+    const users = await User.find({
+      online: true,
+      showOnlineStatus: true,
+      avatarConfig: { $exists: true, $ne: null },
+      lastSeen: { $gte: twoMinutesAgo },
+    }).select('avatarConfig username _id');
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error in getOnlineUsersWithAvatars:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateLastSeen = async (req, res) => {
+  try {
+    const user = req.user;
+    user.lastSeen = new Date();
+    await user.save();
+    res.status(200).json({ message: 'Heartbeat received' });
+  } catch (error) {
+    console.error("Error updating lastSeen:", error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
