@@ -11,6 +11,7 @@ import { createAvatar } from '@dicebear/core'
 import { micah } from '@dicebear/collection'
 import { buttonPressSound } from '../sounds/soundUtils.js';
 import {handleAddPointsToCurrentUser} from './global/incrementPoints';
+import { updateShowOnlineStatus } from './api/user';
 
 export default function Profile() {
     const router = useRouter();
@@ -154,32 +155,18 @@ export default function Profile() {
         try {
             const newValue = !showOnlineStatus;
             setShowOnlineStatus(newValue);
-            console.log("New Show Online Status value:", newValue);
-    
+            await AsyncStorage.setItem('showOnlineStatus', JSON.stringify(newValue));
+        
             const token = await AsyncStorage.getItem('token');
             if (!token || !user?._id) {
-                throw new Error('Authentication token missing');
+                throw new Error('Missing token or user ID');
             }
-    
-            const res = await fetch(`${API_URL}/users/${user._id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ showOnlineStatus: newValue }),
-            });
-    
-            const data = await res.json();
-    
-            if (!res.ok) {
-                console.error('Failed to update show online status:', data.message);
-                return;
-            }
-    
-            console.log('Show online status updated successfully.');
-        } catch (error) {
-            console.error('Error toggling show online status:', error);
+      
+            await updateShowOnlineStatus(user._id, newValue, token);
+      
+            console.log('showOnlineStatus updated successfully on the server');
+        } catch (err) {
+            console.error('Failed to update showOnlineStatus:', err);
         }
     };
 
@@ -496,16 +483,8 @@ export default function Profile() {
                 </View>
 
                 <View style={styles.settingItem}>
-                <Text style={[styles.settingText, isDarkTheme ? styles.darkText : styles.lightText]}>
-                    Show Online Status
-                </Text>
-                <Switch
-                value={showOnlineStatus}
-                onValueChange={async (newValue) => {
-                    setShowOnlineStatus(newValue);
-                    await AsyncStorage.setItem('showOnlineStatus', JSON.stringify(newValue))
-                }}
-                />
+                    <Text style={[styles.settingText, isDarkTheme ? styles.darkText : styles.lightText]}>Show Online Status</Text>
+                    <Switch value={showOnlineStatus} onValueChange={toggleShowOnlineStatus} />
                 </View>
 
                 <TouchableOpacity
