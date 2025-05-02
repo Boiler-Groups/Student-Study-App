@@ -74,10 +74,10 @@ export const editNote = async (req, res) => {
       message: 'Notes name and text content is required',
     });
   }
-
+  let editDate = Date.now;
   try {
     // Attempt to find and update the Study Group by id
-    const updatedNote = await Note.findByIdAndUpdate(id, { name, content }, { new: true });
+    const updatedNote = await Note.findByIdAndUpdate(id, { name, content, lastEdited: Date.now() }, { new: true });
 
     if (!updatedNote) {
       return res.status(404).json({

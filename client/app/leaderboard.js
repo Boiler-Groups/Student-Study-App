@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useRouter } from "expo-router";
 import { API_URL } from '@env';
-import { useTheme } from '@react-navigation/native'; 
+import { useTheme } from '../components/ThemeContext';
 import { getCurrentUser } from './api/user';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -100,29 +100,29 @@ export default function leaderboard() {
       </Text>
 
       <FlatList
-        style={styles.listContainer}
+        style={[styles.listContainer, isDarkTheme ? styles.darkOutline : styles.lightOutline]}
         data={users.slice(0,20)}
         keyExtractor={(item) => item._id}
         renderItem={({ item, index }) => (
-          <View style={[styles.usersItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem]}>
+          <View style={[styles.usersItem, isDarkTheme ? styles.darkNoteItem : styles.lightNoteItem, isDarkTheme ? styles.darkOutline : styles.lightOutline]}>
             <View style={styles.userRow}>
 
               {/* Rank */}
-              <View style={styles.rankBox}>
+              <View style={[styles.rankBox, isDarkTheme ? styles.darkBox : styles.lightBox, isDarkTheme ? styles.darkOutline : styles.lightOutline]}>
                 <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
                   #{index + 1}
                 </Text>
               </View>
               
               {/* Username */}
-              <View style={styles.userBox}>
-                <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+              <View style={[styles.userBox, isDarkTheme ? styles.darkBox : styles.lightBox, isDarkTheme ? styles.darkOutline : styles.lightOutline]}>
+                <Text style={[styles.pointsText, isDarkTheme ? styles.darkBox : styles.lightBox, isDarkTheme ? styles.darkText : styles.lightText]}>
                   User: {item.username}
                 </Text>
               </View>
 
               {/* Points */}
-              <View style={styles.pointsBox}>
+              <View style={[styles.pointsBox, isDarkTheme ? styles.darkBox : styles.lightBox, isDarkTheme ? styles.darkOutline : styles.lightOutline]}>
                 <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
                   {item.points} pts
                 </Text>
@@ -132,25 +132,25 @@ export default function leaderboard() {
         )}
       />
       <View style={[styles.userPosition, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
-      <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}> Your Points </Text>
-      <View style={styles.userRow}>
-          <View style={styles.userBox2} testID='userBox2'>
-            <Text style={[styles.titleText, isDarkTheme ? styles.darkText : styles.lightText]}>
-              User: {uname}
-            </Text>
-          </View>
-          <View style={styles.pointsBox2}>
-            <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
-              {upoints} pts
-            </Text>
-          </View>
-          <View style={styles.pointsBox2}>
-            <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
-              {ustreak} day streak
-            </Text>
+        <Text style={[styles.title, isDarkTheme ? styles.darkText : styles.lightText]}> Your Points </Text>
+        <View style={[styles.userRow, isDarkTheme ? styles.darkBackground : styles.lightBackground]}>
+            <View style={[styles.userBox2, isDarkTheme ? styles.darkBox : styles.lightBox, isDarkTheme ? styles.darkOutline : styles.lightOutline]} testID='userBox2'>
+              <Text style={[styles.titleText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                User: {uname}
+              </Text>
+            </View>
+            <View style={[styles.pointsBox2, isDarkTheme ? styles.darkBox : styles.lightBox, isDarkTheme ? styles.darkOutline : styles.lightOutline]}>
+              <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                {upoints} pts
+              </Text>
+            </View>
+            <View style={[styles.pointsBox2, isDarkTheme ? styles.darkBox : styles.lightBox, isDarkTheme ? styles.darkOutline : styles.lightOutline]}>
+              <Text style={[styles.pointsText, isDarkTheme ? styles.darkText : styles.lightText]}>
+                {ustreak} day streak
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
     </View>
   );
 }
@@ -158,16 +158,17 @@ export default function leaderboard() {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+    height: "100%",
     alignSelf: "center", 
     justifyContent: "center", 
     alignItems: "center", 
-    backgroundColor: "#CFB991",
-    height: "90%",
+    //backgroundColor: "#CFB991",
+    //height: "90%",
   },
   userPosition: {
     width: "100%",
-    height: "10%",
-    backgroundColor: "#CFB991",
+    height: "20%",
+    //backgroundColor: "#CFB991",
     justifyContent: "center",   
     alignItems: "center",        
     flexDirection: "column",       
@@ -187,8 +188,9 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 5,
     width: '80%',
+    height: "80%",
     borderWidth: 6,
-    borderColor: "black",
+    //borderColor: "black",
   },
   userRow: {
     flexDirection: 'row',
@@ -196,30 +198,30 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   userBox: {
-    backgroundColor: '#eee',
+    //backgroundColor: '#eee',
     padding: 10,
     borderRadius: 8,
     minWidth: '45%',
     alignItems: 'center',
-    borderColor: 'black',
+    //borderColor: 'black',
     borderWidth: 2,
   },
   userBox2: {
-    backgroundColor: '#eee',
+    //backgroundColor: '#eee',
     padding: 10,
     borderRadius: 8,
     minWidth: '33%',
     alignItems: 'center',
-    borderColor: 'black',
+    //borderColor: 'black',
     borderWidth: 2,
   },
   pointsBox2: { 
-    backgroundColor: '#eee',
+    //backgroundColor: '#eee',
     padding: 10,
     borderRadius: 8,
     minWidth: '33%',
     alignItems: 'center',
-    borderColor: 'black',
+    //borderColor: 'black',
     borderWidth: 2,
   },
   rankBox: {
@@ -227,23 +229,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minWidth: '10%',
     alignItems: 'center',
-    borderColor: 'black',
+    //borderColor: 'black',
     borderWidth: 2,
   },
   pointsBox: {
-    backgroundColor: '#ddd',
+    //backgroundColor: '#ddd',
     padding: 10,
     borderRadius: 8,
     minWidth: '45%',
     alignItems: 'center',
-    borderColor: 'black',
+    //borderColor: 'black',
     borderWidth: 2,
   },
   pointsText: {
     fontSize: 16,
   },
   titleText: {
-    fontSize: 16,
+    fontSize: 24,
     font: "bold",
   },
   /* Light Mode */
@@ -265,6 +267,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderBottomColor: "#DDD",
   },
+  lightBox: {
+    backgroundColor: "#DEEAEA",
+  },
+  lightOutline: {
+    borderColor: "black",
+  },
 
   /* Dark Mode */
   darkBackground: {
@@ -272,6 +280,9 @@ const styles = StyleSheet.create({
   },
   darkText: {
     color: "#F1F1F1",
+  },
+  darkOutline: {
+    borderColor: "white",
   },
   darkInputContainer: {
     backgroundColor: "#1E1E1E",
@@ -284,5 +295,8 @@ const styles = StyleSheet.create({
   darkNoteItem: {
     backgroundColor: "#1E1E1E",
     borderBottomColor: "#555",
+  },
+  darkBox: {
+    backgroundColor: "#879191",
   },
 });
