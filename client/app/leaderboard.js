@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   titleText: {
-    fontSize: 24,
+    fontSize: 16,
     font: "bold",
   },
   /* Light Mode */
