@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.2",
+    "@dicebear/core": "^9.2.2",
     "@emailjs/browser": "^4.4.1",
     "@expo/metro-runtime": "^4.0.1",
     "@expo/vector-icons": "^14.0.2",
