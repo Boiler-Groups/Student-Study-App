@@ -561,7 +561,7 @@ export default function NotesPage() {
       </View>
 
       <View style={{
-        width: '60%',
+        width: '65%',
         marginBottom: 10,
         borderWidth: 1,
         borderRadius: 8,
@@ -612,7 +612,7 @@ export default function NotesPage() {
           borderRadius: 8,
           padding: 10,
           marginBottom: 10,
-          width: '60%',
+          width: '65%',
           backgroundColor: isDarkTheme ? '#1E1E1E' : '#FFF',
           color: isDarkTheme ? '#FFF' : '#000',
         }}
@@ -826,7 +826,16 @@ export default function NotesPage() {
       {/* Modal for editing Notes */}
       <Modal visible={editModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+        <ScrollView
+          style={{ width: '80%', backgroundColor: '#fff', borderRadius: 10 }}
+          contentContainerStyle={{
+            padding: 20,
+            paddingBottom: 40,
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                 <Text style={styles.modalTitle}>Edit a Note</Text>
                 <View style={{ flexDirection: 'row', marginLeft: 8 }}>
@@ -1027,7 +1036,7 @@ export default function NotesPage() {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
       {/* Modal for Creating Flashcards */}
@@ -1294,7 +1303,7 @@ const styles = StyleSheet.create({
   addNoteContainer: {
     flexDirection: "row",
     alignItems: "center",
-    width: '60%',
+    width: '65%',
     justifyContent: "center",
     backgroundColor: '#CFB991',
     borderWidth: 6,
@@ -1322,7 +1331,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 6,
     borderBottomColor: "black",
     padding: 5,
-    width: '60%',
+    width: '65%',
     borderRightWidth: 6,
     borderRightColor: "black",
     borderLeftWidth: 6,
@@ -1344,8 +1353,8 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    //justifyContent: 'center',
+    //alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
     maxHeight: '90%'
   },
