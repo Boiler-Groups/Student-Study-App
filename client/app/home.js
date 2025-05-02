@@ -168,10 +168,10 @@ export default function Home() {
                                 await buttonPressSound();
                                 handleAddPointsToCurrentUser(5);
                                 //console.log("ID: ", item._id)
-                                //navigation.navigate('group', { groupId: '67ef5a6330893347ba1b9c0c' });
+                                navigation.navigate('group', { groupId: '68142450991740d37048ddb4' });
                                 
                                 console.log("Navigating to group with ID:", item._id);
-                                navigation.navigate('group', { groupId: item._id });
+                                //navigation.navigate('group', { groupId: item._id });
                                 //Does nothing
                             }}
                         >

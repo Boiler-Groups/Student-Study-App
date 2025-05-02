@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express()
 
-const allowedOrigins = ['http://localhost:8081', 'http://localhost:8082'];
+const allowedOrigins = ['http://localhost:8081', 'http://localhost:8082', 'http://localhost:8083'];
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin)) {

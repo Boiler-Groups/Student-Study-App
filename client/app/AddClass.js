@@ -3,12 +3,12 @@ import { FlatList, TextInput, TouchableOpacity, StyleSheet, Text, View, Modal } 
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import { API_URL } from '@env';
-import { useTheme } from '../components/ThemeContext'; 
+import { useTheme } from '../components/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from './api/user';
 import ical from 'ical.js';
-import {handleAddPointsToCurrentUser} from "@/app/global/incrementPoints";
-import {buttonPressSound} from "@/sounds/soundUtils";
+import { handleAddPointsToCurrentUser } from "@/app/global/incrementPoints";
+import { buttonPressSound } from "@/sounds/soundUtils";
 
 export default function AddClass() {
   const router = useRouter();
@@ -26,19 +26,19 @@ export default function AddClass() {
       setErrMsg('Class name cannot be empty');
       return;
     }
-  
+
     const credNum = Number(credits);
     if (!Number.isInteger(credNum) || credNum <= 0) {
       console.error("Credits must be a valid positive integer.");
       setErrMsg('Credits must be a valid positive integer');
       return;
     }
-  
+
     try {
       const token = await AsyncStorage.getItem('token');
-      const user = await getCurrentUser({ token }); 
+      const user = await getCurrentUser({ token });
       const response = user.data;
-      
+
       setClasses(classes => [
         ...classes,
         {
@@ -56,7 +56,7 @@ export default function AddClass() {
       setErrMsg("Something went wrong while adding the class.");
     }
   };
-  
+
 
   const toggleClassAdded = (id) => {
     setClasses(classes.map((c) => (c.id === id ? { ...c, added: !c.added } : c)));
@@ -69,8 +69,8 @@ export default function AddClass() {
   const addAllClassesToDatabase = async () => {
     try {
       for (const classObj of classes) {
-        
-        const newClass = { 
+
+        const newClass = {
           name: classObj.name,
           credits: classObj.credits,
           userId: classObj.userId,
@@ -89,7 +89,7 @@ export default function AddClass() {
           throw new Error(`Failed to add class: ${classObj.name}`);
         }
         console.log(`Successfully added class: ${classObj.name}`);
-        
+
       }
       setSuccessModalVisible(true);
       setClasses([]);
@@ -118,6 +118,7 @@ export default function AddClass() {
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
+      const startOfYear = new Date(currentYear, 0, 1);
       const token = await AsyncStorage.getItem('token');
       const user = await getCurrentUser({ token });
       const userId = user.data._id;
@@ -130,8 +131,8 @@ export default function AddClass() {
           if (!dtstart) return null; // Skip if no start date
 
           const eventDate = new Date(dtstart.toJSDate());
-          if (eventDate.getFullYear() !== currentYear) {
-            return null; // Skip if not in the current month
+          if (eventDate < startOfYear || eventDate > now) {
+            return null; // Skip if not between Jan 1 and now
           }
 
           // Extract only the first two words from the summary
@@ -230,14 +231,14 @@ export default function AddClass() {
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={async()=>{
+        <TouchableOpacity style={styles.button} onPress={async () => {
           await buttonPressSound();
           handleAddPointsToCurrentUser(10);
           addAllClassesToDatabase()
         }}>
           <Text style={styles.buttonText}>Save Changes</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={async() => {
+        <TouchableOpacity style={styles.button} onPress={async () => {
           await buttonPressSound();
           handleAddPointsToCurrentUser(10);
           router.push('/home')
