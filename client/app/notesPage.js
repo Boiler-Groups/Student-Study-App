@@ -11,7 +11,7 @@ import Markdown from 'react-native-markdown-display';
 import * as Speech from 'expo-speech';
 import { MaterialIcons } from '@expo/vector-icons';
 import { API_URL } from '@env';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '../components/ThemeContext';
 import {
   GoogleGenerativeAI, HarmCategory,
   HarmBlockThreshold
