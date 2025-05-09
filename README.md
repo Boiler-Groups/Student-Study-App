@@ -44,11 +44,14 @@ GEMINI_API_KEY=
 5. Create a .env file in `client` with the following fields filled in
 ```
 API_URL=
+GEMINI_API_KEY=
 ```
 - API_URL: This is the root or starting URL for all of the API requests your frontend will make to the backend. 
 For example, if your backend is running on http://localhost:8080 (Port 8080 is default) 
 and your frontend is running on http://localhost:8081 (Port 8081 is defualt for metro builder), you would set the API_URL to your backend's URL.
 Ex. API_URL=http://localhost:8080. During production it might look something like https://api.yoursite.com in production.
+
+- GEMINI_API_KEY: A secret key used to securely access Google's Gemini AI model for AI tools within the app. To get a key, sign up at Google AI Studio and create a free API key under the API Keys section.
 
 6. Start the server and client on separate terminals and open the application
 ```
